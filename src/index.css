@@ -1,5 +1,5 @@
 body {
-  margin: 0;
+  margin: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -7,7 +7,43 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+div.debug {
+  border: solid 1px black;
+  margin: 3px;
+  padding: 3px;
+  background-color: lightgrey;
+}
+
+/* TODO: consider using Bootstrap grid system */
+.sensdat-container {
+  border: solid 1px black;
+  display: grid;
+  grid-template-columns: 20% 20% 20% 20% 20%;
+  grid-template-rows: 50% 50%;
+  min-width: 1200px;
+  min-height: 1200px;
+  padding: 20px;
+  margin: 40px;
+}
+
+.viz-container {
+  grid-column: 1 / span 3;
+  grid-row-start: 1;
+  overflow: scroll;
+}
+
+.state-container {
+  grid-column: 4 / span 2;
+  grid-row-start: 1;
+}
+
+.data-container {
+  grid-column: 1 / span 3;
+  grid-row-start: 2;
+  overflow: scroll;
+}
+
+.tables-container {
+  grid-column: 4 / span 2;
+  grid-row-start: 2;
 }
