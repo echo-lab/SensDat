@@ -1,12 +1,13 @@
 import React, { useRef, useState, useEffect } from "react";
 import * as d3 from "d3";
-import { Range } from 'rc-slider';
-import 'rc-slider/assets/index.css';
+import { Range } from "rc-slider";
+import "rc-slider/assets/index.css";
 
+const PADDING_FRACTION = 1.1;
 
 /*
  * Creates a visualization of the data.
- * 
+ *
  * Args:
  * - dataTable:
  *      A DataTable object. Might not need the entire thing...
@@ -41,21 +42,17 @@ export function VizView({ dataTable, vizTimespan, onSliderChange }) {
 
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
-          height: 500,
-          width: 800,
-          marginRight: "0px",
-          marginLeft: "0px",
-          border: "solid 1px black",
+    height: 500,
+    width: 800,
+    marginRight: "0px",
+    marginLeft: "0px",
+    border: "solid 1px black",
   };
-  const sliderDivStyle = {width: 400, margin: 50};
+  const sliderDivStyle = { width: 400, margin: 50 };
 
   return (
     <div className="viz-container debug">
-      <svg
-        ref={svgRef}
-        style={svgStyle}
-      >
-      </svg>
+      <svg ref={svgRef} style={svgStyle}></svg>
       <div style={sliderDivStyle}>
         <p>Timespan</p>
         <Range {...rangeSliderProps} />
@@ -73,12 +70,16 @@ function drawToSVG(svg, dataTable, timespan) {
   const width = totalWidth - margin.left - margin.right;
   const height = totalHeight - margin.top - margin.bottom;
 
-  // Filter the data
-  let [minOrder, maxOrder] = d3.extent(data, d => d.Order);
-  let [r1, r2] = timespan;
-  let mno = minOrder + (r1/100)*(maxOrder-minOrder);
-  let mxo = minOrder + (r2/100)*(maxOrder-minOrder);
-  data = data.filter(row => row.Order >= mno && row.Order <= mxo );
+  // Get the domain for the data before we filter out the non-visualized points!
+  // Also: dilate the ranges so we don't plot points on the axes.
+  let [latDomain, longDomain] = getLatLongDomain(
+    d3.extent(data, (d) => d.Longitude),
+    d3.extent(data, (d) => d.Latitude),
+    [width, height]
+  ).map((rng) => scaleRange(rng, PADDING_FRACTION));
+
+  // Filter to the selected timespan range.
+  data = filterByTimespan(data, timespan);
 
   // Clear the SVG! Maybe there's a nicer way?
   svg.selectAll("*").remove();
@@ -88,38 +89,106 @@ function drawToSVG(svg, dataTable, timespan) {
     .append("g")
     .attr("transform", `translate(${margin.left}, ${margin.right})`);
 
+  // let m = 10; // margin to separate the data from the axes.
   var x = d3
     .scaleLinear()
-    .domain(d3.extent(data, (d) => d.Longitude))
+    // .domain(d3.extent(data, (d) => d.Longitude))
+    .domain(longDomain)
     .range([0, width]);
 
   var y = d3
     .scaleLinear()
-    .domain(d3.extent(data, (d) => d.Latitude))
+    .domain(latDomain)
+    // .domain(d3.extent(data, (d) => d.Latitude))
     .range([height, 0]);
 
-  svg.append("g")
+  svg
+    .append("g")
     .attr("transform", `translate(0, ${height})`)
-    .call(d3.axisBottom(x));
-  svg.append("g").call(d3.axisLeft(y));
+    .call(d3.axisBottom(x).ticks(4));
+  svg.append("g").call(d3.axisLeft(y).ticks(4));
 
-  svg.append("path")
+  svg
+    .append("path")
     .datum(data)
     .attr("fill", "none")
     .attr("stroke", "#69b3a2")
     .attr("stroke-width", 1.5)
-    .attr("d", d3.line()
-      .x(d=>x(d.Longitude))
-      .y(d=>y(d.Latitude))
+    .attr(
+      "d",
+      d3
+        .line()
+        .x((d) => x(d.Longitude))
+        .y((d) => y(d.Latitude))
     );
 
-  svg.append("g")
+  svg
+    .append("g")
     .selectAll("dot")
     .data(data)
     .enter()
     .append("circle")
-      .attr("cx", d=>x(d.Longitude))
-      .attr("cy", d=>y(d.Latitude))
-      .attr("r", 3)
-      .attr("fill", "#69b3a2");
+    .attr("cx", (d) => x(d.Longitude))
+    .attr("cy", (d) => y(d.Latitude))
+    .attr("r", 3)
+    .attr("fill", "#69b3a2");
+}
+
+
+/* ----------------- */
+/* UTILITY FUNCTIONS */
+/* ----------------- */
+
+// Copied from: https://www.movable-type.co.uk/scripts/latlong.html
+function latLongDist(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // metres
+  const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  const d = R * c; // in metres
+  return d;
+}
+
+// Scale a range, preserving the midpoint.
+function scaleRange([lo, hi], factor) {
+  const mid = (hi + lo) / 2;
+  const m = ((hi - lo) / 2) * factor;
+  return [mid - m, mid + m];
+}
+
+// TODO: TEST THIS! YOU MUST!
+function getLatLongDomain([long0, long1], [lat0, lat1], [width, height]) {
+  // dx and dy are the actual (slightly approximate) physical distances spanned
+  // by the longitude and latitude, respectively.
+  const dx = latLongDist(lat0, long0, lat0, long1);
+  const dy = latLongDist(lat0, long0, lat1, long0);
+
+  // The idea here is that we want the scale in the graph to correspond to
+  // the actual, physical distances. This will be true if dx/dy = width/height.
+  // If dx/dy < width/height, we need to pad the longitude scale, and vice versa.
+  let latDomain = [lat0, lat1];
+  let longDomain = [long0, long1];
+  if (dx / dy < width / height) {
+    longDomain = scaleRange(longDomain, ((width / height) * dy) / dx);
+  } else {
+    latDomain = scaleRange(latDomain, ((height / width) * dx) / dy);
+  }
+  return [latDomain, longDomain];
+}
+
+// TODO: this should probably filter by actual time instead of "order"/"index".
+// Plus: we should not be assuming the index column is called 'Order'.
+function filterByTimespan(data, timespan) {
+  let [minOrder, maxOrder] = d3.extent(data, (d) => d.Order);
+  let [r1, r2] = timespan;
+  let mno = minOrder + (r1 / 100) * (maxOrder - minOrder);
+  let mxo = minOrder + (r2 / 100) * (maxOrder - minOrder);
+  return data.filter((row) => row.Order >= mno && row.Order <= mxo);
 }
