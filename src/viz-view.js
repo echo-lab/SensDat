@@ -84,6 +84,14 @@ function drawToSVG(svg, dataTable, timespan) {
   // Clear the SVG! Maybe there's a nicer way?
   svg.selectAll("*").remove();
 
+  let [selectPoint, deselectPoints] = makeHandlers();
+
+  // TODO: can we rely on this getting called after the on-click handler for each
+  // datapoint?
+  svg.on("click", (e) => {
+    if (!e.defaultPrevented) deselectPoints();
+  });
+
   // Based on: https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
   svg = svg
     .append("g")
@@ -131,9 +139,37 @@ function drawToSVG(svg, dataTable, timespan) {
     .attr("cx", (d) => x(d.Longitude))
     .attr("cy", (d) => y(d.Latitude))
     .attr("r", 3)
-    .attr("fill", "#69b3a2");
+    .attr("fill", "#69b3a2")
+    .on("click", selectPoint)
+    .on("mouseenter", (e) => {
+      console.log("mouseenter event: ", e);
+    })
+    .on("mouseleave", (e) => {
+      console.log("mouseleave event: ", e);
+    });
 }
 
+function makeHandlers() {
+  let onDeselect;
+
+  let deselect = () => {
+    if (!onDeselect) return;
+    onDeselect();
+    onDeselect = null;
+  };
+
+  let select = (e, d) => {
+    e.preventDefault();
+    deselect();
+    let elem = d3.select(e.currentTarget);
+    elem.attr("stroke", "black");
+    onDeselect = () => {
+      elem.attr("stroke", null);
+    };
+  };
+
+  return [select, deselect];
+}
 
 /* ----------------- */
 /* UTILITY FUNCTIONS */
