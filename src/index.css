@@ -14,7 +14,7 @@ div.debug {
   background-color: lightgrey;
 }
 
-/* TODO: consider using Bootstrap grid system */
+/* TODO: Switch to Bootstrap for the layout */
 .sensdat-container {
   border: solid 1px black;
   display: grid;
@@ -32,8 +32,13 @@ div.debug {
   overflow: scroll;
 }
 
-.state-container {
-  grid-column: 4 / span 2;
+.new-state-container {
+  grid-column: 4 / span 1;
+  grid-row-start: 1;
+}
+
+.existing-state-container {
+  grid-column: 5 / span 1;
   grid-row-start: 1;
 }
 

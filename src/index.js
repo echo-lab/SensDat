@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import "./index.css";
 import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
+import { StateView } from "./state-view.js";
 import { DataTable } from "./data-table.js";
 
 
@@ -24,7 +25,7 @@ function App() {
   return (
     <div className="sensdat-container">
       <VizView dataTable={dataTable} vizTimespan={vizTimespan} onSliderChange={setVizTimespan}/>
-      <div className="state-container debug"></div>
+      <StateView/>
       <DataView dataTable={dataTable} />
       <div className="tables-container debug"></div>
     </div>
