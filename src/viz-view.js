@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import * as d3 from "d3";
 import { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
+import { UIState } from "./ui-state.js";
 
 const PADDING_FRACTION = 1.1;
 
@@ -16,7 +17,7 @@ const PADDING_FRACTION = 1.1;
  * - onSliderChange:
  *      A callback function for when the timespan slider changes.
  */
-export function VizView({ dataTable, vizTimespan, onSliderChange }) {
+export function VizView({ dataTable, vizTimespan, onSliderChange, uistate }) {
   const svgRef = useRef();
 
   // Function to update the SVG.
@@ -50,8 +51,12 @@ export function VizView({ dataTable, vizTimespan, onSliderChange }) {
   };
   const sliderDivStyle = { width: 400, margin: 50 };
 
+  // Lol - this is probably a bad way to do it... Maybe should pull out
+  // the class name 'def-visible' as a constant somewhere.
+  let classNames = "viz-container debug" + (uistate.showViz() ? " def-visible" : "");
+
   return (
-    <div className="viz-container debug">
+    <div className={classNames}>
       <svg ref={svgRef} style={svgStyle}></svg>
       <div style={sliderDivStyle}>
         <p>Timespan</p>
