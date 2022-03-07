@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import { UIState } from "./ui-state.js";
@@ -47,15 +47,25 @@ function CreateStateButton({ stateType, handleClick }) {
 }
 
 function CreateRegionPane({ handleCancel }) {
+  let [regionName, setRegionName] = useState("");
+
+  let handleChange = (e) => setRegionName(e.target.value);
+  let handleSubmit = () => console.log("Region Name:", regionName);
+
   return (
     <div className="create-state-container def-visible debug">
       <div className="text-center py-4 px-5">
         <Form>
-          <Form.Group className="mb-3" controlId="dunnowhatthisis">
+          <Form.Group className="mb-3" controlId="formNewRegionName">
             <Form.Label>Region Name: </Form.Label>
-            <Form.Control type="text" placeholder="My Region" />
+            <Form.Control
+              type="text"
+              placeholder="My Region"
+              value={regionName}
+              onChange={handleChange}
+            />
           </Form.Group>
-          <Button variant="outline-dark" size="md">
+          <Button variant="outline-dark" size="md" onClick={handleSubmit}>
             Done
           </Button>{" "}
           <Button variant="outline-dark" size="md" onClick={handleCancel}>
