@@ -9,15 +9,16 @@ export function StateView({ uiState, handleCreateRegion, handleCancel }) {
   let newStateContainerProps = { handleCreateRegion, handleCancel };
   let createRegionProps = { handleCancel };
 
-  if (uiState === UIState.CreateRegion) {
-    return <CreateRegionPane {...createRegionProps} />;
-  }
+  let regionPane = uiState === UIState.CreateRegion && (
+    <CreateRegionPane {...createRegionProps} />
+  );
 
   return (
-    <>
+    <div className="state-container debug">
       <NewStateContainer {...newStateContainerProps} />
       <div className="existing-state-container debug"></div>
-    </>
+      {regionPane}
+    </div>
   );
 }
 
@@ -45,7 +46,6 @@ function CreateStateButton({ stateType, handleClick }) {
   );
 }
 
-// TODO: can this just go over the other pane???
 function CreateRegionPane({ handleCancel }) {
   return (
     <div className="create-state-container def-visible debug">
