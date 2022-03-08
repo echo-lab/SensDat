@@ -2,27 +2,27 @@ import React, { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import { UIState } from "./ui-state.js";
+import { actions } from "./app-state.js";
 
-export function StateView({ uiState, handleCreateRegion, handleCancel }) {
-  // TODO: need to pass in 1) the current states and 2) callback functions
-  // for CreateStateButtons.
-  let newStateContainerProps = { handleCreateRegion, handleCancel };
-  let createRegionProps = { handleCancel };
+export function StateView({ uiState, dispatch }) {
 
+  // This pane is only present for UIState.CreateRegion
   let regionPane = uiState === UIState.CreateRegion && (
-    <CreateRegionPane {...createRegionProps} />
+    <CreateRegionPane dispatch={dispatch} />
   );
 
   return (
     <div className="state-container debug">
-      <NewStateContainer {...newStateContainerProps} />
+      <NewStateContainer dispatch={dispatch} />
       <div className="existing-state-container debug"></div>
       {regionPane}
     </div>
   );
 }
 
-function NewStateContainer({ handleCreateRegion, handleCancel }) {
+function NewStateContainer({ dispatch }) {
+  let handleCreateRegion = ()=>dispatch(actions.startCreateRegion());
+
   return (
     <div className="new-state-container debug">
       <h4 className="py-4 text-center"> Create New State </h4>
@@ -46,11 +46,12 @@ function CreateStateButton({ stateType, handleClick }) {
   );
 }
 
-function CreateRegionPane({ handleCancel }) {
+function CreateRegionPane({ dispatch }) {
   let [regionName, setRegionName] = useState("");
 
   let handleChange = (e) => setRegionName(e.target.value);
   let handleSubmit = () => console.log("Region Name:", regionName);
+  let handleCancel = () => dispatch(actions.cancelCreateRegion());
 
   return (
     <div className="create-state-container def-visible debug">

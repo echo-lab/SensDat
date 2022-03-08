@@ -1,4 +1,5 @@
 export class UIState {
+  static NotLoaded = new UIState("not-loaded");
   static Default = new UIState("default");
   static CreateRegion = new UIState("create-region");
 

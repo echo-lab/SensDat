@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
 import { UIState } from "./ui-state.js";
+import { actions } from "./app-state.js";
 
 const PADDING_FRACTION = 1.1;
 
@@ -14,10 +15,8 @@ const PADDING_FRACTION = 1.1;
  *      A DataTable object. Might not need the entire thing...
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
- * - onSliderChange:
- *      A callback function for when the timespan slider changes.
  */
-export function VizView({ dataTable, vizTimespan, onSliderChange, uistate }) {
+export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
   const svgRef = useRef();
 
   // Function to update the SVG.
@@ -36,8 +35,8 @@ export function VizView({ dataTable, vizTimespan, onSliderChange, uistate }) {
     max: 100,
     defaultValue: [0, 100],
     draggableTrack: true,
-    // onAfterChange: onSliderChange,
-    onChange: onSliderChange,
+    // onAfterChange: ...,
+    onChange: (val)=>dispatch(actions.changeTimespan(val)),
     // Also see: trackStyle, railStyle, dotStyle, activeDotStyle
   };
 

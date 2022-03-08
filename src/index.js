@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 import { DataView } from "./data-view.js";
@@ -6,43 +6,43 @@ import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { DataTable } from "./data-table.js";
 import { UIState } from "./ui-state.js";
+import * as AppState from "./app-state.js";
 
 function App() {
-  // TODO: eventually we need a map from tableName -> dataTable
-  const [dataTable, setDataTable] = useState(undefined);
-  const [vizTimespan, setVizTimespan] = useState([0, 100]);
-  const [uistate, setUistate] = useState(UIState.Default);
+  const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
 
   useEffect(
     () => {
       DataTable.FromTestData().then((dt) => {
         console.log("setting data to: ", dt);
-        setDataTable(dt);
+        // setDataTable(dt);
+        dispatch(AppState.actions.loadTable(dt));
       });
     },
     /*dependencies=*/ []
   );
 
   let stateViewProps = {
-    uiState: uistate,
-    handleCreateRegion: ()=>setUistate(UIState.CreateRegion),
-    handleCancel: ()=>setUistate(UIState.Default),
+    uiState: state.uiState,
+    dispatch,
   };
 
   let vizViewProps = {
-    dataTable,
-    vizTimespan,
-    uistate,
-    onSliderChange: setVizTimespan,
+    dataTable: state.dataTable,
+    dispatch,
+    vizTimespan: state.vizState.timespan,
+    uistate: state.uiState,
   };
+
+  let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
   return (
     <div className="sensdat-container">
       <VizView {...vizViewProps} />
       <StateView {...stateViewProps}/>
-      <DataView dataTable={dataTable} />
+      <DataView dataTable={state.dataTable} />
       <div className="tables-container debug"></div>
-      <div className="modal-background" hidden={uistate===UIState.Default}></div>
+      <div className="modal-background" hidden={modalHidden}></div>
     </div>
   );
 }
