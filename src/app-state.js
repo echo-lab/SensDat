@@ -50,7 +50,11 @@ export const initialState = {
     timespan: [0, 100],
   },
 
-  // TODO: add state for: createRegionInteraction, etc. 
+  // Should be true when 1) we are in the middle of creating a new state,
+  // and 2) the new state is valid and could be saved. As an example, if
+  // we're drawing a new region, before we draw a polygon, this value should
+  // be false, but after we've drawn one, it should be true.
+  createStateValid: false,
 };
 
 
@@ -92,6 +96,20 @@ actionHandlers["cancelCreateRegion"] = (state, payload) => {
     ...state,
     uiState: UIState.Default,
   };
+};
+
+actionHandlers["createRegionTemp"] = (state, payload) => {
+  // return a new DataTable with the temp region column?
+  // Note: clobbers any existing temp columns (!)
+  return {
+    ...state,
+    createStateValid: true,
+  };
+};
+
+actionHandlers["createRegionCommit"] = (state, payload) => {
+  // return a new DataTablewith the temp columns committed!
+  return state;
 };
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function

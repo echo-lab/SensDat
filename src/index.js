@@ -24,6 +24,7 @@ function App() {
 
   let stateViewProps = {
     uiState: state.uiState,
+    createStateValid: state.createStateValid,
     dispatch,
   };
 

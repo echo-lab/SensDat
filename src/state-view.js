@@ -4,11 +4,10 @@ import Form from "react-bootstrap/Form";
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
 
-export function StateView({ uiState, dispatch }) {
-
+export function StateView({ uiState, dispatch, createStateValid }) {
   // This pane is only present for UIState.CreateRegion
   let regionPane = uiState === UIState.CreateRegion && (
-    <CreateRegionPane dispatch={dispatch} />
+    <CreateRegionPane dispatch={dispatch} createStateValid={createStateValid} />
   );
 
   return (
@@ -21,7 +20,7 @@ export function StateView({ uiState, dispatch }) {
 }
 
 function NewStateContainer({ dispatch }) {
-  let handleCreateRegion = ()=>dispatch(actions.startCreateRegion());
+  let handleCreateRegion = () => dispatch(actions.startCreateRegion());
 
   return (
     <div className="new-state-container debug">
@@ -46,7 +45,7 @@ function CreateStateButton({ stateType, handleClick }) {
   );
 }
 
-function CreateRegionPane({ dispatch }) {
+function CreateRegionPane({ dispatch, createStateValid }) {
   let [regionName, setRegionName] = useState("");
 
   let handleChange = (e) => setRegionName(e.target.value);
@@ -66,7 +65,12 @@ function CreateRegionPane({ dispatch }) {
               onChange={handleChange}
             />
           </Form.Group>
-          <Button variant="outline-dark" size="md" onClick={handleSubmit}>
+          <Button
+            variant="outline-dark"
+            size="md"
+            onClick={handleSubmit}
+            disabled={!createStateValid || !regionName}
+          >
             Done
           </Button>{" "}
           <Button variant="outline-dark" size="md" onClick={handleCancel}>

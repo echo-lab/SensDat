@@ -4,8 +4,17 @@ import { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
+import { CreateRegionInteraction } from "./create-region-interaction.js";
 
 const PADDING_FRACTION = 1.1;
+
+const SVG_HEIGHT = 500;
+const SVG_WIDTH = 800;
+const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
+const SVG_EFFECTIVE_DIMS = {
+  WIDTH: SVG_WIDTH - SVG_MARGIN.LEFT - SVG_MARGIN.RIGHT,
+  HEIGHT: SVG_HEIGHT - SVG_MARGIN.TOP - SVG_MARGIN.BOTTOM,
+};
 
 /*
  * Creates a visualization of the data.
@@ -18,26 +27,50 @@ const PADDING_FRACTION = 1.1;
  */
 export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
   const svgRef = useRef();
+  const createRegionWidget = useRef(null);
+  const coordRanges = useRef(null);
+
+  useEffect(
+    () => {
+      if (!dataTable) return;
+      coordRanges.current = getCoordRanges(dataTable);
+    },
+    /*dependencies=*/ [dataTable]
+  );
+
+  useEffect(
+    () => {
+      createRegionWidget.current && createRegionWidget.current.cleanup();
+      createRegionWidget.current = null;
+      if (uistate !== UIState.CreateRegion) return;
+
+      createRegionWidget.current = new CreateRegionInteraction(svgRef.current, coordRanges.current, dispatch);
+    },
+    /*dependencies=*/ [uistate]
+  );
 
   // Function to update the SVG.
   useEffect(
     () => {
       let svg = d3.select(svgRef.current);
-      if (dataTable) drawToSVG(svg, dataTable, vizTimespan);
+      if (!dataTable) return;
+
+      drawToSVG(svg, dataTable, vizTimespan, coordRanges.current);
+      createRegionWidget.current && createRegionWidget.current.redraw();
+
       return () => {};
     },
     /*dependencies=*/ [dataTable, vizTimespan]
   );
 
   let rangeSliderProps = {
-    allowCross: false,
     // TODO: investigate why settings this to dataTable.length - 1 doesn't work
     max: 100,
     defaultValue: [0, 100],
+    allowCross: false,
     draggableTrack: true,
     // onAfterChange: ...,
-    onChange: (val)=>dispatch(actions.changeTimespan(val)),
-    // Also see: trackStyle, railStyle, dotStyle, activeDotStyle
+    onChange: (val) => dispatch(actions.changeTimespan(val)),
   };
 
   // TODO: Figure out what these should be and probably move them.
@@ -52,7 +85,8 @@ export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
 
   // Lol - this is probably a bad way to do it... Maybe should pull out
   // the class name 'def-visible' as a constant somewhere.
-  let classNames = "viz-container debug" + (uistate.showViz() ? " def-visible" : "");
+  let classNames =
+    "viz-container debug" + (uistate.showViz() ? " def-visible" : "");
 
   return (
     <div className={classNames}>
@@ -65,22 +99,49 @@ export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
   );
 }
 
-function drawToSVG(svg, dataTable, timespan) {
+// Get information about the SVG's xy-coordinates should correspond to latitude/longitude
+// based on the data table.
+// Example:
+// {
+//   latitude: [24.4, 24.5],
+//   svgX: [40, 400],
+//   ...
+// }
+// Here, the graph on the SVG should be between pixels 40 and 400 (x-wise), and
+// the latitudes corresponding to x=40 and x=400 are 24.4 and 24.5 respectively.
+//
+// NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
+// in the graph and the XY distance is true-to-life.
+function getCoordRanges(dataTable) {
   let data = dataTable.data();
-
-  const totalHeight = 500;
-  const totalWidth = 800;
-  const margin = { top: 30, right: 30, bottom: 30, left: 50 };
-  const width = totalWidth - margin.left - margin.right;
-  const height = totalHeight - margin.top - margin.bottom;
-
-  // Get the domain for the data before we filter out the non-visualized points!
-  // Also: dilate the ranges so we don't plot points on the axes.
-  let [latDomain, longDomain] = getLatLongDomain(
+  // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
+  // plot data right on the axes. Of course, we could also constrict the svgX
+  // and svgY range instead.
+  let [latitude, longitude] = getLatLongDomain(
     d3.extent(data, (d) => d.Longitude),
     d3.extent(data, (d) => d.Latitude),
-    [width, height]
+    [SVG_WIDTH, SVG_HEIGHT]
   ).map((rng) => scaleRange(rng, PADDING_FRACTION));
+
+  let svgX = [SVG_MARGIN.LEFT, SVG_MARGIN.LEFT + SVG_WIDTH];
+  let svgY = [SVG_MARGIN.TOP + SVG_HEIGHT, SVG_MARGIN.TOP];
+
+  let ty = d3.scaleLinear().domain(svgY).range(latitude);
+  let tx = d3.scaleLinear().domain(svgX).range(longitude);
+
+  return {
+    latitude,
+    longitude,
+    svgX,
+    svgY,
+    pxlToLatLong: (x, y) => [tx(x), ty(y)],
+  };
+}
+
+function drawToSVG(svg, dataTable, timespan, coordRanges) {
+  let data = dataTable.data();
+
+  let [width, height] = [SVG_EFFECTIVE_DIMS.WIDTH, SVG_EFFECTIVE_DIMS.HEIGHT];
 
   // Filter to the selected timespan range.
   data = filterByTimespan(data, timespan);
@@ -99,20 +160,12 @@ function drawToSVG(svg, dataTable, timespan) {
   // Based on: https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
   svg = svg
     .append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.right})`);
+    .attr("transform", `translate(${SVG_MARGIN.LEFT}, ${SVG_MARGIN.RIGHT})`);
 
   // let m = 10; // margin to separate the data from the axes.
-  var x = d3
-    .scaleLinear()
-    // .domain(d3.extent(data, (d) => d.Longitude))
-    .domain(longDomain)
-    .range([0, width]);
+  var x = d3.scaleLinear().domain(coordRanges.longitude).range([0, width]);
 
-  var y = d3
-    .scaleLinear()
-    .domain(latDomain)
-    // .domain(d3.extent(data, (d) => d.Latitude))
-    .range([height, 0]);
+  var y = d3.scaleLinear().domain(coordRanges.latitude).range([height, 0]);
 
   svg
     .append("g")
