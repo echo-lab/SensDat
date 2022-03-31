@@ -1,5 +1,8 @@
 import * as d3 from "d3";
 import { actions } from "./app-state.js";
+import { EllipseRegion } from "./states/region.js";
+
+const RADIUS = 30;
 
 // A class for handling the user interactions for creating a new region state.
 // The user creates the new region by clicking on the svgElement.
@@ -36,11 +39,7 @@ export class CreateRegionInteraction {
       return;
     }
 
-    // This is hella temporary!
-    if (this.element !== null) {
-      this.element.setAttribute("cx", x);
-      this.element.setAttribute("cy", y);
-    } else {
+    if (this.element === null) {
       // This is sad! Maybe it's better to put this into a React Component :)
       // If it's possible, anyway! Dunno if we can have the SVG managed by d3 but also having a group
       // which is a react component ...
@@ -51,16 +50,25 @@ export class CreateRegionInteraction {
       [
         ["cx", x],
         ["cy", y],
-        ["r", 30],
+        ["r", RADIUS],
         ["stroke", "black"],
         ["stroke-width", 1],
         ["fill", "transparent"],
       ].forEach(([attr, val]) => this.element.setAttribute(attr, val));
       this.svg.appendChild(this.element);
-
-      // TODO: get a payload in there which will allow the DataTable to update!
-      this.dispatch(actions.createRegionTemp());
     }
+
+    // Possibly redundant, but whatevs!
+    this.element.setAttribute("cx", x);
+    this.element.setAttribute("cy", y);
+
+    // TODO: get a payload in there which will allow the DataTable to update!
+    let center = [long, lat];
+    let rx = this.coordRanges.pxlToLatLong(x+RADIUS, y)[0] - long;
+    let ry = this.coordRanges.pxlToLatLong(x, y-RADIUS)[1] - lat;
+    let region = new EllipseRegion(center, rx, ry);
+    let name = "New Region";
+    this.dispatch(actions.createRegionTemp({region, name}));
   }
 
   redraw() {

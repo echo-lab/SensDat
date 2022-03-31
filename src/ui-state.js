@@ -10,4 +10,8 @@ export class UIState {
   showViz() {
     return this === UIState.Default || this === UIState.CreateRegion;
   }
+
+  showTable() {
+    return true;
+  }
 }

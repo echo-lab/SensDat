@@ -5,7 +5,7 @@ import { FixedSizeList } from "react-window";
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-export function DataView({ dataTable }) {
+export function DataView({ dataTable, uistate }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -55,8 +55,11 @@ export function DataView({ dataTable }) {
     [prepareRow, rows]
   );
 
+  let classNames =
+    "data-container debug" + (uistate.showTable() ? " def-visible" : "");
+
   return (
-    <div className="data-container debug">
+    <div className={classNames}>
       <Styles>
         <div {...getTableProps()} className="table">
           <div>

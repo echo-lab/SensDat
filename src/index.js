@@ -41,7 +41,7 @@ function App() {
     <div className="sensdat-container">
       <VizView {...vizViewProps} />
       <StateView {...stateViewProps}/>
-      <DataView dataTable={state.dataTable} />
+      <DataView dataTable={state.dataTable} uistate={state.uiState} />
       <div className="tables-container debug"></div>
       <div className="modal-background" hidden={modalHidden}></div>
     </div>

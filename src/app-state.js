@@ -41,7 +41,8 @@ export const initialState = {
   uiState: UIState.NotLoaded,
 
   // User-defined states
-  states: [],
+  userDefinedStates: [],
+  tmpUserDefinedState: null,
 
   // Active filters, like: columns which are hidden, states
   // which are visible, datapoints which are highlighted, etc.
@@ -95,21 +96,32 @@ actionHandlers["cancelCreateRegion"] = (state, payload) => {
   return {
     ...state,
     uiState: UIState.Default,
+    tmpUserDefinedState: null,
+    dataTable: state.dataTable.withoutTempState(),
   };
 };
 
 actionHandlers["createRegionTemp"] = (state, payload) => {
   // return a new DataTable with the temp region column?
   // Note: clobbers any existing temp columns (!)
+  let {region, name} = payload;
   return {
     ...state,
     createStateValid: true,
+    tmpUserDefinedState: payload,
+    dataTable: state.dataTable.withTempState(name, region.getRowToValueFxn()),
   };
 };
 
 actionHandlers["createRegionCommit"] = (state, payload) => {
   // return a new DataTablewith the temp columns committed!
-  return state;
+  return {
+    ...state,
+    userDefinedStates: state.userDefinedStates.concat(state.tmpUserDefinedState),
+    tmpUserDefinedState: null,
+    dataTable: state.dataTable.withCommittedTempState(payload),
+    uiState: UIState.Default,
+  };
 };
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
