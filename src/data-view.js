@@ -111,6 +111,7 @@ const Styles = styled.div`
     display: inline-block;
     border-spacing: 0;
     border: 1px solid black;
+    width: auto;
 
     .tr {
       :last-child {
