@@ -123,8 +123,8 @@ function getCoordRanges(dataTable) {
     [SVG_WIDTH, SVG_HEIGHT]
   ).map((rng) => scaleRange(rng, PADDING_FRACTION));
 
-  let svgX = [SVG_MARGIN.LEFT, SVG_MARGIN.LEFT + SVG_WIDTH];
-  let svgY = [SVG_MARGIN.TOP + SVG_HEIGHT, SVG_MARGIN.TOP];
+  let svgX = [SVG_MARGIN.LEFT, SVG_WIDTH - SVG_MARGIN.LEFT];
+  let svgY = [SVG_HEIGHT - SVG_MARGIN.TOP, SVG_MARGIN.TOP];
 
   let ty = d3.scaleLinear().domain(svgY).range(latitude);
   let tx = d3.scaleLinear().domain(svgX).range(longitude);
