@@ -9,7 +9,7 @@ export class EllipseRegion {
     return (x-cx)*(x-cx)/(rx*rx) + (y-cy)*(y-cy)/(ry*ry) <= 1;
   }
 
-  getRowToValueFxn() {
-    return row => String(this.containsPoint(row.Longitude, row.Latitude));
+  getValues(rows) {
+    return rows.map(row => String(this.containsPoint(row.Longitude, row.Latitude)));
   }
 }

@@ -40,7 +40,7 @@ export class DataTable {
   }
 
   // NOTE: This returns a NEW DataTable (!!)
-  withTempState(stateName, calculateStateFxn) {
+  withTempState(stateName, state) {
     let result = this.copy();
     let tmpCol = this.getTempCol();
 
@@ -48,11 +48,15 @@ export class DataTable {
     result.cols = result.cols.filter(col => col.type != COL_TYPES.STATE_TMP);
     result.cols.push({displayName: stateName, accessor: stateName, type: COL_TYPES.STATE_TMP});
 
+    // Get the values for our new state. Note: this can't necessarily be done
+    // row-by-row (e.g., for compound states).
+    let values = state.getValues(result.rows);
+
     // Filter out values for the old temp state (if they exist), and populate w/
     // the new one.
-    result.rows = result.rows.map(row => {
+    result.rows = result.rows.map((row, idx) => {
       tmpCol && delete row[tmpCol.accessor];
-      row[stateName] = calculateStateFxn(row);
+      row[stateName] = values[idx];
       return row;
     });
     return result;

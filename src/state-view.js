@@ -49,7 +49,7 @@ function CreateRegionPane({ dispatch, createStateValid }) {
   let [regionName, setRegionName] = useState("");
 
   let handleChange = (e) => setRegionName(e.target.value);
-  let handleSubmit = () => dispatch(actions.createRegionCommit(regionName));
+  let handleSubmit = () => dispatch(actions.commitTempState(regionName));
   let handleCancel = () => dispatch(actions.cancelCreateRegion());
 
   return (

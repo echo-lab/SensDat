@@ -68,7 +68,7 @@ export class CreateRegionInteraction {
     let ry = this.coordRanges.pxlToLatLong(x, y-RADIUS)[1] - lat;
     let region = new EllipseRegion(center, rx, ry);
     let name = "New Region";
-    this.dispatch(actions.createRegionTemp({region, name}));
+    this.dispatch(actions.createTempState({region, name}));
   }
 
   redraw() {

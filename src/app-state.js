@@ -6,7 +6,7 @@ import { UIState } from "./ui-state.js";
  *
  * How does it all work?
  * ---------------------
- * 
+ *
  * In the highest-level component, we should do:
  *   const [state, dispatch] = React.useReducer(initialState, reducer);
  * Here, 'initialState' and 'reducer' are defined in this file.
@@ -84,6 +84,7 @@ actionHandlers["changeTimespan"] = (state, payload) => {
   };
 };
 
+// TODO: should create a new CreateRegionInteraction.
 actionHandlers["startCreateRegion"] = (state, payload) => {
   return {
     ...state,
@@ -101,7 +102,7 @@ actionHandlers["cancelCreateRegion"] = (state, payload) => {
   };
 };
 
-actionHandlers["createRegionTemp"] = (state, payload) => {
+actionHandlers["createTempState"] = (state, payload) => {
   // return a new DataTable with the temp region column?
   // Note: clobbers any existing temp columns (!)
   let {region, name} = payload;
@@ -109,11 +110,11 @@ actionHandlers["createRegionTemp"] = (state, payload) => {
     ...state,
     createStateValid: true,
     tmpUserDefinedState: payload,
-    dataTable: state.dataTable.withTempState(name, region.getRowToValueFxn()),
+    dataTable: state.dataTable.withTempState(name, region),
   };
 };
 
-actionHandlers["createRegionCommit"] = (state, payload) => {
+actionHandlers["commitTempState"] = (state, payload) => {
   // return a new DataTablewith the temp columns committed!
   // payload = name
   return {
