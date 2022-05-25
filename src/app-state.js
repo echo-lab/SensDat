@@ -115,6 +115,7 @@ actionHandlers["createRegionTemp"] = (state, payload) => {
 
 actionHandlers["createRegionCommit"] = (state, payload) => {
   // return a new DataTablewith the temp columns committed!
+  // payload = name
   return {
     ...state,
     userDefinedStates: state.userDefinedStates.concat(state.tmpUserDefinedState),
