@@ -196,14 +196,14 @@ function drawToSVG(svg, dataTable, timespan, coordRanges) {
     .attr("cx", (d) => x(d.Longitude))
     .attr("cy", (d) => y(d.Latitude))
     .attr("r", 3)
-    .attr("fill", "#69b3a2")
-    .on("click", selectPoint)
-    .on("mouseenter", (e) => {
-      console.log("mouseenter event: ", e);
-    })
-    .on("mouseleave", (e) => {
-      console.log("mouseleave event: ", e);
-    });
+    .attr("fill", "#69b3a2");
+    // .on("click", selectPoint)
+    // .on("mouseenter", (e) => {
+    //   console.log("mouseenter event: ", e);
+    // })
+    // .on("mouseleave", (e) => {
+    //   console.log("mouseleave event: ", e);
+    // });
 }
 
 function makeHandlers() {
