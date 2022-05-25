@@ -1,7 +1,15 @@
+import { uid } from "../utils";
+
 export class EllipseRegion {
 
-  constructor(center, rx, ry) {
+  constructor(center, rx, ry, name="") {
     this.params = [center, rx, ry];
+    this.name = name;
+    this.id = uid();
+  }
+
+  withName(name) {
+    return new EllipseRegion(...this.params, name);
   }
 
   containsPoint(x, y) {

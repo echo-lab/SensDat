@@ -1,4 +1,5 @@
 import { UIState } from "./ui-state.js";
+import { CreateRegionInteraction } from "./create-region-interaction.js";
 
 /*
  * This file provides a way to organize the app state that is shared across components.
@@ -44,20 +45,21 @@ export const initialState = {
   userDefinedStates: [],
   tmpUserDefinedState: null,
 
+  // Interactions :D
+  createRegionInteraction: null,
+
   // Active filters, like: columns which are hidden, states
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
   vizState: {
     timespan: [0, 100],
   },
-
-  // Should be true when 1) we are in the middle of creating a new state,
-  // and 2) the new state is valid and could be saved. As an example, if
-  // we're drawing a new region, before we draw a polygon, this value should
-  // be false, but after we've drawn one, it should be true.
-  createStateValid: false,
 };
 
+
+function cleanupInteractions(state) {
+  state.createRegionInteraction && state.createRegionInteraction.cleanup();
+}
 
 /*
  * ACTION HANDLERS
@@ -84,16 +86,16 @@ actionHandlers["changeTimespan"] = (state, payload) => {
   };
 };
 
-// TODO: should create a new CreateRegionInteraction.
-actionHandlers["startCreateRegion"] = (state, payload) => {
+actionHandlers["startCreateRegion"] = (state, {dispatch}) => {
   return {
     ...state,
     uiState: UIState.CreateRegion,
+    createRegionInteraction: new CreateRegionInteraction(dispatch),
   };
 };
 
 actionHandlers["cancelCreateRegion"] = (state, payload) => {
-  // TODO: in the future, we need to clean up any state associated w/ createRegion!
+  cleanupInteractions(state);
   return {
     ...state,
     uiState: UIState.Default,
@@ -102,26 +104,24 @@ actionHandlers["cancelCreateRegion"] = (state, payload) => {
   };
 };
 
-actionHandlers["createTempState"] = (state, payload) => {
-  // return a new DataTable with the temp region column?
+actionHandlers["createTempState"] = (state, {userDefinedState}) => {
+  // return a new DataTable with the temp state column.
   // Note: clobbers any existing temp columns (!)
-  let {region, name} = payload;
   return {
     ...state,
-    createStateValid: true,
-    tmpUserDefinedState: payload,
-    dataTable: state.dataTable.withTempState(name, region),
+    tmpUserDefinedState: userDefinedState,
+    dataTable: state.dataTable.withTempState(userDefinedState),
   };
 };
 
 actionHandlers["commitTempState"] = (state, payload) => {
+  cleanupInteractions(state);
   // return a new DataTablewith the temp columns committed!
-  // payload = name
   return {
     ...state,
     userDefinedStates: state.userDefinedStates.concat(state.tmpUserDefinedState),
     tmpUserDefinedState: null,
-    dataTable: state.dataTable.withCommittedTempState(payload),
+    dataTable: state.dataTable.withCommittedTempState(),
     uiState: UIState.Default,
   };
 };

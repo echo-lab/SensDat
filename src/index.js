@@ -24,8 +24,10 @@ function App() {
 
   let stateViewProps = {
     uiState: state.uiState,
-    createStateValid: state.createStateValid,
+    userDefinedState: state.userDefinedState,
+    tmpUserDefinedState: state.tmpUserDefinedState,
     dispatch,
+    createRegionInteraction: state.createRegionInteraction,
   };
 
   let vizViewProps = {
@@ -33,6 +35,7 @@ function App() {
     dispatch,
     vizTimespan: state.vizState.timespan,
     uistate: state.uiState,
+    createRegionInteraction: state.createRegionInteraction,
   };
 
   let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;

@@ -12,18 +12,31 @@ const RADIUS = 30;
 // renamed to something much clearer lol.
 //
 // For now: this class just lets the user click to add a one-size circular region.
-// Still TODO:
-//  - Change the DataTable to reflect the tentative new state.
 export class CreateRegionInteraction {
-  constructor(svgElement, coordRanges, dispatch) {
-    this.svg = svgElement;
+  constructor(dispatch) {
     this.dispatch = dispatch;
+    this.name = "";
+    this.userDefinedState = null;
+  }
+
+  initializeSvg(svgElement, coordRanges) {
+    this.svg = svgElement;
     this.coordRanges = coordRanges;
 
     this.callbacks = [["click", this.onClick.bind(this)]];
     this.callbacks.forEach((args) => this.svg.addEventListener(...args));
 
     this.element = null;
+    console.log("SVG initialized!");
+  }
+
+  setName(name) {
+    this.name = name;
+    if (!this.userDefinedState) return;
+
+    let userDefinedState = this.userDefinedState.withName(name);
+    this.userDefinedState = userDefinedState;
+    this.dispatch(actions.createTempState({userDefinedState}));
   }
 
   onClick(e) {
@@ -66,9 +79,10 @@ export class CreateRegionInteraction {
     let center = [long, lat];
     let rx = this.coordRanges.pxlToLatLong(x+RADIUS, y)[0] - long;
     let ry = this.coordRanges.pxlToLatLong(x, y-RADIUS)[1] - lat;
-    let region = new EllipseRegion(center, rx, ry);
-    let name = "New Region";
-    this.dispatch(actions.createTempState({region, name}));
+    this.userDefinedState = new EllipseRegion(center, rx, ry, this.name);
+    this.dispatch(actions.createTempState({
+      userDefinedState: this.userDefinedState,
+    }));
   }
 
   redraw() {

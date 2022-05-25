@@ -40,13 +40,13 @@ export class DataTable {
   }
 
   // NOTE: This returns a NEW DataTable (!!)
-  withTempState(stateName, state) {
+  withTempState(state) {
     let result = this.copy();
     let tmpCol = this.getTempCol();
 
     // Filter out any current temp-state columns and add the new one.
     result.cols = result.cols.filter(col => col.type != COL_TYPES.STATE_TMP);
-    result.cols.push({displayName: stateName, accessor: stateName, type: COL_TYPES.STATE_TMP});
+    result.cols.push({displayName: state.name, accessor: state.id, type: COL_TYPES.STATE_TMP});
 
     // Get the values for our new state. Note: this can't necessarily be done
     // row-by-row (e.g., for compound states).
@@ -56,7 +56,7 @@ export class DataTable {
     // the new one.
     result.rows = result.rows.map((row, idx) => {
       tmpCol && delete row[tmpCol.accessor];
-      row[stateName] = values[idx];
+      row[state.id] = values[idx];
       return row;
     });
     return result;
@@ -77,7 +77,7 @@ export class DataTable {
   }
 
   // NOTE: This returns a NEW DataTable (!!)
-  withCommittedTempState(stateName) {
+  withCommittedTempState() {
     if (!this.getTempCol()) return this;
 
     let result = this.copy();

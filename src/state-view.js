@@ -4,10 +4,14 @@ import Form from "react-bootstrap/Form";
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
 
-export function StateView({ uiState, dispatch, createStateValid }) {
+export function StateView({ uiState, dispatch, userDefinedState, tmpUserDefinedState, createRegionInteraction }) {
   // This pane is only present for UIState.CreateRegion
   let regionPane = uiState === UIState.CreateRegion && (
-    <CreateRegionPane dispatch={dispatch} createStateValid={createStateValid} />
+    <CreateRegionPane
+      dispatch={dispatch}
+      tmpUserDefinedState={tmpUserDefinedState}
+      createRegionInteraction={createRegionInteraction}
+      />
   );
 
   return (
@@ -20,7 +24,7 @@ export function StateView({ uiState, dispatch, createStateValid }) {
 }
 
 function NewStateContainer({ dispatch }) {
-  let handleCreateRegion = () => dispatch(actions.startCreateRegion());
+  let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
 
   return (
     <div className="new-state-container debug">
@@ -45,11 +49,14 @@ function CreateStateButton({ stateType, handleClick }) {
   );
 }
 
-function CreateRegionPane({ dispatch, createStateValid }) {
+function CreateRegionPane({ dispatch, tmpUserDefinedState, createRegionInteraction }) {
   let [regionName, setRegionName] = useState("");
 
-  let handleChange = (e) => setRegionName(e.target.value);
-  let handleSubmit = () => dispatch(actions.commitTempState(regionName));
+  let handleChange = (e) => {
+    setRegionName(e.target.value);
+    createRegionInteraction.setName(e.target.value);
+  };
+  let handleSubmit = () => dispatch(actions.commitTempState());
   let handleCancel = () => dispatch(actions.cancelCreateRegion());
 
   return (
@@ -69,7 +76,7 @@ function CreateRegionPane({ dispatch, createStateValid }) {
             variant="outline-dark"
             size="md"
             onClick={handleSubmit}
-            disabled={!createStateValid || !regionName}
+            disabled={!tmpUserDefinedState || tmpUserDefinedState.name === ""}
           >
             Done
           </Button>{" "}

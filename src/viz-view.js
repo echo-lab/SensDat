@@ -4,7 +4,6 @@ import { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
-import { CreateRegionInteraction } from "./create-region-interaction.js";
 
 const PADDING_FRACTION = 1.1;
 
@@ -25,9 +24,8 @@ const SVG_EFFECTIVE_DIMS = {
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
-export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
+export function VizView({ dataTable, vizTimespan, uistate, dispatch, createRegionInteraction }) {
   const svgRef = useRef();
-  const createRegionWidget = useRef(null);
   const coordRanges = useRef(null);
 
   useEffect(
@@ -40,13 +38,9 @@ export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
 
   useEffect(
     () => {
-      createRegionWidget.current && createRegionWidget.current.cleanup();
-      createRegionWidget.current = null;
-      if (uistate !== UIState.CreateRegion) return;
-
-      createRegionWidget.current = new CreateRegionInteraction(svgRef.current, coordRanges.current, dispatch);
+      createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, coordRanges.current);
     },
-    /*dependencies=*/ [uistate]
+    /*dependencies=*/ [createRegionInteraction]
   );
 
   // Function to update the SVG.
@@ -56,7 +50,7 @@ export function VizView({ dataTable, vizTimespan, uistate, dispatch }) {
       if (!dataTable) return;
 
       drawToSVG(svg, dataTable, vizTimespan, coordRanges.current);
-      createRegionWidget.current && createRegionWidget.current.redraw();
+      createRegionInteraction && createRegionInteraction.redraw();
 
       return () => {};
     },
