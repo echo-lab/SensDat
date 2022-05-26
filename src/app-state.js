@@ -100,6 +100,7 @@ actionHandlers["cancelCreateRegion"] = (state, payload) => {
     ...state,
     uiState: UIState.Default,
     tmpUserDefinedState: null,
+    createRegionInteraction: null,
     dataTable: state.dataTable.withoutTempState(),
   };
 };
@@ -121,6 +122,7 @@ actionHandlers["commitTempState"] = (state, payload) => {
     ...state,
     userDefinedStates: state.userDefinedStates.concat(state.tmpUserDefinedState),
     tmpUserDefinedState: null,
+    createRegionInteraction: null,
     dataTable: state.dataTable.withCommittedTempState(),
     uiState: UIState.Default,
   };

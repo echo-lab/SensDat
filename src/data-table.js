@@ -31,6 +31,12 @@ export class DataTable {
       accessor: key,
       type: colTypes[key],
     }));
+
+    this.vizData = this.rows.map(row => ({
+      Order: row.Order,
+      Latitude: row.Latitude,
+      Longitude: row.Longitude,
+    }));
   }
 
   getTempCol() {
@@ -109,14 +115,11 @@ export class DataTable {
     return this.rows;
   }
 
-  data() {
-    return this.rows;
-  }
-
   copy() {
     let res = new DataTable();
     res.rows = this.rows;
     res.cols = this.cols;
+    res.vizData = this.vizData;
     return res;
   }
 

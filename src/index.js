@@ -31,7 +31,7 @@ function App() {
   };
 
   let vizViewProps = {
-    dataTable: state.dataTable,
+    vizData: state.dataTable ? state.dataTable.vizData : null,
     dispatch,
     vizTimespan: state.vizState.timespan,
     uistate: state.uiState,

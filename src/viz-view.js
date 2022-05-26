@@ -19,21 +19,22 @@ const SVG_EFFECTIVE_DIMS = {
  * Creates a visualization of the data.
  *
  * Args:
- * - dataTable:
- *      A DataTable object. Might not need the entire thing...
+ * - vizData:
+ *      A list of objects like: [{Order, Latitude, Longitude}, ...].
+ *      Should come from DataTable.vizData
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
-export function VizView({ dataTable, vizTimespan, uistate, dispatch, createRegionInteraction }) {
+export function VizView({ vizData, vizTimespan, uistate, dispatch, createRegionInteraction }) {
   const svgRef = useRef();
   const coordRanges = useRef(null);
 
   useEffect(
     () => {
-      if (!dataTable) return;
-      coordRanges.current = getCoordRanges(dataTable);
+      if (!vizData) return;
+      coordRanges.current = getCoordRanges(vizData);
     },
-    /*dependencies=*/ [dataTable]
+    /*dependencies=*/ [vizData]
   );
 
   useEffect(
@@ -47,14 +48,14 @@ export function VizView({ dataTable, vizTimespan, uistate, dispatch, createRegio
   useEffect(
     () => {
       let svg = d3.select(svgRef.current);
-      if (!dataTable) return;
+      if (!vizData) return;
 
-      drawToSVG(svg, dataTable, vizTimespan, coordRanges.current);
+      drawToSVG(svg, vizData, vizTimespan, coordRanges.current);
       createRegionInteraction && createRegionInteraction.redraw();
 
       return () => {};
     },
-    /*dependencies=*/ [dataTable, vizTimespan]
+    /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction]
   );
 
   let rangeSliderProps = {
@@ -106,8 +107,7 @@ export function VizView({ dataTable, vizTimespan, uistate, dispatch, createRegio
 //
 // NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
 // in the graph and the XY distance is true-to-life.
-function getCoordRanges(dataTable) {
-  let data = dataTable.data();
+function getCoordRanges(data) {
   // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
   // plot data right on the axes. Of course, we could also constrict the svgX
   // and svgY range instead.
@@ -132,9 +132,7 @@ function getCoordRanges(dataTable) {
   };
 }
 
-function drawToSVG(svg, dataTable, timespan, coordRanges) {
-  let data = dataTable.data();
-
+function drawToSVG(svg, data, timespan, coordRanges) {
   let [width, height] = [SVG_EFFECTIVE_DIMS.WIDTH, SVG_EFFECTIVE_DIMS.HEIGHT];
 
   // Filter to the selected timespan range.

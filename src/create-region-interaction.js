@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 import { actions } from "./app-state.js";
 import { EllipseRegion } from "./states/region.js";
+import debounce from 'lodash.debounce'
 
 const RADIUS = 30;
 
@@ -17,6 +18,11 @@ export class CreateRegionInteraction {
     this.dispatch = dispatch;
     this.name = "";
     this.userDefinedState = null;
+
+    this.debouncedCreateTempState = debounce((userDefinedState)=>{
+      this.dispatch(actions.createTempState({userDefinedState}));
+    },
+    1000);
   }
 
   initializeSvg(svgElement, coordRanges) {
@@ -27,7 +33,6 @@ export class CreateRegionInteraction {
     this.callbacks.forEach((args) => this.svg.addEventListener(...args));
 
     this.element = null;
-    console.log("SVG initialized!");
   }
 
   setName(name) {
@@ -36,15 +41,15 @@ export class CreateRegionInteraction {
 
     let userDefinedState = this.userDefinedState.withName(name);
     this.userDefinedState = userDefinedState;
-    this.dispatch(actions.createTempState({userDefinedState}));
+    this.debouncedCreateTempState(userDefinedState);
   }
 
   onClick(e) {
     e.preventDefault();
     let [x, y] = d3.pointer(e, this.svg);
     let [long, lat] = this.coordRanges.pxlToLatLong(x, y);
-    console.log("x, y: ", x, y);
-    console.log("long/lat: ", long, lat);
+    // console.log("x, y: ", x, y);
+    // console.log("long/lat: ", long, lat);
 
     let [minX, maxX] = this.coordRanges.svgX;
     let [maxY, minY] = this.coordRanges.svgY;
@@ -80,13 +85,11 @@ export class CreateRegionInteraction {
     let rx = this.coordRanges.pxlToLatLong(x+RADIUS, y)[0] - long;
     let ry = this.coordRanges.pxlToLatLong(x, y-RADIUS)[1] - lat;
     this.userDefinedState = new EllipseRegion(center, rx, ry, this.name);
-    this.dispatch(actions.createTempState({
-      userDefinedState: this.userDefinedState,
-    }));
+    this.debouncedCreateTempState(this.userDefinedState);
   }
 
   redraw() {
-    this.svg.appendChild(this.element);
+    this.element && this.svg.appendChild(this.element);
   }
 
   cleanup() {
