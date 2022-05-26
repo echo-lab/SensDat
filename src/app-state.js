@@ -1,5 +1,8 @@
 import { UIState } from "./ui-state.js";
 import { CreateRegionInteraction } from "./create-region-interaction.js";
+import { DataTable } from "./data-table.js";
+import * as LZString from "lz-string";
+import { objectToState } from "./utils.js";
 
 /*
  * This file provides a way to organize the app state that is shared across components.
@@ -57,8 +60,21 @@ export const initialState = {
 };
 
 
+/* Helper functions */
+
 function cleanupInteractions(state) {
   state.createRegionInteraction && state.createRegionInteraction.cleanup();
+}
+
+export function serialize(state) {
+  // Only need to save: dataTable, userDefinedStates
+  if (!state.dataTable) return "";
+
+  let res = {
+    dataTable: state.dataTable.asObject(),
+    userDefinedStates: state.userDefinedStates.map(s=>s.asObject()),
+  };
+  return LZString.compress(JSON.stringify(res));
 }
 
 /*
@@ -66,6 +82,22 @@ function cleanupInteractions(state) {
  * Consider: moving this to it's own file; using Immer if the {...state} type updates become too cumbersome.
  */
 let actionHandlers = {};
+
+actionHandlers["loadState"] = (state, serializedState) => {
+  if (!serializedState) {
+    console.log("No state to load")
+    return state;
+  }
+
+  cleanupInteractions(state);  // in case we're in the middle of something
+  let data = JSON.parse(LZString.decompress(serializedState));
+  return {
+    ...initialState,
+    dataTable: DataTable.fromObject(data.dataTable),
+    userDefinedStates: data.userDefinedStates.map(o=>objectToState(o)),
+    uiState: UIState.Default,
+  };
+}
 
 // payload: a valid DataTable object.
 actionHandlers["loadTable"] = (state, payload) => {

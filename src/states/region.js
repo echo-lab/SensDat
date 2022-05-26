@@ -1,6 +1,7 @@
 import { uid } from "../utils";
 
 export class EllipseRegion {
+  static typeName = "EllipseRegion";  // surely there's a better way?
 
   constructor(center, rx, ry, name="") {
     this.params = [center, rx, ry];
@@ -19,5 +20,17 @@ export class EllipseRegion {
 
   getValues(rows) {
     return rows.map(row => String(this.containsPoint(row.Longitude, row.Latitude)));
+  }
+
+  asObject() {
+    return {type: EllipseRegion.typeName, params: this.params, name: this.name, id: this.id};
+  }
+
+  static fromObject(o) {
+    if (o.type !== EllipseRegion.typeName) return false;
+
+    let res = new EllipseRegion(...o.params, o.name);
+    res.id = o.id;
+    return res;
   }
 }

@@ -11,16 +11,44 @@ import * as AppState from "./app-state.js";
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
 
+  // By default, load the test data.
   useEffect(
     () => {
       DataTable.FromTestData().then((dt) => {
-        console.log("setting data to: ", dt);
-        // setDataTable(dt);
         dispatch(AppState.actions.loadTable(dt));
       });
     },
     /*dependencies=*/ []
   );
+
+  // Allow saving/loading/deleting/printing.
+  useEffect(
+    () => {
+      let onKeypress = (e) => {
+        if (e.key === "s") {
+          console.log("Saving state");
+          window.localStorage["state"] = AppState.serialize(state);
+        }
+        if (e.key === "l") {
+          console.log("Loading state");
+          let serializedState = window.localStorage["state"];
+          dispatch(AppState.actions.loadState(serializedState));
+        }
+        if (e.key === "d") {
+          console.log("Deleting saved state");
+          window.localStorage.removeItem("state");
+        }
+        if (e.key === "p") {
+          console.log("Current state: ", state);
+        }
+      };
+
+      document.addEventListener("keydown", onKeypress);
+
+      return () => document.removeEventListener("keydown", onKeypress);
+    },
+    /*dependencies=*/[state]
+  )
 
   let stateViewProps = {
     uiState: state.uiState,

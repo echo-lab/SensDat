@@ -32,6 +32,10 @@ export class DataTable {
       type: colTypes[key],
     }));
 
+    this.cacheVizData();
+  }
+
+  cacheVizData() {
     this.vizData = this.rows.map(row => ({
       Order: row.Order,
       Latitude: row.Latitude,
@@ -120,6 +124,18 @@ export class DataTable {
     res.rows = this.rows;
     res.cols = this.cols;
     res.vizData = this.vizData;
+    return res;
+  }
+
+  asObject() {
+    return {rows: this.rows, cols: this.cols};
+  }
+
+  static fromObject(o) {
+    let res = new DataTable();
+    res.rows = o.rows;
+    res.cols = o.cols;
+    res.cacheVizData();
     return res;
   }
 
