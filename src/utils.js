@@ -3,12 +3,13 @@ import { EllipseRegion } from "./states/region.js";
 // This is slightly sad.
 const stateFactories = [o=>EllipseRegion.fromObject(o)];
 
-// This assumes the object has a 'type' which is equal to its original class name.
+// This assumes that the stateFactories will return null if the object isn't
+// the correct state type.
 export function objectToState(o) {
   let res;
   for (let fromObject of stateFactories) {
     res = fromObject(o);
-    if (o) return o;
+    if (o) return res;
   }
   return null;
 }

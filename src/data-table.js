@@ -45,7 +45,7 @@ export class DataTable {
 
   getTempCol() {
     // returns null or col object, i.e., {displayName, accessor, type}
-    let res = this.cols.filter(col => col.type == COL_TYPES.STATE_TMP);
+    let res = this.cols.filter(col => col.type === COL_TYPES.STATE_TMP);
     return res.length > 0 ? res[0] : null;
   }
 
@@ -55,7 +55,7 @@ export class DataTable {
     let tmpCol = this.getTempCol();
 
     // Filter out any current temp-state columns and add the new one.
-    result.cols = result.cols.filter(col => col.type != COL_TYPES.STATE_TMP);
+    result.cols = result.cols.filter(col => col.type !== COL_TYPES.STATE_TMP);
     result.cols.push({displayName: state.name, accessor: state.id, type: COL_TYPES.STATE_TMP});
 
     // Get the values for our new state. Note: this can't necessarily be done
@@ -78,7 +78,7 @@ export class DataTable {
     let tmpCol = result.getTempCol();
     if (!tmpCol) return result;
 
-    result.cols = result.cols.filter(col => col.type != COL_TYPES.STATE_TMP);
+    result.cols = result.cols.filter(col => col.type !== COL_TYPES.STATE_TMP);
     result.rows = result.rows.map(row => {
       delete row[tmpCol.accessor];
       return row;
@@ -92,7 +92,7 @@ export class DataTable {
 
     let result = this.copy();
     result.cols = result.cols.map(col => {
-      if (col.type == COL_TYPES.STATE_TMP) {
+      if (col.type === COL_TYPES.STATE_TMP) {
         col.type = COL_TYPES.STATE;
       }
       return col;

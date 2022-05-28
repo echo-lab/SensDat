@@ -1,8 +1,7 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import * as d3 from "d3";
 import { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
-import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
 
 const PADDING_FRACTION = 1.1;

@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import styled from "styled-components";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
