@@ -42,6 +42,7 @@ import { objectToState } from "./utils.js";
 export const initialState = {
   // Eventually, we'll want a map from tableName: table.
   dataTable: undefined,
+  summaryTables: [],
   uiState: UIState.NotLoaded,
 
   // User-defined states
@@ -157,6 +158,24 @@ actionHandlers["commitTempState"] = (state, payload) => {
     createRegionInteraction: null,
     dataTable: state.dataTable.withCommittedTempState(),
     uiState: UIState.Default,
+  };
+};
+
+actionHandlers["createSummary"] = (state, stateID) => {
+  // See if the summary already exists.
+  // TODO: switch to that tab if it does :)
+  let existingSummary = state.summaryTables.find(st=>st.state.id === stateID);
+  if (existingSummary) {
+    return state;
+  }
+
+  // Find the state w/ the given ID
+  let uds = state.userDefinedStates.find(s=>s.id === stateID);
+  if (!uds) return state;
+  state.summaryTables.push({state: uds, summaryTable: null});
+
+  return {
+    ...state
   };
 };
 

@@ -6,16 +6,20 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from 'react-bootstrap/Tabs';
 
 
-export function DataView({dataTable, uistate}) {
+export function DataView({dataTable, summaryTables, uistate}) {
   return (
     <div className="data-container debug def-visible">
       <Tabs defaultActiveKey="main" className="m-3">
         <Tab eventKey="main" title="Main Table">
           <Table dataTable={dataTable} />
         </Tab>
-        <Tab eventKey="test" title="Test Tab">
-          <Styles><div>Hi there, I'm a test tab!</div></Styles>
-        </Tab>
+        {
+          summaryTables.map(st=>
+            <Tab eventKey={st.state.id} key={st.state.id} title={`Summary: ${st.state.name}`}>
+              <div> TEMPORARY FILL! </div>
+            </Tab>
+          )
+        }
       </Tabs>
     </div>
   );

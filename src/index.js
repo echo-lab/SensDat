@@ -4,6 +4,7 @@ import "./index.css";
 import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
+import { SummaryView } from "./summary-view.js";
 import { DataTable } from "./data-table.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
@@ -66,14 +67,25 @@ function App() {
     createRegionInteraction: state.createRegionInteraction,
   };
 
+  let dataViewProps = {
+    dataTable: state.dataTable,
+    uistate: state.uiState,
+    summaryTables: state.summaryTables,
+  };
+
+  let summaryViewProps = {
+    userDefinedStates: state.userDefinedStates,
+    dispatch,
+  };
+
   let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
   return (
     <div className="sensdat-container">
       <VizView {...vizViewProps} />
       <StateView {...stateViewProps}/>
-      <DataView dataTable={state.dataTable} uistate={state.uiState} />
-      <div className="tables-container debug"></div>
+      <DataView {...dataViewProps}/>
+      <SummaryView {...summaryViewProps} />
       <div className="modal-background" hidden={modalHidden}></div>
     </div>
   );

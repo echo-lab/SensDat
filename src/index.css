@@ -68,7 +68,7 @@ div.debug {
   overflow: scroll;
 }
 
-.tables-container {
+.summary-container {
   grid-column: 5 / span 1;
   grid-row-start: 2;
 }
