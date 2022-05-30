@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
 
-export function StateView({ uiState, dispatch, userDefinedState, tmpUserDefinedState, createRegionInteraction }) {
+export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefinedState, createRegionInteraction }) {
   // This pane is only present for UIState.CreateRegion
   let regionPane = uiState === UIState.CreateRegion && (
     <CreateRegionPane
@@ -17,8 +17,25 @@ export function StateView({ uiState, dispatch, userDefinedState, tmpUserDefinedS
   return (
     <div className="state-container debug">
       <NewStateContainer dispatch={dispatch} />
-      <div className="existing-state-container debug"></div>
+      <ExistingStateContainer userDefinedStates={userDefinedStates} />
       {regionPane}
+    </div>
+  );
+}
+
+function ExistingStateContainer({userDefinedStates}) {
+  return (
+    <div className="existing-state-container debug">
+      <h4 className="py-4 text-center">Existing States </h4>
+      <div className="d-grid gap-2 py-4 mx-4">
+        <ul>
+          {
+            userDefinedStates.map(s=>
+              <li key={s.id}>{s.name}</li>
+            )
+          }
+        </ul>
+      </div>
     </div>
   );
 }

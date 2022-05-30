@@ -52,7 +52,7 @@ function App() {
 
   let stateViewProps = {
     uiState: state.uiState,
-    userDefinedState: state.userDefinedState,
+    userDefinedStates: state.userDefinedStates,
     tmpUserDefinedState: state.tmpUserDefinedState,
     dispatch,
     createRegionInteraction: state.createRegionInteraction,
