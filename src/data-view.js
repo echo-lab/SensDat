@@ -2,10 +2,28 @@ import React, { useCallback } from "react";
 import styled from "styled-components";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
+import Tab from "react-bootstrap/Tab";
+import Tabs from 'react-bootstrap/Tabs';
+
+
+export function DataView({dataTable, uistate}) {
+  return (
+    <div className="data-container debug def-visible">
+      <Tabs defaultActiveKey="main" className="m-3">
+        <Tab eventKey="main" title="Main Table">
+          <Table dataTable={dataTable} />
+        </Tab>
+        <Tab eventKey="test" title="Test Tab">
+          <Styles><div>Hi there, I'm a test tab!</div></Styles>
+        </Tab>
+      </Tabs>
+    </div>
+  );
+}
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-export function DataView({ dataTable, uistate }) {
+function Table({ dataTable }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -55,11 +73,7 @@ export function DataView({ dataTable, uistate }) {
     [prepareRow, rows]
   );
 
-  let classNames =
-    "data-container debug" + (uistate.showTable() ? " def-visible" : "");
-
   return (
-    <div className={classNames}>
       <Styles>
         <div {...getTableProps()} className="table">
           <div>
@@ -87,7 +101,6 @@ export function DataView({ dataTable, uistate }) {
           </div>
         </div>
       </Styles>
-    </div>
   );
 }
 
