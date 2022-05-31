@@ -11,7 +11,7 @@ export function DataView({dataTable, summaryTables, uistate}) {
     <div className="data-container debug def-visible">
       <Tabs defaultActiveKey="main" className="m-3">
         <Tab eventKey="main" title="Main Table">
-          <Table dataTable={dataTable} />
+          <VirtualizedTable dataTable={dataTable} />
         </Tab>
         {
           summaryTables.map(st=>
@@ -25,9 +25,58 @@ export function DataView({dataTable, summaryTables, uistate}) {
   );
 }
 
+// Simple table display.
+function Table({ dataTable }) {
+  const columns = React.useMemo(() => {
+    return dataTable ? dataTable.getReactTableCols() : [];
+  }, [dataTable]);
+  const data = React.useMemo(() => {
+    return dataTable ? dataTable.getReactTableData() : [];
+  }, [dataTable]);
+
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    rows,
+    prepareRow,
+  } = useTable({
+    columns,
+    data,
+  });
+
+  return (
+    <Styles>
+    <table {...getTableProps()}>
+      <thead>
+        {headerGroups.map(headerGroup => (
+          <tr {...headerGroup.getHeaderGroupProps()}>
+            {headerGroup.headers.map(column => (
+              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
+            ))}
+          </tr>
+        ))}
+      </thead>
+      <tbody {...getTableBodyProps()}>
+        {rows.map((row, i) => {
+          prepareRow(row)
+          return (
+            <tr {...row.getRowProps()}>
+              {row.cells.map(cell => {
+                return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+              })}
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+    </Styles>
+  );
+}
+
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-function Table({ dataTable }) {
+function VirtualizedTable({ dataTable }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -138,15 +187,46 @@ const Styles = styled.div`
       }
     }
 
+    .th {
+      font-weight: bold;
+    }
+
     .th,
     .td {
       margin: 0;
       padding: 0.5rem;
       border-bottom: 1px solid black;
       border-right: 1px solid black;
+      text-align: center;
 
       :last-child {
         border-right: 1px solid black;
+      }
+    }
+  }
+
+  table {
+    border-spacing: 0;
+    border: 1px solid black;
+
+    tr {
+      :last-child {
+        td {
+          border-bottom: 0;
+        }
+      }
+    }
+
+    th,
+    td {
+      margin: 0;
+      padding: 0.5rem 1.0rem 0.5rem 1.0rem;
+      border-bottom: 1px solid black;
+      border-right: 1px solid black;
+      text-align: center;
+
+      :last-child {
+        border-right: 0;
       }
     }
   }
