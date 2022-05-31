@@ -43,7 +43,7 @@ import { objectToState } from "./utils.js";
 export const initialState = {
   // Eventually, we'll want a map from tableName: table.
   dataTable: undefined,
-  summaryTables: [],
+  summaryTables: [],  // {state, summaryTable}
   uiState: UIState.NotLoaded,
 
   // User-defined states
@@ -75,6 +75,10 @@ export function serialize(state) {
   let res = {
     dataTable: state.dataTable.asObject(),
     userDefinedStates: state.userDefinedStates.map(s=>s.asObject()),
+    summaryTables: state.summaryTables.map(st=>({
+      state: st.state.asObject(),
+      summaryTable: st.summaryTable.asObject(),
+    })),
   };
   return LZString.compress(JSON.stringify(res));
 }
@@ -98,6 +102,10 @@ actionHandlers["loadState"] = (state, serializedState) => {
     dataTable: DataTable.fromObject(data.dataTable),
     userDefinedStates: data.userDefinedStates.map(o=>objectToState(o)),
     uiState: UIState.Default,
+    summaryTables: data.summaryTables.map(st=>({
+      state: objectToState(st.state),
+      summaryTable: SummaryTable.fromObject(st.summaryTable),
+    }))
   };
 }
 

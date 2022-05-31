@@ -5,6 +5,8 @@ const INDEX = "Order";
 export class SummaryTable {
 
   constructor(table, state) {
+    if (!table) return;
+
     // Step 1) construct a "cycleBreakdown", which looks like:
     // {true: [low_idx, high_idx], false: [low_idx, high_idx]}.
     // That is, each "cycle" is broken up into the "true" portion and the
@@ -52,6 +54,22 @@ export class SummaryTable {
 
   getReactTableData() {
     return this.rows;
+  }
+
+  asObject() {
+    return {
+      cols: this.cols,
+      rows: this.rows,
+      cycleBreakdown: this.cycleBreakdown,
+    };
+  }
+
+  static fromObject(o) {
+    let res = new SummaryTable();
+    res.cols = o.cols;
+    res.rows = o.rows;
+    res.cycleBreakdown = o.cycleBreakdown;
+    return res;
   }
 }
 
