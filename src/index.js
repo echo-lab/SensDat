@@ -26,20 +26,21 @@ function App() {
   useEffect(
     () => {
       let onKeypress = (e) => {
-        if (e.key === "s") {
+        if (!e.altKey) return;
+        if (e.code === "KeyS") {
           console.log("Saving state");
           window.localStorage["state"] = AppState.serialize(state);
         }
-        if (e.key === "l") {
+        if (e.code === "KeyL") {
           console.log("Loading state");
           let serializedState = window.localStorage["state"];
           dispatch(AppState.actions.loadState(serializedState));
         }
-        if (e.key === "d") {
+        if (e.code === "KeyD") {
           console.log("Deleting saved state");
           window.localStorage.removeItem("state");
         }
-        if (e.key === "p") {
+        if (e.code === "KeyP") {
           console.log("Current state: ", state);
         }
       };
