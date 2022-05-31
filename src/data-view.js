@@ -16,7 +16,7 @@ export function DataView({dataTable, summaryTables, uistate}) {
         {
           summaryTables.map(st=>
             <Tab eventKey={st.state.id} key={st.state.id} title={`Summary: ${st.state.name}`}>
-              <div> TEMPORARY FILL! </div>
+              <Table dataTable={st.summaryTable} />
             </Tab>
           )
         }

@@ -1,6 +1,7 @@
 import { UIState } from "./ui-state.js";
 import { CreateRegionInteraction } from "./create-region-interaction.js";
 import { DataTable } from "./data-table.js";
+import { SummaryTable } from "./summary-table.js";
 import * as LZString from "lz-string";
 import { objectToState } from "./utils.js";
 
@@ -172,7 +173,10 @@ actionHandlers["createSummary"] = (state, stateID) => {
   // Find the state w/ the given ID
   let uds = state.userDefinedStates.find(s=>s.id === stateID);
   if (!uds) return state;
-  state.summaryTables.push({state: uds, summaryTable: null});
+  state.summaryTables.push({
+    state: uds,
+    summaryTable: new SummaryTable(state.dataTable, uds),
+  });
 
   return {
     ...state
