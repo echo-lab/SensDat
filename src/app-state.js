@@ -53,6 +53,9 @@ export const initialState = {
   // Interactions :D
   createRegionInteraction: null,
 
+  // Which tab is active in the Data Pane. Either "BASE_TABLE" or a state ID.
+  activeTab: "BASE_TABLE",
+
   // Active filters, like: columns which are hidden, states
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
@@ -172,10 +175,12 @@ actionHandlers["commitTempState"] = (state, payload) => {
 
 actionHandlers["createSummary"] = (state, stateID) => {
   // See if the summary already exists.
-  // TODO: switch to that tab if it does :)
   let existingSummary = state.summaryTables.find(st=>st.state.id === stateID);
   if (existingSummary) {
-    return state;
+    return {
+      ...state,
+      activeTab: stateID,
+    };
   }
 
   // Find the state w/ the given ID
@@ -187,9 +192,15 @@ actionHandlers["createSummary"] = (state, stateID) => {
   });
 
   return {
-    ...state
+    ...state,
+    activeTab: stateID
   };
 };
+
+actionHandlers["selectTab"] = (state, tabID) => ({
+  ...state,
+  activeTab: tabID,
+});
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
 // which takes a payload and returns an action object which can be used w/ React's `dispatch`

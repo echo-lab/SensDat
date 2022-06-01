@@ -72,6 +72,8 @@ function App() {
     dataTable: state.dataTable,
     uistate: state.uiState,
     summaryTables: state.summaryTables,
+    activeTab: state.activeTab,
+    dispatch,
   };
 
   let summaryViewProps = {

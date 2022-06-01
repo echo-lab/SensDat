@@ -4,13 +4,18 @@ import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 import Tab from "react-bootstrap/Tab";
 import Tabs from 'react-bootstrap/Tabs';
+import { actions } from "./app-state.js";
 
 
-export function DataView({dataTable, summaryTables, uistate}) {
+export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch}) {
   return (
     <div className="data-container debug def-visible">
-      <Tabs defaultActiveKey="main" className="m-3">
-        <Tab eventKey="main" title="Main Table">
+      <Tabs
+        activeKey={activeTab}
+        onSelect={(k)=>dispatch(actions.selectTab(k))}
+        className="m-3"
+      >
+        <Tab eventKey="BASE_TABLE" title="Base Table">
           <VirtualizedTable dataTable={dataTable} />
         </Tab>
         {
