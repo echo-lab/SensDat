@@ -154,6 +154,7 @@ export class DataTable {
         download: true,
         dynamicTyping: true,
         header: true,
+        skipEmptyLines: true,
         error: (e) => reject(e),
         complete: (res) => {
           resolve(new DataTable(res.data, colMapping));
