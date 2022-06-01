@@ -1,6 +1,11 @@
 import * as Papa from "papaparse";
 
-const TEST_DATA = ["test_data", "demo_data_student", "demo_data_classroom"].map(
+const TEST_DATA = [
+  "test_data",
+  "demo_data_student",
+  "demo_data_classroom",
+  "demo_data_classroom_clean"
+].map(
   (s) => `${process.env.PUBLIC_URL}/${s}.csv`
 );
 
