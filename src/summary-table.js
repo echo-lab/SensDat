@@ -1,87 +1,144 @@
-
 // Accessor for the index row. Probably should live in the DataTable object.
 const INDEX = "Order";
 
-export class SummaryTable {
 
-  constructor(table, state) {
-    if (!table) return;
+export function SummaryTable({table, state, highlightFn}) {
 
-    // Step 1) construct a "cycleBreakdown", which looks like:
-    // {true: [low_idx, high_idx], false: [low_idx, high_idx]}.
-    // That is, each "cycle" is broken up into the "true" portion and the
-    // "false" portion, in that order, and we want to calculate the bounds for
-    // which points fall in that cycle. Bounds are inclusive.
-    this.cycleBreakdown = [{true: null, false: null}];
+  let [cols, rows] = getBreakdownByTF(table, state);
 
-    let id = state.id;
-    let prevVal = table.rows[0][id] === "true";
-    let curCycle = this.cycleBreakdown[0];
-    curCycle[prevVal] = [table.rows[0][INDEX], table.rows[0][INDEX]];
+  return (
+    <table role="table">
+      <thead>
+        <tr role="row">
+          {cols.map((col, idx) => (
+            <th key={idx} role="columnheader">
+              {col.Header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody role="rowgroup">
+        {rows.map((row, idx) => (
+            <tr
+              role="row" key={idx}
+              onClick={()=>highlightFn(row.pointsRange)}
+              onMouseEnter={()=>highlightFn(row.pointsRange)}
+              onMouseLeave={()=>highlightFn(null)}
+            >
+              {cols.map(({accessor}, idx)=> {
+                if (!row[accessor]) return null;
+                if (accessor === "cycle") {
+                  return (
+                    <td role="cell" key={idx} rowSpan={row["cycleRowspan"] || 1}>
+                      {row[accessor]}
+                    </td>
+                  );
+                }
+                return (
+                  <td role="cell" key={idx}>
+                    {row[accessor]}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  );
+}
 
-    for (let row of table.rows) {
-      let val = row[id] === "true";  // sad...
-      let idx = row[INDEX];
+// Helper functions
+function getTime(dataTable, idx) {
+  let row = dataTable.rows.find(x=>x[INDEX]===idx);
+  return row ? row["Date Created"] : null;
+}
 
-      if (prevVal === val) {
-        curCycle[val][1] = idx;  // change the upper bound
-      } else if (prevVal && !val) {
-        curCycle[false] = [idx, idx];
-      } else if (!prevVal && val) {
-        curCycle = {true: [idx, idx], false: null};
-        this.cycleBreakdown.push(curCycle);
-      }
-      prevVal = val;
+// Returns cycle ranges broken down by T/F.
+// For example: [{cycle: 1, state: false, range: [1, 23]}, ...]
+function getCycleRanges(table, state) {
+  if (!table.rows || table.rows.length === 0) return [];
+
+  let r0 = table.rows[0];
+  let res = [{
+    cycle: 1,
+    state: r0[state.id],
+    range: [r0[INDEX], r0[INDEX]],
+  }];
+
+  for (let row of table.rows) {
+    if (res.at(-1).state === row[state.id]) {
+      // Our state is the same, so we just update the end of the range.
+      res.at(-1).range[1] = row[INDEX];
+    } else {
+      // Our state changed, so we need to add a new item to the result.
+      res.push({
+        cycle: res.at(-1).cycle + (row[state.id] === "true" ? 1 : 0),
+        state: row[state.id],
+        range: [row[INDEX], row[INDEX]],
+      });
+    }
+  }
+  return res;
+}
+
+// Returns [cols, rows] for rendering.
+// cols:
+//   [{Header, accessor}, ...]
+// rows:
+//   [{
+//     state: "NOT <state name>" | "<state name>"
+//     startTime: <string>,
+//     endTime: <string>,
+//     pointsRange: [startIdx, endIdx],
+//     cycle: <number> | null  // null if previous row's cell has rowspan 2
+//     cycleRowspan: 2 | 1 | null
+//   }]
+function getBreakdownByTF(table, state) {
+  let cols = [
+    {Header: "Cycle", accessor: "cycle"},
+    {Header: "State", accessor: "state"},
+    {Header: "Start Time", accessor: "startTime"},
+    {Header: "End Time", accessor: "endTime"},
+  ];
+
+  let cycleRanges = getCycleRanges(table, state);
+
+  let rows = cycleRanges.map((cycleRange, idx) => {
+    let res = {
+      state: (cycleRange.state === "true" ? state.name : `NOT ${state.name}`),
+      startTime: getTime(table, cycleRange.range[0]),
+      endTime: getTime(table, cycleRange.range[1]),
+      pointsRange: cycleRange.range,
+    };
+
+    // Populate 'cycle' and 'cycleRowspan' conditionally.
+    let prev = (idx > 0 ? cycleRanges[idx-1] : null);
+    let next = (cycleRanges.length > idx+1 ? cycleRanges[idx+1] : null);
+    if (!prev || prev.cycle !== cycleRange.cycle) {
+      // This is the first row of the cycle.
+      res.cycle = cycleRange.cycle;
+      // If the next entry has the same cycle, make the rowspan 2.
+      res.cycleRowspan = (next && next.cycle === cycleRange.cycle ? 2 : 1);
     }
 
-    // Step 2) define the columns and rows which will be displayed.
-    this.cols = [
-      {Header: "Cycle", accessor: "cycle"},
-      {Header: "Start Time", accessor: "start_time"},
-      {Header: "End Time", accessor: "end_time"},
-    ];
-
-    this.rows = this.cycleBreakdown.map((cycle, idx) => ({
-      cycle: idx+1,
-      start_time: getStartTime(cycle, table),
-      end_time: getEndTime(cycle, table),
-    }));
-  }
-
-  getReactTableCols() {
-    return this.cols;
-  }
-
-  getReactTableData() {
-    return this.rows;
-  }
-
-  asObject() {
-    return {
-      cols: this.cols,
-      rows: this.rows,
-      cycleBreakdown: this.cycleBreakdown,
-    };
-  }
-
-  static fromObject(o) {
-    let res = new SummaryTable();
-    res.cols = o.cols;
-    res.rows = o.rows;
-    res.cycleBreakdown = o.cycleBreakdown;
     return res;
-  }
+  });
+
+  return [cols, rows];
 }
 
-// Helper functions for calculating aggregate statistics.
-function getStartTime(cycle, dataTable) {
-  let idx = cycle[true] ? cycle[true][0] : cycle[false][0];
-  let row = dataTable.rows.find(x=>x[INDEX]===idx);  // slow
-  return row ? row["Date Created"] : null;
-}
+function getBreakdownByWholeCycle(table, state) {
+  let cols = [
+    {Header: "Cycle", accessor: "cycle"},
+    {Header: "State", accessor: "state"},
+    {Header: "Start Time", accessor: "startTime"},
+    {Header: "End Time", accessor: "endTime"},
+  ];
 
-function getEndTime(cycle, dataTable) {
-  let idx = cycle[false] ? cycle[false][1] : cycle[true][1];
-  let row = dataTable.rows.find(x=>x[INDEX]===idx);  // slow
-  return row ? row["Date Created"] : null;
+  let cycleRanges = getCycleRanges(table, state);
+
+  // TODO: do this...
+
+
+
 }

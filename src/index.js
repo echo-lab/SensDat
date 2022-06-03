@@ -64,6 +64,7 @@ function App() {
     vizData: state.dataTable ? state.dataTable.vizData : null,
     dispatch,
     vizTimespan: state.vizState.timespan,
+    highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
   };

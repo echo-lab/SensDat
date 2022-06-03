@@ -24,8 +24,10 @@ const SVG_EFFECTIVE_DIMS = {
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
-export function VizView({ vizData, vizTimespan, uistate, dispatch, createRegionInteraction }) {
+export function VizView({ vizData, vizTimespan, uistate, dispatch,
+    createRegionInteraction, highlightedPoints }) {
   const svgRef = useRef();
+  const d3Dots = useRef();
   const coordRanges = useRef(null);
 
   useEffect(
@@ -49,13 +51,30 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch, createRegionI
       let svg = d3.select(svgRef.current);
       if (!vizData) return;
 
-      drawToSVG(svg, vizData, vizTimespan, coordRanges.current);
+      d3Dots.current = drawToSVG(svg, vizData, vizTimespan, coordRanges.current);
       createRegionInteraction && createRegionInteraction.redraw();
 
       return () => {};
     },
     /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction]
   );
+
+  // Function to highlight points.
+  useEffect(
+    () => {
+      if (!d3Dots.current || !highlightedPoints) return;
+
+      let [lo, hi] = highlightedPoints;
+      let matches = d3Dots.current.filter(d=>(lo <= d.Order && d.Order <= hi));
+      matches.attr("fill", "#77f3b2").attr("stroke", "black").raise();
+
+      return () => {
+        matches.attr("fill", "#69b3a2").attr("stroke", null);
+      };
+    },
+    /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints]
+  );
+
 
   let rangeSliderProps = {
     // TODO: investigate why settings this to dataTable.length - 1 doesn't work
@@ -178,7 +197,7 @@ function drawToSVG(svg, data, timespan, coordRanges) {
         .y((d) => y(d.Latitude))
     );
 
-  svg
+  let dots = svg
     .append("g")
     .selectAll("dot")
     .data(data)
@@ -195,6 +214,7 @@ function drawToSVG(svg, data, timespan, coordRanges) {
     // .on("mouseleave", (e) => {
     //   console.log("mouseleave event: ", e);
     // });
+  return dots;
 }
 
 function makeHandlers() {

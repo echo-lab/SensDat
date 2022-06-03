@@ -5,9 +5,12 @@ import { FixedSizeList } from "react-window";
 import Tab from "react-bootstrap/Tab";
 import Tabs from 'react-bootstrap/Tabs';
 import { actions } from "./app-state.js";
+import {SummaryTable} from "./summary-table.js";
 
 
 export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch}) {
+  let highlightFn = (points)=>dispatch(actions.highlightPoints(points));
+
   return (
     <div className="data-container debug def-visible">
       <Tabs
@@ -21,7 +24,13 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
         {
           summaryTables.map(st=>
             <Tab eventKey={st.state.id} key={st.state.id} title={`Summary: ${st.state.name}`}>
-              <Table dataTable={st.summaryTable} />
+              <Styles>
+                <SummaryTable
+                  table={dataTable}
+                  state={st.state}
+                  highlightFn={highlightFn}
+                />
+              </Styles>
             </Tab>
           )
         }
@@ -30,54 +39,6 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
   );
 }
 
-// Simple table display.
-function Table({ dataTable }) {
-  const columns = React.useMemo(() => {
-    return dataTable ? dataTable.getReactTableCols() : [];
-  }, [dataTable]);
-  const data = React.useMemo(() => {
-    return dataTable ? dataTable.getReactTableData() : [];
-  }, [dataTable]);
-
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-  } = useTable({
-    columns,
-    data,
-  });
-
-  return (
-    <Styles>
-    <table {...getTableProps()}>
-      <thead>
-        {headerGroups.map(headerGroup => (
-          <tr {...headerGroup.getHeaderGroupProps()}>
-            {headerGroup.headers.map(column => (
-              <th {...column.getHeaderProps()}>{column.render('Header')}</th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-      <tbody {...getTableBodyProps()}>
-        {rows.map((row, i) => {
-          prepareRow(row)
-          return (
-            <tr {...row.getRowProps()}>
-              {row.cells.map(cell => {
-                return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-              })}
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-    </Styles>
-  );
-}
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows

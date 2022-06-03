@@ -43,7 +43,7 @@ import { objectToState } from "./utils.js";
 export const initialState = {
   // Eventually, we'll want a map from tableName: table.
   dataTable: undefined,
-  summaryTables: [],  // {state, summaryTable}
+  summaryTables: [],  // [{state}, ...]
   uiState: UIState.NotLoaded,
 
   // User-defined states
@@ -61,6 +61,7 @@ export const initialState = {
   // TODO: add more as they're implemented.
   vizState: {
     timespan: [0, 100],
+    highlightedPoints: null,
   },
 };
 
@@ -78,10 +79,7 @@ export function serialize(state) {
   let res = {
     dataTable: state.dataTable.asObject(),
     userDefinedStates: state.userDefinedStates.map(s=>s.asObject()),
-    summaryTables: state.summaryTables.map(st=>({
-      state: st.state.asObject(),
-      summaryTable: st.summaryTable.asObject(),
-    })),
+    summaryTables: state.summaryTables.map(({state})=>state.asObject()),
   };
   return LZString.compress(JSON.stringify(res));
 }
@@ -105,10 +103,7 @@ actionHandlers["loadState"] = (state, serializedState) => {
     dataTable: DataTable.fromObject(data.dataTable),
     userDefinedStates: data.userDefinedStates.map(o=>objectToState(o)),
     uiState: UIState.Default,
-    summaryTables: data.summaryTables.map(st=>({
-      state: objectToState(st.state),
-      summaryTable: SummaryTable.fromObject(st.summaryTable),
-    }))
+    summaryTables: data.summaryTables.map(s=>({state: objectToState(s)})),
   };
 }
 
@@ -186,11 +181,8 @@ actionHandlers["createSummary"] = (state, stateID) => {
   // Find the state w/ the given ID
   let uds = state.userDefinedStates.find(s=>s.id === stateID);
   if (!uds) return state;
-  state.summaryTables.push({
-    state: uds,
-    summaryTable: new SummaryTable(state.dataTable, uds),
-  });
 
+  state.summaryTables.push({state: uds});
   return {
     ...state,
     activeTab: stateID
@@ -200,6 +192,14 @@ actionHandlers["createSummary"] = (state, stateID) => {
 actionHandlers["selectTab"] = (state, tabID) => ({
   ...state,
   activeTab: tabID,
+});
+
+actionHandlers["highlightPoints"] = (state, pointsRange) => ({
+  ...state,
+  vizState: {
+    ...state.vizState,
+    highlightedPoints: pointsRange,
+  },
 });
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
