@@ -17,7 +17,7 @@ export function SummaryTable({table, state, highlightFn}) {
           ))}
         </tr>
       </thead>
-      <tbody role="rowgroup">
+      <tbody>
         {rows.map((row, idx) => (
             <tr
               role="row" key={idx}

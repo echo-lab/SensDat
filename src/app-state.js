@@ -1,7 +1,6 @@
 import { UIState } from "./ui-state.js";
 import { CreateRegionInteraction } from "./create-region-interaction.js";
 import { DataTable } from "./data-table.js";
-import { SummaryTable } from "./summary-table.js";
 import * as LZString from "lz-string";
 import { objectToState } from "./utils.js";
 
