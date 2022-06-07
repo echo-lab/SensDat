@@ -10,10 +10,6 @@ const PADDING_FRACTION = 1.1;
 const SVG_HEIGHT = 500;
 const SVG_WIDTH = 800;
 const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
-const SVG_EFFECTIVE_DIMS = {
-  WIDTH: SVG_WIDTH - SVG_MARGIN.LEFT - SVG_MARGIN.RIGHT,
-  HEIGHT: SVG_HEIGHT - SVG_MARGIN.TOP - SVG_MARGIN.BOTTOM,
-};
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#77f3b2";
@@ -33,19 +29,19 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
     createRegionInteraction, highlightedPoints, userDefinedStates }) {
   const svgRef = useRef();
   const d3Dots = useRef();
-  const coordRanges = useRef(null);
+  const svgCoordMapping = useRef(null);
 
   useEffect(
     () => {
       if (!vizData) return;
-      coordRanges.current = getCoordRanges(vizData);
+      svgCoordMapping.current = getSvgCoordMapping(vizData);
     },
     /*dependencies=*/ [vizData]
   );
 
   useEffect(
     () => {
-      createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, coordRanges.current);
+      createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping.current);
     },
     /*dependencies=*/ [createRegionInteraction]
   );
@@ -56,7 +52,7 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
       let svg = d3.select(svgRef.current);
       if (!vizData) return;
 
-      d3Dots.current = drawToSVG(svg, vizData, vizTimespan, coordRanges.current, userDefinedStates);
+      d3Dots.current = drawToSVG(svg, vizData, vizTimespan, svgCoordMapping.current, userDefinedStates);
       createRegionInteraction && createRegionInteraction.redraw();
 
       return () => {};
@@ -117,20 +113,20 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
   );
 }
 
-// Get information about the SVG's xy-coordinates should correspond to latitude/longitude
-// based on the data table.
-// Example:
-// {
-//   latitude: [24.4, 24.5],
-//   svgX: [40, 400],
-//   ...
+// Get information about how the SVG's xy-coordinates should correspond to
+// latitude/longitude based on the data table.
+// Returns: {
+//   svgX: [minXPixel, maxXPixel],
+//   xvgY: [bottomYPixel, topYPixel],
+//   xToLong: function(),
+//   yToLat: function(),
+//   longToX: function(),
+//   latToY: function(),
 // }
-// Here, the graph on the SVG should be between pixels 40 and 400 (x-wise), and
-// the latitudes corresponding to x=40 and x=400 are 24.4 and 24.5 respectively.
 //
 // NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
 // in the graph and the XY distance is true-to-life.
-function getCoordRanges(data) {
+function getSvgCoordMapping(data) {
   // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
   // plot data right on the axes. Of course, we could also constrict the svgX
   // and svgY range instead.
@@ -140,27 +136,21 @@ function getCoordRanges(data) {
     [SVG_WIDTH, SVG_HEIGHT]
   ).map((rng) => scaleRange(rng, PADDING_FRACTION));
 
-  let svgX = [SVG_MARGIN.LEFT, SVG_WIDTH - SVG_MARGIN.LEFT];
-  let svgY = [SVG_HEIGHT - SVG_MARGIN.TOP, SVG_MARGIN.TOP];
-
-  let ty = d3.scaleLinear().domain(svgY).range(latitude);
-  let tx = d3.scaleLinear().domain(svgX).range(longitude);
-
-  let py = d3.scaleLinear().domain(latitude).range(svgY);
-  let px = d3.scaleLinear().domain(longitude).range(svgX);
+  let svgX = [SVG_MARGIN.LEFT, SVG_WIDTH - SVG_MARGIN.RIGHT];
+  let svgY = [SVG_HEIGHT - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
 
   return {
-    latitude,
-    longitude,
-    svgX,
-    svgY,
-    pxlToLatLong: (x, y) => [tx(x), ty(y)],
-    longLatToPxl: (long, lat) => [px(long), py(lat)],
+    svgX, svgY,
+    xToLong: d3.scaleLinear().domain(svgX).range(longitude),
+    yToLat: d3.scaleLinear().domain(svgY).range(latitude),
+    longToX: d3.scaleLinear().domain(longitude).range(svgX),
+    latToY: d3.scaleLinear().domain(latitude).range(svgY),
   };
 }
 
-function drawToSVG(svg, data, timespan, coordRanges, userDefinedStates) {
-  let [width, height] = [SVG_EFFECTIVE_DIMS.WIDTH, SVG_EFFECTIVE_DIMS.HEIGHT];
+function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
+  let {longToX, latToY} = svgCoordMapping;  // These are functions
+  let {svgX, svgY} = svgCoordMapping;  // These are range values, i.e., [low, high]
 
   // Filter to the selected timespan range.
   data = filterByTimespan(data, timespan);
@@ -176,45 +166,22 @@ function drawToSVG(svg, data, timespan, coordRanges, userDefinedStates) {
     if (!e.defaultPrevented) deselectPoints();
   });
 
-  // Draw the current regions
-  let longLatToPxl = coordRanges.longLatToPxl;
-  let ellipses = userDefinedStates
-    .filter(s=>s instanceof EllipseRegion)
-    .map(s => {
-      let [cx, cy] = longLatToPxl(s.cx, s.cy);
-      let rx = longLatToPxl(s.cx + s.rx, s.cy)[0] - cx;
-      let ry = longLatToPxl(s.cx, s.cy + s.ry)[1] - cy;
-      [rx, ry] = [Math.abs(rx), Math.abs(ry)];
-      return {cx, cy, rx, ry};
-    });
-
-  let regionElements = svg
-    .selectAll("regionStates")
-    .data(ellipses)
-    .enter()
-    .append("ellipse")
-    .style("stroke", "black")
-    .style("fill-opacity", 0.0)
-    .attr("cx", d=>d.cx)
-    .attr("cy", d=>d.cy)
-    .attr("rx", d=>d.rx)
-    .attr("ry", d=>d.ry);
-
-  // Draw the trajectory. Based on:
+  // Draw the trajectory. Loosely based on:
   // https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
-  svg = svg
-    .append("g")
-    .attr("transform", `translate(${SVG_MARGIN.LEFT}, ${SVG_MARGIN.RIGHT})`);
 
-  var x = d3.scaleLinear().domain(coordRanges.longitude).range([0, width]);
-  var y = d3.scaleLinear().domain(coordRanges.latitude).range([height, 0]);
-
+  // X-axis
   svg
     .append("g")
-    .attr("transform", `translate(0, ${height})`)
-    .call(d3.axisBottom(x).ticks(4));
-  svg.append("g").call(d3.axisLeft(y).ticks(4));
+    .attr("transform", `translate(0, ${svgY[0]})`)
+    .call(d3.axisBottom(longToX).ticks(4));
 
+  // Y-axis
+  svg
+    .append("g")
+    .attr("transform", `translate(${svgX[0]}, 0)`)
+    .call(d3.axisLeft(latToY).ticks(4));
+
+  // Trajectory
   svg
     .append("path")
     .datum(data)
@@ -225,18 +192,19 @@ function drawToSVG(svg, data, timespan, coordRanges, userDefinedStates) {
       "d",
       d3
         .line()
-        .x((d) => x(d.Longitude))
-        .y((d) => y(d.Latitude))
+        .x((d) => longToX(d.Longitude))
+        .y((d) => latToY(d.Latitude))
     );
 
+  // Datapoints
   let dots = svg
     .append("g")
     .selectAll("dot")
     .data(data)
     .enter()
     .append("circle")
-    .attr("cx", (d) => x(d.Longitude))
-    .attr("cy", (d) => y(d.Latitude))
+    .attr("cx", (d) => longToX(d.Longitude))
+    .attr("cy", (d) => latToY(d.Latitude))
     .attr("r", 3)
     .attr("fill", DOT_COLOR);
     // .on("click", selectPoint)
@@ -247,7 +215,19 @@ function drawToSVG(svg, data, timespan, coordRanges, userDefinedStates) {
     //   console.log("mouseleave event: ", e);
     // });
 
-  regionElements.raise();
+  // Draw the current regions
+  svg
+    .selectAll("regionStates")
+    .data(userDefinedStates.filter(s=>s instanceof EllipseRegion))
+    .enter()
+    .append("ellipse")
+    .style("stroke", "black")
+    .style("fill-opacity", 0.0)
+    .attr("cx", d=>longToX(d.cx))
+    .attr("cy", d=>latToY(d.cy))
+    .attr("rx", d=>Math.abs(longToX(d.cx+d.rx) - longToX(d.cx)))
+    .attr("ry", d=>Math.abs(latToY(d.cy+d.ry) - latToY(d.cy)));
+
   return dots;
 }
 
