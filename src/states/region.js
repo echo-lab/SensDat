@@ -9,6 +9,11 @@ export class EllipseRegion {
     this.id = uid();
   }
 
+  get cx() { return this.params[0][0]; }
+  get cy() { return this.params[0][1]; }
+  get rx() { return this.params[1]; }
+  get ry() { return this.params[2]; }
+
   withName(name) {
     return new EllipseRegion(...this.params, name);
   }

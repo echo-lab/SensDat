@@ -67,6 +67,7 @@ function App() {
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
+    userDefinedStates: state.userDefinedStates,
   };
 
   let dataViewProps = {

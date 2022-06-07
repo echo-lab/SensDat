@@ -3,6 +3,7 @@ import * as d3 from "d3";
 import { Range } from "rc-slider";
 import "rc-slider/assets/index.css";
 import { actions } from "./app-state.js";
+import {EllipseRegion} from "./states/region.js";
 
 const PADDING_FRACTION = 1.1;
 
@@ -13,6 +14,10 @@ const SVG_EFFECTIVE_DIMS = {
   WIDTH: SVG_WIDTH - SVG_MARGIN.LEFT - SVG_MARGIN.RIGHT,
   HEIGHT: SVG_HEIGHT - SVG_MARGIN.TOP - SVG_MARGIN.BOTTOM,
 };
+
+const DOT_COLOR = "#69b3a2";
+const DOT_HIGHLIGHT_COLOR = "#77f3b2";
+const PATH_COLOR = "#69b3a2";
 
 /*
  * Creates a visualization of the data.
@@ -25,7 +30,7 @@ const SVG_EFFECTIVE_DIMS = {
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
 export function VizView({ vizData, vizTimespan, uistate, dispatch,
-    createRegionInteraction, highlightedPoints }) {
+    createRegionInteraction, highlightedPoints, userDefinedStates }) {
   const svgRef = useRef();
   const d3Dots = useRef();
   const coordRanges = useRef(null);
@@ -51,12 +56,12 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
       let svg = d3.select(svgRef.current);
       if (!vizData) return;
 
-      d3Dots.current = drawToSVG(svg, vizData, vizTimespan, coordRanges.current);
+      d3Dots.current = drawToSVG(svg, vizData, vizTimespan, coordRanges.current, userDefinedStates);
       createRegionInteraction && createRegionInteraction.redraw();
 
       return () => {};
     },
-    /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction]
+    /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction, userDefinedStates]
   );
 
   // Function to highlight points.
@@ -66,10 +71,10 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
 
       let [lo, hi] = highlightedPoints;
       let matches = d3Dots.current.filter(d=>(lo <= d.Order && d.Order <= hi));
-      matches.attr("fill", "#77f3b2").attr("stroke", "black").raise();
+      matches.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").raise();
 
       return () => {
-        matches.attr("fill", "#69b3a2").attr("stroke", null);
+        matches.attr("fill", DOT_COLOR).attr("stroke", null);
       };
     },
     /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints]
@@ -141,16 +146,20 @@ function getCoordRanges(data) {
   let ty = d3.scaleLinear().domain(svgY).range(latitude);
   let tx = d3.scaleLinear().domain(svgX).range(longitude);
 
+  let py = d3.scaleLinear().domain(latitude).range(svgY);
+  let px = d3.scaleLinear().domain(longitude).range(svgX);
+
   return {
     latitude,
     longitude,
     svgX,
     svgY,
     pxlToLatLong: (x, y) => [tx(x), ty(y)],
+    longLatToPxl: (long, lat) => [px(long), py(lat)],
   };
 }
 
-function drawToSVG(svg, data, timespan, coordRanges) {
+function drawToSVG(svg, data, timespan, coordRanges, userDefinedStates) {
   let [width, height] = [SVG_EFFECTIVE_DIMS.WIDTH, SVG_EFFECTIVE_DIMS.HEIGHT];
 
   // Filter to the selected timespan range.
@@ -167,14 +176,37 @@ function drawToSVG(svg, data, timespan, coordRanges) {
     if (!e.defaultPrevented) deselectPoints();
   });
 
-  // Based on: https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
+  // Draw the current regions
+  let longLatToPxl = coordRanges.longLatToPxl;
+  let ellipses = userDefinedStates
+    .filter(s=>s instanceof EllipseRegion)
+    .map(s => {
+      let [cx, cy] = longLatToPxl(s.cx, s.cy);
+      let rx = longLatToPxl(s.cx + s.rx, s.cy)[0] - cx;
+      let ry = longLatToPxl(s.cx, s.cy + s.ry)[1] - cy;
+      [rx, ry] = [Math.abs(rx), Math.abs(ry)];
+      return {cx, cy, rx, ry};
+    });
+
+  let regionElements = svg
+    .selectAll("regionStates")
+    .data(ellipses)
+    .enter()
+    .append("ellipse")
+    .style("stroke", "black")
+    .style("fill-opacity", 0.0)
+    .attr("cx", d=>d.cx)
+    .attr("cy", d=>d.cy)
+    .attr("rx", d=>d.rx)
+    .attr("ry", d=>d.ry);
+
+  // Draw the trajectory. Based on:
+  // https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
   svg = svg
     .append("g")
     .attr("transform", `translate(${SVG_MARGIN.LEFT}, ${SVG_MARGIN.RIGHT})`);
 
-  // let m = 10; // margin to separate the data from the axes.
   var x = d3.scaleLinear().domain(coordRanges.longitude).range([0, width]);
-
   var y = d3.scaleLinear().domain(coordRanges.latitude).range([height, 0]);
 
   svg
@@ -187,7 +219,7 @@ function drawToSVG(svg, data, timespan, coordRanges) {
     .append("path")
     .datum(data)
     .attr("fill", "none")
-    .attr("stroke", "#69b3a2")
+    .attr("stroke", PATH_COLOR)
     .attr("stroke-width", 1.5)
     .attr(
       "d",
@@ -206,7 +238,7 @@ function drawToSVG(svg, data, timespan, coordRanges) {
     .attr("cx", (d) => x(d.Longitude))
     .attr("cy", (d) => y(d.Latitude))
     .attr("r", 3)
-    .attr("fill", "#69b3a2");
+    .attr("fill", DOT_COLOR);
     // .on("click", selectPoint)
     // .on("mouseenter", (e) => {
     //   console.log("mouseenter event: ", e);
@@ -214,6 +246,8 @@ function drawToSVG(svg, data, timespan, coordRanges) {
     // .on("mouseleave", (e) => {
     //   console.log("mouseleave event: ", e);
     // });
+
+  regionElements.raise();
   return dots;
 }
 
