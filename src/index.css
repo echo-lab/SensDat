@@ -19,7 +19,7 @@ div.debug {
   border: solid 1px black;
   display: grid;
   grid-template-columns: 20% 20% 20% 20% 20%;
-  grid-template-rows: 700px 700px;
+  grid-template-rows: 650px 700px;
   min-width: 1200px;
   min-height: 1200px;
   padding: 20px;

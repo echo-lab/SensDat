@@ -95,7 +95,7 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
     marginLeft: "0px",
     border: "solid 1px black",
   };
-  const sliderDivStyle = { width: 400, margin: 50 };
+  const sliderDivStyle = { width: 400, "margin-left": 50, "margin-top": 30 };
 
   // Lol - this is probably a bad way to do it... Maybe should pull out
   // the class name 'def-visible' as a constant somewhere.
