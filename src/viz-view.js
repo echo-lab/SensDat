@@ -7,8 +7,7 @@ import {EllipseRegion} from "./states/region.js";
 
 const PADDING_FRACTION = 1.1;
 
-const SVG_HEIGHT = 500;
-const SVG_WIDTH = 800;
+const SVG_ASPECT_RATIO = 8/5;  // width/height
 const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
 
 const DOT_COLOR = "#69b3a2";
@@ -25,25 +24,24 @@ const PATH_COLOR = "#69b3a2";
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
-export function VizView({ vizData, vizTimespan, uistate, dispatch,
-    createRegionInteraction, highlightedPoints, userDefinedStates }) {
+export function VizView({
+  vizData, vizTimespan, uistate, dispatch,
+  createRegionInteraction, highlightedPoints, userDefinedStates,
+  dimensions
+ }) {
   const svgRef = useRef();
   const d3Dots = useRef();
   const svgCoordMapping = useRef(null);
 
-  useEffect(
-    () => {
-      if (!vizData) return;
-      svgCoordMapping.current = getSvgCoordMapping(vizData);
-    },
-    /*dependencies=*/ [vizData]
-  );
+  let svgWidth = (dimensions.width * 0.97) || 500;  // Default to 500 to avoid an error message
+  let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
   useEffect(
     () => {
-      createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping.current);
+      if (!vizData) return;
+      svgCoordMapping.current = getSvgCoordMapping(vizData, svgWidth, svgHeight);
     },
-    /*dependencies=*/ [createRegionInteraction]
+    /*dependencies=*/ [vizData, dimensions]
   );
 
   // Function to update the SVG.
@@ -57,7 +55,15 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
 
       return () => {};
     },
-    /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction, userDefinedStates]
+    /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction, userDefinedStates, dimensions]
+  );
+
+  // TODO: revisit this...
+  useEffect(
+    () => {
+      createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping.current);
+    },
+    /*dependencies=*/ [createRegionInteraction, dimensions]
   );
 
   // Function to highlight points.
@@ -73,7 +79,7 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
         matches.attr("fill", DOT_COLOR).attr("stroke", null);
       };
     },
-    /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints]
+    /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints, dimensions]
   );
 
 
@@ -89,13 +95,16 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
 
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
-    height: 500,
-    width: 800,
+    height: svgHeight,
+    width: svgWidth,
     marginRight: "0px",
     marginLeft: "0px",
     border: "solid 1px black",
   };
-  const sliderDivStyle = { width: 400, "margin-left": 50, "margin-top": 30 };
+  const sliderDivStyle = {
+    width: svgWidth - 150,  // TODO: fix this - it's a weird magic value
+    margin: 50
+  };
 
   // Lol - this is probably a bad way to do it... Maybe should pull out
   // the class name 'def-visible' as a constant somewhere.
@@ -126,18 +135,18 @@ export function VizView({ vizData, vizTimespan, uistate, dispatch,
 //
 // NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
 // in the graph and the XY distance is true-to-life.
-function getSvgCoordMapping(data) {
+function getSvgCoordMapping(data, width, height) {
   // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
   // plot data right on the axes. Of course, we could also constrict the svgX
   // and svgY range instead.
   let [latitude, longitude] = getLatLongDomain(
     d3.extent(data, (d) => d.Longitude),
     d3.extent(data, (d) => d.Latitude),
-    [SVG_WIDTH, SVG_HEIGHT]
+    [width, height]
   ).map((rng) => scaleRange(rng, PADDING_FRACTION));
 
-  let svgX = [SVG_MARGIN.LEFT, SVG_WIDTH - SVG_MARGIN.RIGHT];
-  let svgY = [SVG_HEIGHT - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
+  let svgX = [SVG_MARGIN.LEFT, width - SVG_MARGIN.RIGHT];
+  let svgY = [height - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
 
   return {
     svgX, svgY,

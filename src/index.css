@@ -14,21 +14,12 @@ div.debug {
   background-color: lightgrey;
 }
 
-/* TODO: Switch to Bootstrap for the layout */
-.sensdat-container {
-  border: solid 1px black;
-  display: grid;
-  grid-template-columns: 20% 20% 20% 20% 20%;
-  grid-template-rows: 650px 700px;
-  min-width: 1200px;
-  min-height: 1200px;
-  padding: 20px;
-  margin: 40px;
+.main-container {
+  height: 800px;
+  margin-top: 50px;
 }
 
 .viz-container {
-  grid-column: 1 / span 3;
-  grid-row-start: 1;
   overflow: scroll;
 }
 
@@ -63,8 +54,6 @@ div.debug {
 }
 
 .data-container {
-  grid-column: 1 / span 4;
-  grid-row-start: 2;
   overflow: scroll;
 }
 

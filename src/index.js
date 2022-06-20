@@ -9,6 +9,19 @@ import { DataTable } from "./data-table.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
 
+import Container from 'react-bootstrap/Container';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
+
+import 'react-reflex/styles.css';
+import {
+  ReflexContainer,
+  ReflexSplitter,
+  ReflexElement
+} from 'react-reflex'
+
+
+
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
 
@@ -85,15 +98,48 @@ function App() {
 
   let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
-  return (
-    <div className="sensdat-container">
-      <VizView {...vizViewProps} />
-      <StateView {...stateViewProps}/>
-      <DataView {...dataViewProps}/>
-      <SummaryView {...summaryViewProps} />
-      <div className="modal-background" hidden={modalHidden}></div>
-    </div>
+  let PageHeader = () => (
+    <Navbar bg="light" expand="lg">
+      <Container>
+        <Navbar.Brand >Octave</Navbar.Brand>
+          <Nav className="justify-content-end">
+            <Nav.Link> Upload Data </Nav.Link>
+            <Navbar.Text>|</Navbar.Text>
+            <Nav.Link> New State </Nav.Link>
+            <Navbar.Text>|</Navbar.Text>
+            <Nav.Link> Existing States </Nav.Link>
+            <Navbar.Text>|</Navbar.Text>
+            <Nav.Link> Create Summary </Nav.Link>
+          </Nav>
+      </Container>
+    </Navbar>
   );
+
+  return (
+    <>
+    <PageHeader />
+
+    <div className="main-container">
+    <ReflexContainer orientation="vertical">
+      <ReflexElement
+        className="left-pane"
+        flex={0.595}
+        propagateDimensionsRate={200}
+        propagateDimensions={true}
+        minSize="500"
+        >
+          <VizView {...vizViewProps} />
+      </ReflexElement>
+      <ReflexSplitter/>
+      <ReflexElement className="right-pane"
+        minSize="100"
+      >
+        <DataView {...dataViewProps} />
+      </ReflexElement>
+    </ReflexContainer>
+    </div>
+    </>
+    );
 }
 
 ReactDOM.render(
