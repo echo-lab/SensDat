@@ -11,7 +11,7 @@ const SVG_ASPECT_RATIO = 8/5;  // width/height
 const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
 
 const DOT_COLOR = "#69b3a2";
-const DOT_HIGHLIGHT_COLOR = "#77f3b2";
+const DOT_HIGHLIGHT_COLOR = "#91fd76";
 const PATH_COLOR = "#69b3a2";
 
 /*
@@ -74,10 +74,10 @@ export function VizView({
 
       let [lo, hi] = highlightedPoints;
       let matches = d3Dots.current.filter(d=>(lo <= d.Order && d.Order <= hi));
-      matches.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").raise();
+      matches.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").attr("r", 3.5).raise();
 
       return () => {
-        matches.attr("fill", DOT_COLOR).attr("stroke", null);
+        matches.attr("fill", DOT_COLOR).attr("stroke", null).attr("r", 3);
       };
     },
     /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints, dimensions]

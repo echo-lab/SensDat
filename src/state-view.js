@@ -13,15 +13,21 @@ import { actions } from "./app-state.js";
 
 export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefinedState, createRegionInteraction }) {
   let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
-
+  
   return (
     <>
     <Row>
       <Col className="state-container">
         { userDefinedStates.map(s=> (
-            <Button variant="outline-primary" size="sm" className="mx-2">
-              {s.name}
-            </Button>
+            <DropdownButton
+              variant="outline-dark" size="sm" id="dropdown-basic-button"
+              title={s.name} className="mx-2"
+            >
+              <Dropdown.Item
+                onClick={()=>dispatch(actions.createSummary(s.id))}>
+                Create Summary
+              </Dropdown.Item>
+            </DropdownButton>
           ))
         }
         <DropdownButton

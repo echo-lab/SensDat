@@ -37,18 +37,13 @@ div.debug {
   overflow: scroll;
 }
 
-.summary-container {
-  grid-column: 5 / span 1;
-  grid-row-start: 2;
-}
-
 .data-container .nav-tabs {
   border-bottom: 1px solid black;
 }
 
 .data-container .nav-link.active {
   background-color: inherit;
-  border-color: black black lightgrey black;
+  border-color: black black white black;
 }
 
 .data-container .nav-link:hover:not(.active) {
