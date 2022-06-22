@@ -36,6 +36,7 @@ export function VizView({
   let svgWidth = (dimensions.width * 0.97) || 500;  // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
+  // Update the coordinate mapping.
   useEffect(
     () => {
       if (!vizData) return;
@@ -51,19 +52,19 @@ export function VizView({
       if (!vizData) return;
 
       d3Dots.current = drawToSVG(svg, vizData, vizTimespan, svgCoordMapping.current, userDefinedStates);
-      createRegionInteraction && createRegionInteraction.redraw();
+      createRegionInteraction && createRegionInteraction.redraw(svgCoordMapping.current);
 
       return () => {};
     },
     /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction, userDefinedStates, dimensions]
   );
 
-  // TODO: revisit this...
+  // This initializes the createRegionInteraction with the SVG.
   useEffect(
     () => {
       createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping.current);
     },
-    /*dependencies=*/ [createRegionInteraction, dimensions]
+    /*dependencies=*/ [createRegionInteraction]
   );
 
   // Function to highlight points.

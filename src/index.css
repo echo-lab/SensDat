@@ -11,46 +11,26 @@ div.debug {
   border: solid 1px black;
   margin: 3px;
   padding: 3px;
-  background-color: lightgrey;
+  /* background-color: lightgrey; */
+  /* background-color: #f8f9fa; */
 }
 
 .main-container {
   height: 800px;
-  margin-top: 50px;
+  margin-top: 10px;
 }
 
 .viz-container {
   overflow: scroll;
 }
 
-/* State Container, along with it's child divs */
 .state-container {
-  grid-column: 4 / span 2;
-  grid-row-start: 1;
-  display: flex;  /* For vertically centering a "fixed" child component */
-  align-items: center;
-  position: relative;  /* For horizontally centering a "fixed" child component */
-}
-
-.create-state-container {
-  position: absolute;
-  /* Horizontal and vertical centering */
-  margin: auto !important;
-  width: 80%;
-  left: 0;
-  right: 0;
-}
-
-.new-state-container {
-  float: left;
-  width: 48%;
-  height: 100%;
-}
-
-.existing-state-container {
-  float: right;
-  width: 48%;
-  height: 100%;
+  display: flex;
+  position: relative;
+  /* overflow: scroll; */
+  /* possibly should just change the height and nix the padding? */
+  height: 55px;
+  padding: 10px;
 }
 
 .data-container {

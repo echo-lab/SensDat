@@ -21,7 +21,6 @@ import {
 } from 'react-reflex'
 
 
-
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
 
@@ -118,6 +117,9 @@ function App() {
   return (
     <>
     <PageHeader />
+    <Container bg="light">
+    <StateView {...stateViewProps} />
+    </Container>
 
     <div className="main-container">
     <ReflexContainer orientation="vertical">

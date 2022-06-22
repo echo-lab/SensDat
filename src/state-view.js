@@ -1,73 +1,56 @@
 import React, { useState } from "react";
+
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
 
+
 export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefinedState, createRegionInteraction }) {
-  // This pane is only present for UIState.CreateRegion
-  let regionPane = uiState === UIState.CreateRegion && (
+  let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
+
+  return (
+    <>
+    <Row>
+      <Col className="state-container">
+        { userDefinedStates.map(s=> (
+            <Button variant="outline-primary" size="sm" className="mx-2">
+              {s.name}
+            </Button>
+          ))
+        }
+        <DropdownButton
+          variant="outline-primary" size="sm" id="dropdown-basic-button"
+          title="+ New State" className="mx-2"
+        >
+          <Dropdown.Item onClick={handleCreateRegion}>
+            Region
+          </Dropdown.Item>
+          <Dropdown.Item href="#/action-2">Timespan</Dropdown.Item>
+          <Dropdown.Item href="#/action-3">Compound</Dropdown.Item>
+        </DropdownButton>
+      </Col>
+    </Row>
     <CreateRegionPane
+      uiState={uiState}
       dispatch={dispatch}
       tmpUserDefinedState={tmpUserDefinedState}
       createRegionInteraction={createRegionInteraction}
       />
-  );
-
-  return (
-    <div className="state-container debug">
-      <NewStateContainer dispatch={dispatch} />
-      <ExistingStateContainer userDefinedStates={userDefinedStates} />
-      {regionPane}
-    </div>
+    </>
   );
 }
 
-function ExistingStateContainer({userDefinedStates}) {
-  return (
-    <div className="existing-state-container debug">
-      <h4 className="py-4 text-center">Existing States </h4>
-      <div className="d-grid gap-2 py-4 mx-4">
-        <ul>
-          {
-            userDefinedStates.map(s=>
-              <li key={s.id}>{s.name}</li>
-            )
-          }
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function NewStateContainer({ dispatch }) {
-  let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
-
-  return (
-    <div className="new-state-container debug">
-      <h4 className="py-4 text-center"> Create New State </h4>
-      <div className="d-grid gap-2 py-4">
-        <CreateStateButton
-          stateType="Region"
-          handleClick={handleCreateRegion}
-        />
-        <CreateStateButton stateType="Timespan" />
-        <CreateStateButton stateType="Compound State" />
-      </div>
-    </div>
-  );
-}
-
-function CreateStateButton({ stateType, handleClick }) {
-  return (
-    <Button variant="outline-dark" size="md" onClick={handleClick}>
-      {stateType}
-    </Button>
-  );
-}
-
-function CreateRegionPane({ dispatch, tmpUserDefinedState, createRegionInteraction }) {
+// Returns null if it shouldn't be shown.
+function CreateRegionPane({ uiState, dispatch, tmpUserDefinedState, createRegionInteraction }) {
   let [regionName, setRegionName] = useState("");
+
+  if (uiState !== UIState.CreateRegion) return null;
 
   let handleChange = (e) => {
     setRegionName(e.target.value);
@@ -77,8 +60,10 @@ function CreateRegionPane({ dispatch, tmpUserDefinedState, createRegionInteracti
   let handleCancel = () => dispatch(actions.cancelCreateRegion());
 
   return (
-    <div className="create-state-container def-visible debug">
-      <div className="text-center py-4 px-5">
+    <Row className="mt-3">
+    <Col></Col>
+    <Col xs={4} className="debug p-3"><Row>
+      <Col>
         <Form>
           <Form.Group className="mb-3" controlId="formNewRegionName">
             <Form.Label>Region Name: </Form.Label>
@@ -89,19 +74,30 @@ function CreateRegionPane({ dispatch, tmpUserDefinedState, createRegionInteracti
               onChange={handleChange}
             />
           </Form.Group>
+        </Form>
+      </Col>
+      <Col>
+      <Form>
           <Button
             variant="outline-dark"
             size="md"
+            className="m-1"
             onClick={handleSubmit}
             disabled={!tmpUserDefinedState || tmpUserDefinedState.name === ""}
           >
             Done
           </Button>{" "}
-          <Button variant="outline-dark" size="md" onClick={handleCancel}>
+          <br />
+          <Button
+            variant="outline-dark"
+            className="m-1"
+            size="md" onClick={handleCancel}>
             Cancel
           </Button>
         </Form>
-      </div>
-    </div>
+        </Col>
+      </Row></Col>
+    <Col></Col>
+    </Row>
   );
 }

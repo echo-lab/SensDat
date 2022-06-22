@@ -75,6 +75,7 @@ export class CreateRegionInteraction {
     // Possibly redundant, but whatevs!
     this.element.setAttribute("cx", x);
     this.element.setAttribute("cy", y);
+    this.element.setAttribute("r", RADIUS);
 
     let [cx, cy] = [xToLong(x), yToLat(y)];
     let rx = xToLong(x+RADIUS) - cx;
@@ -83,8 +84,20 @@ export class CreateRegionInteraction {
     this.debouncedCreateTempState(this.userDefinedState);
   }
 
-  redraw() {
-    this.element && this.svg.appendChild(this.element);
+  // Need to pass in the Lat/Long -> pixel mapping again - it may have changed,
+  // e.g., if the svg was resized.
+  redraw(svgCoordMapping) {
+    this.svgCoordMapping = svgCoordMapping;
+    if (!this.element) return;
+    if (!this.userDefinedState) return;
+
+    let s = this.userDefinedState;  // Has Lat/Long coordinates.
+    let {longToX, latToY} = this.svgCoordMapping;
+    this.element.setAttribute("cx", longToX(s.cx));
+    this.element.setAttribute("cy", latToY(s.cy));
+    this.element.setAttribute("r", longToX(s.cx + s.rx) - longToX(s.cx));
+
+    this.svg.appendChild(this.element);
   }
 
   cleanup() {

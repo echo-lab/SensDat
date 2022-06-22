@@ -46,7 +46,7 @@ export const initialState = {
   uiState: UIState.NotLoaded,
 
   // User-defined states
-  userDefinedStates: [],
+  userDefinedStates: [],  // list of state objects
   tmpUserDefinedState: null,
 
   // Interactions :D
