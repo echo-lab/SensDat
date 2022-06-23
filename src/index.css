@@ -1,5 +1,4 @@
 body {
-  margin: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -8,16 +7,34 @@ body {
 }
 
 div.debug {
-  border: solid 1px black;
-  margin: 3px;
-  padding: 3px;
+  /* border: solid 1px black; */
+  /* margin: 3px; */
+  /* padding: 3px; */
+
   /* background-color: lightgrey; */
   /* background-color: #f8f9fa; */
 }
 
 .main-container {
-  height: 800px;
+  height: 720px;
   margin-top: 10px;
+}
+
+html, body, #root, #app, #app>div {
+  width: 100%;
+  height: 100%;
+}
+
+.bg-top-nav {
+  background-color: #414040;
+}
+
+body {
+  background-color: #f8f9fa;
+}
+
+.bg-doob {
+  background-color: #c4c0c0;
 }
 
 .viz-container {

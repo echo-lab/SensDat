@@ -13,11 +13,11 @@ import { actions } from "./app-state.js";
 
 export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefinedState, createRegionInteraction }) {
   let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
-  
+
   return (
     <>
     <Row>
-      <Col className="state-container">
+      <Col className="state-container" xs={8}>
         { userDefinedStates.map(s=> (
             <DropdownButton
               variant="outline-dark" size="sm" id="dropdown-basic-button"
@@ -62,28 +62,31 @@ function CreateRegionPane({ uiState, dispatch, tmpUserDefinedState, createRegion
     setRegionName(e.target.value);
     createRegionInteraction.setName(e.target.value);
   };
-  let handleSubmit = () => dispatch(actions.commitTempState());
-  let handleCancel = () => dispatch(actions.cancelCreateRegion());
+  let handleSubmit = () => {
+    dispatch(actions.commitTempState());
+    setRegionName("");
+  };
+  let handleCancel = () => {
+    dispatch(actions.cancelCreateRegion());
+    setRegionName("");
+  };
 
   return (
-    <Row className="mt-3">
+    <Row className="pb-2">
     <Col></Col>
-    <Col xs={4} className="debug p-3"><Row>
-      <Col>
-        <Form>
-          <Form.Group className="mb-3" controlId="formNewRegionName">
-            <Form.Label>Region Name: </Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="My Region"
-              value={regionName}
-              onChange={handleChange}
-            />
-          </Form.Group>
-        </Form>
-      </Col>
-      <Col>
-      <Form>
+    <Col xs={5} className="p-1">
+      <Form className="form-horizontal">
+      <Form.Group as={Row}>
+        <Col>
+          <Form.Control
+            type="text"
+            placeholder="Region Name"
+            value={regionName}
+            onChange={handleChange}
+            className="mt-1"
+          />
+        </Col>
+        <Col>
           <Button
             variant="outline-dark"
             size="md"
@@ -92,17 +95,17 @@ function CreateRegionPane({ uiState, dispatch, tmpUserDefinedState, createRegion
             disabled={!tmpUserDefinedState || tmpUserDefinedState.name === ""}
           >
             Done
-          </Button>{" "}
-          <br />
+          </Button>
           <Button
             variant="outline-dark"
             className="m-1"
             size="md" onClick={handleCancel}>
             Cancel
           </Button>
-        </Form>
         </Col>
-      </Row></Col>
+      </Form.Group>
+      </Form>
+    </Col>
     <Col></Col>
     </Row>
   );

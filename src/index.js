@@ -98,17 +98,13 @@ function App() {
   let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
   let PageHeader = () => (
-    <Navbar bg="light" expand="lg">
+    <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
         <Navbar.Brand >Octave</Navbar.Brand>
           <Nav className="justify-content-end">
             <Nav.Link> Upload Data </Nav.Link>
             <Navbar.Text>|</Navbar.Text>
-            <Nav.Link> New State </Nav.Link>
-            <Navbar.Text>|</Navbar.Text>
-            <Nav.Link> Existing States </Nav.Link>
-            <Navbar.Text>|</Navbar.Text>
-            <Nav.Link> Create Summary </Nav.Link>
+            <Nav.Link> Export Data </Nav.Link>
           </Nav>
       </Container>
     </Navbar>
@@ -117,9 +113,12 @@ function App() {
   return (
     <>
     <PageHeader />
-    <Container bg="light">
+    <Container fluid className="bg-doob">
+    <Container>
     <StateView {...stateViewProps} />
     </Container>
+    </Container>
+    <Container fluid className="bg-light">
 
     <div className="main-container">
     <ReflexContainer orientation="vertical">
@@ -140,6 +139,7 @@ function App() {
       </ReflexElement>
     </ReflexContainer>
     </div>
+    </Container>
     </>
     );
 }
