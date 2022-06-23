@@ -42,7 +42,7 @@ export function VizView({
       if (!vizData) return;
       svgCoordMapping.current = getSvgCoordMapping(vizData, svgWidth, svgHeight);
     },
-    /*dependencies=*/ [vizData, dimensions]
+    /*dependencies=*/ [vizData, svgWidth, svgHeight]
   );
 
   // Function to update the SVG.

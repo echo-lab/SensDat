@@ -5,7 +5,6 @@ import { FixedSizeList } from "react-window";
 
 import Tab from "react-bootstrap/Tab";
 import Tabs from 'react-bootstrap/Tabs';
-import Table from 'react-bootstrap/Table';
 
 import { actions } from "./app-state.js";
 import {SummaryTable} from "./summary-table.js";

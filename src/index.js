@@ -4,9 +4,7 @@ import "./index.css";
 import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
-import { SummaryView } from "./summary-view.js";
 import { DataTable } from "./data-table.js";
-import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
 
 import Container from 'react-bootstrap/Container';
@@ -90,12 +88,7 @@ function App() {
     dispatch,
   };
 
-  let summaryViewProps = {
-    userDefinedStates: state.userDefinedStates,
-    dispatch,
-  };
-
-  let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
+  // let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
