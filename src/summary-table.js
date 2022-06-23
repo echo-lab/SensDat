@@ -1,3 +1,5 @@
+import Table from 'react-bootstrap/Table';
+
 // Accessor for the index row. Probably should live in the DataTable object.
 const INDEX = "Order";
 
@@ -7,7 +9,7 @@ export function SummaryTable({table, state, highlightFn}) {
   let [cols, rows] = getBreakdownByTF(table, state);
 
   return (
-    <table role="table">
+    <Table hover>
       <thead>
         <tr role="row">
           {cols.map((col, idx) => (
@@ -43,7 +45,7 @@ export function SummaryTable({table, state, highlightFn}) {
             </tr>
           ))}
       </tbody>
-    </table>
+    </Table>
   );
 }
 
