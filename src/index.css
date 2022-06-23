@@ -67,6 +67,14 @@ body {
   border-color: grey;
 }
 
+div .tr:hover:not(.table-header) {
+  background-color: rgba(33, 37, 41, 0.075);
+}
+
+.tr {
+  cursor: default;
+}
+
 .modal-background {
   position: fixed;
   z-index: 1;

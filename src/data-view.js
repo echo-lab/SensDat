@@ -22,7 +22,7 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
         className="m-3"
       >
         <Tab eventKey="BASE_TABLE" title="Base Table">
-          <VirtualizedTable dataTable={dataTable} />
+          <VirtualizedTable dataTable={dataTable} highlightFn={highlightFn} />
         </Tab>
         {
           summaryTables.map(st=>
@@ -45,7 +45,7 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-function VirtualizedTable({ dataTable }) {
+function VirtualizedTable({ dataTable, highlightFn }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -77,6 +77,8 @@ function VirtualizedTable({ dataTable }) {
       prepareRow(row);
       return (
         <div
+          onMouseEnter={()=>highlightFn([row.original.Order, row.original.Order])}
+          onMouseLeave={()=>highlightFn(null)}
           {...row.getRowProps({
             style,
           })}
@@ -92,7 +94,7 @@ function VirtualizedTable({ dataTable }) {
         </div>
       );
     },
-    [prepareRow, rows]
+    [prepareRow, rows, highlightFn]
   );
 
   return (
@@ -100,7 +102,7 @@ function VirtualizedTable({ dataTable }) {
         <div {...getTableProps()} className="table">
           <div>
             {headerGroups.map((headerGroup) => (
-              <div {...headerGroup.getHeaderGroupProps()} className="tr">
+              <div {...headerGroup.getHeaderGroupProps()} className="tr table-header">
                 {headerGroup.headers.map((column) => (
                   <div {...column.getHeaderProps()} className="th">
                     {column.render("Header")}
