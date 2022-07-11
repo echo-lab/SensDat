@@ -226,10 +226,12 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
     // });
 
   // Draw the current regions
-  svg
-    .selectAll("regionStates")
+  let regions = svg.selectAll("regionStates")
     .data(userDefinedStates.filter(s=>s instanceof EllipseRegion))
     .enter()
+    .append("g");
+
+  regions
     .append("ellipse")
     .style("stroke", "black")
     .style("fill-opacity", 0.0)
@@ -237,6 +239,13 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
     .attr("cy", d=>latToY(d.cy))
     .attr("rx", d=>Math.abs(longToX(d.cx+d.rx) - longToX(d.cx)))
     .attr("ry", d=>Math.abs(latToY(d.cy+d.ry) - latToY(d.cy)));
+
+  regions.append("text")
+      .attr("x", d=>longToX(d.cx))
+      .attr("y", d=>latToY(d.cy+d.ry))
+      .attr("text-anchor", "middle")
+      .attr("dy", "-.35em")
+      .text(d=>d.name);
 
   return dots;
 }
