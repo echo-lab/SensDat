@@ -18,7 +18,24 @@ div.debug {
 .main-container {
   height: 720px;
   margin-top: 10px;
+  border: solid 2px black;
+  padding: 15px;
+  padding-bottom: 25px;
 }
+
+.SMWidget {
+  cursor: pointer;
+}
+
+.unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 
 html, body, #root, #app, #app>div {
   width: 100%;
@@ -73,6 +90,10 @@ div .tr:hover:not(.table-header) {
 
 .tr {
   cursor: default;
+}
+
+.table {
+  font-size: small;
 }
 
 .modal-background {

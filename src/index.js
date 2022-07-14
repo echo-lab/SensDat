@@ -5,6 +5,8 @@ import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { DataTable } from "./data-table.js";
+import { CompoundStatePane } from "./compound-state-pane.js";
+import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
 
 import Container from 'react-bootstrap/Container';
@@ -88,6 +90,12 @@ function App() {
     dispatch,
   };
 
+  let compoundStatePaneProps = {
+    userDefinedStates: state.userDefinedStates,
+    dataTable: state.dataTable,
+    dispatch
+  };
+
   // let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
   let PageHeader = () => (
@@ -127,8 +135,14 @@ function App() {
       <ReflexSplitter/>
       <ReflexElement className="right-pane"
         minSize="100"
+        propagateDimensions={true}
+        propagateDimensionsRate={200}
       >
-        <DataView {...dataViewProps} />
+        {
+            state.uiState !== UIState.CreateCompound ?
+            <DataView {...dataViewProps} /> :
+            <CompoundStatePane {...compoundStatePaneProps} />
+        }
       </ReflexElement>
     </ReflexContainer>
     </div>

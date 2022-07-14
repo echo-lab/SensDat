@@ -72,8 +72,11 @@ export function VizView({
     () => {
       if (!d3Dots.current || !highlightedPoints) return;
 
-      let [lo, hi] = highlightedPoints;
-      let matches = d3Dots.current.filter(d=>(lo <= d.Order && d.Order <= hi));
+      // let [lo, hi] = highlightedPoints;
+      // let withinBounds = d=>highlightedPoints.some(([lo, hi])=> lo <= d.Order && d.Order <= hi);
+      let matches = d3Dots.current
+        .filter(d=>highlightedPoints.some(
+          ([lo, hi])=>(lo <= d.Order && d.Order <= hi)));
       matches.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").attr("r", 3.5).raise();
 
       return () => {
@@ -107,13 +110,8 @@ export function VizView({
     margin: 50
   };
 
-  // Lol - this is probably a bad way to do it... Maybe should pull out
-  // the class name 'def-visible' as a constant somewhere.
-  let classNames =
-    "viz-container debug" + (uistate.showViz() ? " def-visible" : "");
-
   return (
-    <div className={classNames}>
+    <div className="viz-container debug def-visible">
       <svg ref={svgRef} style={svgStyle}></svg>
       <div style={sliderDivStyle}>
         <p>Timespan</p>

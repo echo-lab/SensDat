@@ -144,6 +144,13 @@ actionHandlers["cancelCreateRegion"] = (state, payload) => {
   };
 };
 
+actionHandlers["startCreateCompoundState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.CreateCompound,
+  };
+}
+
 actionHandlers["createTempState"] = (state, {userDefinedState}) => {
   // return a new DataTable with the temp state column.
   // Note: clobbers any existing temp columns (!)

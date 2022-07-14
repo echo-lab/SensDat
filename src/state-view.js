@@ -13,15 +13,35 @@ import { actions } from "./app-state.js";
 
 export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefinedState, createRegionInteraction }) {
   let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
+  let handleCreateTimespan = () => {};
+  let handleCreateCompoundState = () => dispatch(actions.startCreateCompoundState());
 
   return (
     <>
     <Row>
       <Col className="state-container" xs={8}>
+        <DropdownButton
+          variant="outline-primary" size="sm" id="dropdown-basic-button"
+          title="+ New State" className="mx-2"
+        >
+          <Dropdown.Item onClick={handleCreateRegion}>
+            Region
+          </Dropdown.Item>
+          <Dropdown.Item onClick={handleCreateTimespan}>
+            Timespan
+          </Dropdown.Item>
+          <Dropdown.Item onClick={handleCreateCompoundState}>
+            Compound
+          </Dropdown.Item>
+        </DropdownButton>
         { userDefinedStates.map(s=> (
             <DropdownButton
-              variant="outline-dark" size="sm" id="dropdown-basic-button"
-              title={s.name} className="mx-2"
+              variant="outline-dark"
+              size="sm"
+              id="dropdown-basic-button"
+              key={s.id}
+              title={s.name}
+              className="mx-2"
             >
               <Dropdown.Item
                 onClick={()=>dispatch(actions.createSummary(s.id))}>
@@ -30,16 +50,6 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
             </DropdownButton>
           ))
         }
-        <DropdownButton
-          variant="outline-primary" size="sm" id="dropdown-basic-button"
-          title="+ New State" className="mx-2"
-        >
-          <Dropdown.Item onClick={handleCreateRegion}>
-            Region
-          </Dropdown.Item>
-          <Dropdown.Item href="#/action-2">Timespan</Dropdown.Item>
-          <Dropdown.Item href="#/action-3">Compound</Dropdown.Item>
-        </DropdownButton>
       </Col>
     </Row>
     <CreateRegionPane

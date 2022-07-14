@@ -23,9 +23,9 @@ export function SummaryTable({table, state, highlightFn}) {
         {rows.map((row, idx) => (
             <tr
               role="row" key={idx}
-              onClick={()=>highlightFn(row.pointsRange)}
-              onMouseEnter={()=>highlightFn(row.pointsRange)}
-              onMouseLeave={()=>highlightFn(null)}
+              onClick={()=>highlightFn([row.pointsRange])}
+              onMouseEnter={()=>highlightFn([row.pointsRange])}
+              onMouseLeave={()=>highlightFn([])}
             >
               {cols.map(({accessor}, idx)=> {
                 if (!row[accessor]) return null;

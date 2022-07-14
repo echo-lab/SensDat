@@ -76,8 +76,8 @@ function VirtualizedTable({ dataTable, highlightFn }) {
       prepareRow(row);
       return (
         <div
-          onMouseEnter={()=>highlightFn([row.original.Order, row.original.Order])}
-          onMouseLeave={()=>highlightFn(null)}
+          onMouseEnter={()=>highlightFn([[row.original.Order, row.original.Order]])}
+          onMouseLeave={()=>highlightFn([])}
           {...row.getRowProps({
             style,
           })}
