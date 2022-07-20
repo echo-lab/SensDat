@@ -295,7 +295,7 @@ function StateMachineWidget({
               markerUnits="strokeWidth"
               markerWidth="3" markerHeight="3"
               orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="black"/>
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="green"/>
         </marker>
       </defs>
       {
@@ -344,7 +344,7 @@ function StateNode({cx, cy, r, states, stateValues, isSelected, onSelect}) {
         style={
           {
             fill: "white",
-            stroke: "black",
+            stroke: isSelected ? "green" : "black",
             strokeWidth: isSelected ? 5 : 1,
           }
         }
@@ -450,7 +450,7 @@ function ArrowTo({p1, p2, isSelected, onSelect}) {
   return (
     <path
       fill="none"
-      stroke={isSelected ? "black" : "grey"}
+      stroke={isSelected ? "green" : "grey"}
       strokeWidth={isSelected ? "6px" : "4px"}
       onClick={onSelect}
       markerEnd={isSelected ? "url(#selectedtriangle)" : "url(#triangle)"}

@@ -1,4 +1,5 @@
 import Table from 'react-bootstrap/Table';
+import Button from 'react-bootstrap/Button';
 
 // Accessor for the index row. Probably should live in the DataTable object.
 const INDEX = "Order";
@@ -17,6 +18,14 @@ export function SummaryTable({table, state, highlightFn}) {
               {col.Header}
             </th>
           ))}
+          <th role="columnheader" class="add-col">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              id="new-agg-col">
+            +
+            </Button>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -42,6 +51,7 @@ export function SummaryTable({table, state, highlightFn}) {
                   </td>
                 );
               })}
+              <td role="cell" class="add-col"></td>
             </tr>
           ))}
       </tbody>
