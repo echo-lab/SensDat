@@ -5,6 +5,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Modal from 'react-bootstrap/Modal';
 
 import { actions } from "./app-state.js";
 import { CompoundState } from "./states/compound-state.js";
@@ -46,7 +47,8 @@ export function CompoundStatePane(
     chosenStates,
     dimensions,
     dataTable,
-    dispatch
+    dispatch,
+    goBack: ()=>setStep(CHOOSE_STATES),
   };
 
   return (
@@ -76,6 +78,7 @@ function PickTwoStates(
           label={s.name}
           key={s.id}
           onClick={toggleChosenState(s)}
+          defaultChecked={chosenStates.includes(s)}
           disabled={!chosenStates.includes(s) && chosenStates.length >= 2}
         />
       ))}
@@ -94,12 +97,13 @@ function PickTwoStates(
 }
 
 function DefineCompoundStateScreen({
-  chosenStates, dimensions, dataTable, dispatch
+  chosenStates, dimensions, dataTable, dispatch, goBack
 }) {
   // NOTE: must reset if dataTable or chosenStates changes.
   // Or like... if we come back to this screen after being absent?
   let [compoundState, setCompoundState] = useState(new CompoundState(...chosenStates, [], []));
   let [selectedNodes, selectedEdges] = [compoundState.nodes, compoundState.edges];
+  let [showModal, setShowModal] = useState(false);
 
   useEffect(()=>{
     setCompoundState(new CompoundState(...chosenStates, [], []));
@@ -121,6 +125,19 @@ function DefineCompoundStateScreen({
 
   let toggleNode = node => setCompoundState(compoundState.toggleNode(node));
   let toggleEdge = edge => setCompoundState(compoundState.toggleEdge(edge));
+
+  let onGoBack = () => {
+    goBack();
+    dispatch(actions.highlightPoints([]));
+  };
+
+  let onCloseModal = () => {
+    setShowModal(false);
+  };
+
+  let commitNewState = (name) => {
+    dispatch(actions.createCompoundState(compoundState.withName(name)));
+  };
 
   // Need all da data PLUS which two states were chosen.
   // Need to recalculate everything each time the data/chosen states change.
@@ -145,6 +162,7 @@ function DefineCompoundStateScreen({
   };
 
   return (
+    <>
     <Container>
       <h2 className="text-center"> Create Compound State </h2>
       <Row>
@@ -155,12 +173,62 @@ function DefineCompoundStateScreen({
       <Row>
         <Col />
         <Col xs={6} className="text-center">
-          <Button variant="primary" sz="lg" className="mx-2">Back</Button>
-          <Button variant="primary" sz="lg" className="mx-2">Create State</Button>
+          <Button variant="primary" sz="lg" className="mx-2" onClick={onGoBack}>Back</Button>
+          <Button variant="primary" sz="lg" className="mx-2" onClick={()=>setShowModal(true)}>Create State</Button>
         </Col>
         <Col />
       </Row>
     </Container>
+    <StateNameModal show={showModal} onClose={onCloseModal} commit={commitNewState} />
+    </>
+  );
+}
+
+function StateNameModal({show, onClose, commit}) {
+  let [stateName, setStateName] = useState("");
+
+  let closeFn = () => {
+    setStateName("");
+    onClose();
+  };
+
+  let onChange = (e) => {
+    let name = e.target.value;
+    if (name.length <= 20) setStateName(name);
+  };
+
+  let onSubmit = () => commit(stateName);
+
+  return (
+    <Modal show={show} onHide={closeFn}>
+      <Modal.Header closeButton>
+        <Modal.Title>Name your new state</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form className="form-horizontal">
+          <Form.Control
+            as="input"
+            type="text"
+            placeholder="Compound State Name"
+            htmlSize="10"
+            value={stateName}
+            onChange={onChange}
+          />
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={closeFn}>
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={onSubmit}
+          disabled={stateName === ""}
+        >
+          Create Compound State
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 

@@ -149,6 +149,15 @@ actionHandlers["startCreateCompoundState"] = (state, payload) => {
     ...state,
     uiState: UIState.CreateCompound,
   };
+};
+
+actionHandlers["createCompoundState"] = (state, compoundState) => {
+  return {
+    ...state,
+    userDefinedStates: state.userDefinedStates.concat(compoundState),
+    dataTable: state.dataTable.withTempState(compoundState).withCommittedTempState(),
+    uiState: UIState.Default,
+  };
 }
 
 actionHandlers["createTempState"] = (state, {userDefinedState}) => {

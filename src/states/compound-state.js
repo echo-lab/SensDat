@@ -18,6 +18,12 @@ export class CompoundState {
     this.id = uid();
   }
 
+  withName(name) {
+    let res = new CompoundState(...this.states, this.nodes, this.edges);
+    res.name = name;
+    return res;
+  }
+
   toggleNode(node) {
     let nodes = this.nodes.includes(node) ? this.nodes.filter(x=>x!==node) : [...this.nodes, node];
     return new CompoundState(...this.states, nodes, this.edges);
@@ -29,7 +35,10 @@ export class CompoundState {
   }
 
   getValues(rows) {
-    return getChosenPoints(rows, this.states, this.nodes, this.edges);
+    let truePoints = getChosenPoints(rows, this.states, this.nodes, this.edges);
+    return rows.map(row => {
+      return "" + truePoints.some(([lo, hi]) => lo <= row[INDEX] && row[INDEX] <= hi);
+    });
   }
 
   // Helper functions for CompoundStatePane
