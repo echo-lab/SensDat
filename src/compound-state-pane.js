@@ -232,6 +232,46 @@ function StateNode({cx, cy, r, states, stateValues, isSelected, onSelect}) {
   let [v1, v2] = stateValues;
   let m = {"T": "TRUE", "F": "FALSE"};
 
+  let innerText;
+  if (m[v1] === "TRUE" && m[v2] === "TRUE") {
+    innerText = (
+      <>
+      <tspan x={cx} dy="-1.0em">
+        {s1.name}
+      </tspan>
+      <tspan x={cx} dy="1.5em">
+        AND
+      </tspan>
+      <tspan x={cx} dy="1.5em">
+        {s2.name}
+      </tspan>
+      </>
+    );
+  } else if (m[v1] !== m[v2]) {
+    innerText = (
+        <tspan x={cx} dy="0.3em" >
+          {m[v1] === "TRUE" ? s1.name : s2.name}
+        </tspan>
+      );
+  } else {
+    innerText = (
+      <>
+      <tspan x={cx} dy="-1.9em">
+        NEITHER
+      </tspan>
+      <tspan x={cx} dy="1.4em">
+        {s1.name}
+      </tspan>
+      <tspan x={cx} dy="1.4em">
+        NOR
+      </tspan>
+      <tspan x={cx} dy="1.4em">
+        {s2.name}
+      </tspan>
+      </>
+    );
+  }
+
   return (
     <>
       <rect
@@ -254,12 +294,7 @@ function StateNode({cx, cy, r, states, stateValues, isSelected, onSelect}) {
         onClick={onSelect}
         x={cx} y={cy}
       >
-        <tspan x={cx} dy="-0.25em" >
-          {`${s1.name}: ${m[v1]}`}
-        </tspan>
-        <tspan x={cx} dy="1.5em">
-          {`${s2.name}: ${m[v2]}`}
-        </tspan>
+        {innerText}
       </text>
     </>
   );
