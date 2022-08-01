@@ -18,13 +18,13 @@ export class EllipseRegion {
     return new EllipseRegion(...this.params, name);
   }
 
-  containsPoint(x, y) {
+  _containsPoint(x, y) {
     let [[cx, cy], rx, ry] = this.params;
     return (x-cx)*(x-cx)/(rx*rx) + (y-cy)*(y-cy)/(ry*ry) <= 1;
   }
 
   getValues(rows) {
-    return rows.map(row => String(this.containsPoint(row.Longitude, row.Latitude)));
+    return rows.map(row => String(this._containsPoint(row.Longitude, row.Latitude)));
   }
 
   asObject() {

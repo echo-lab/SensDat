@@ -18,7 +18,7 @@ export function SummaryTable({table, state, highlightFn}) {
               {col.Header}
             </th>
           ))}
-          <th role="columnheader" class="add-col">
+          <th role="columnheader" className="add-col">
             <Button
               variant="outline-primary"
               size="sm"
@@ -51,7 +51,7 @@ export function SummaryTable({table, state, highlightFn}) {
                   </td>
                 );
               })}
-              <td role="cell" class="add-col"></td>
+              <td role="cell" className="add-col"></td>
             </tr>
           ))}
       </tbody>

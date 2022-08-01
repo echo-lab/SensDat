@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
@@ -7,105 +7,15 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
 import { actions } from "./app-state.js";
+import { CompoundState } from "./states/compound-state.js";
 
 // Define different steps. This is a lazy enum lol.
 const CHOOSE_STATES = 1;
 const DEFINE_COMPOUND_STATE = 2;
 
-// lol - should really move this into DataTable...
-const INDEX = "Order";
-
 // Variables controlling how the nodes look.
 const NODE_WIDTH = 200;
 const NODE_HEIGHT = 100;
-
-// Helper functions
-// TODO: Separate out the logic here: there's UI and SM logic...
-const stateToString = ([s1, s2]) => `${s1 === "true" ? "T" : "F"}${s2 === "true" ? "T" : "F"}`;
-
-function summarizeByStates(dt, [s1, s2]) {
-  let res = [];
-  for (let row of dt.rows) {
-    let s = stateToString([row[s1.id], row[s2.id]]);
-    if (res.length > 0 && res.at(-1).state === s) {
-      res.at(-1).range[1] = row[INDEX];
-      continue;
-    }
-    res.push({
-      state: s,
-      range: [row[INDEX], row[INDEX]],
-    });
-  }
-  return res;
-}
-
-// lol, sloppppppy sloppy
-function getChosenPoints(dt, states, selectedNodes, selectedEdges) {
-  let sumTable = summarizeByStates(dt, states);
-
-  if (selectedEdges.length === 0) {
-    return sumTable
-      .filter(({state})=>selectedNodes.includes(state))
-      .map(({range})=>range);
-  }
-
-  if (selectedNodes.length !== 1 || selectedEdges.length > 2) {
-    return [];
-  }
-
-  let node = selectedNodes[0];
-
-  let prevState = null;
-  let nextState = null;
-
-  for (let e of selectedEdges) {
-    let [u, v] = [e.substring(0, 2), e.substring(2, 4)];
-    if (u === node) {
-      if (nextState) return [];
-      nextState = v;
-    } else if (v === node) {
-      if (prevState) return [];
-      prevState = u;
-    } else {
-      return [];
-    }
-  }
-
-  let res = [];
-  sumTable.forEach(({state, range}, i) => {
-    if (state !== node) return;
-    if (prevState &&
-      (i === 0 || sumTable[i-1].state !== prevState)) {
-        return;
-    }
-    if (nextState &&
-      (i+1 === sumTable.length || sumTable[i+1].state !== nextState)) {
-        return;
-    }
-    res.push(range);
-  });
-  return res;
-}
-
-function getExistingNodesAndEdges(dt, states) {
-  let [existingNodes, existingEdges] = [[], []];
-  let summary = summarizeByStates(dt, states);
-
-  summary.forEach(({state, range}, i)=>{
-    if (!existingNodes.includes(state)) {
-      existingNodes.push(state);
-    }
-
-    if (i+1 === summary.length) return;
-
-    let edge = `${state}${summary[i+1].state}`;
-    if (!existingEdges.includes(edge)) {
-      existingEdges.push(edge);
-    }
-  });
-
-  return { existingNodes, existingEdges };
-}
 
 export function CompoundStatePane(
   {dimensions, userDefinedStates, dispatch, dataTable}) {
@@ -173,7 +83,7 @@ function PickTwoStates(
         variant="primary"
         sz="lg"
         onClick={advanceStep}
-        disabled={chosenStates.length != 2}
+        disabled={chosenStates.length !== 2}
       >
         Next
       </Button>
@@ -188,39 +98,29 @@ function DefineCompoundStateScreen({
 }) {
   // NOTE: must reset if dataTable or chosenStates changes.
   // Or like... if we come back to this screen after being absent?
-  let [selectedNodes, setSelectedNodes] = useState([]);
-  let [selectedEdges, setSelectedEdges] = useState([]);
+  let [compoundState, setCompoundState] = useState(new CompoundState(...chosenStates, [], []));
+  let [selectedNodes, selectedEdges] = [compoundState.nodes, compoundState.edges];
 
   useEffect(()=>{
-    let pts = getChosenPoints(
-      dataTable, chosenStates, selectedNodes, selectedEdges);
+    setCompoundState(new CompoundState(...chosenStates, [], []));
+    // TODO: ALSO: set the possible states...??
+  }, [dataTable, chosenStates]);
+
+  // TODO: Some of this can be memoized and sped up :D
+  let [existingNodes, existingEdges] = compoundState.getPossibleNodesAndEdges(dataTable);
+
+  useEffect(()=>{
+    let pts = compoundState.getChosenPoints(dataTable);
     dispatch(actions.highlightPoints(pts));
-  }, [dataTable, chosenStates, selectedNodes, selectedEdges]);
+  }, [dataTable, compoundState, dispatch]);
 
   const svgWidth = (dimensions.width * 0.97) || 500;
   const svgHeight = (dimensions.height * 0.9 - 50) || 300;
 
-  if (chosenStates.length != 2) return null;
+  if (chosenStates.length !== 2) return null;
 
-  let toggleNode = node => {
-    if (selectedNodes.includes(node)) {
-      setSelectedNodes(selectedNodes.filter(x=>x!==node));
-    } else {
-      setSelectedNodes([...selectedNodes, node]);
-    }
-  };
-
-  let toggleEdge = edge => {
-    if (selectedEdges.includes(edge)) {
-      setSelectedEdges(selectedEdges.filter(x=>x!==edge));
-    } else {
-      setSelectedEdges([...selectedEdges, edge]);
-    }
-  };
-
-  // TODO: Some of this can be memoized and sped up :D
-  let {existingNodes, existingEdges} =
-    getExistingNodesAndEdges(dataTable, chosenStates);
+  let toggleNode = node => setCompoundState(compoundState.toggleNode(node));
+  let toggleEdge = edge => setCompoundState(compoundState.toggleEdge(edge));
 
   // Need all da data PLUS which two states were chosen.
   // Need to recalculate everything each time the data/chosen states change.
