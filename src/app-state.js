@@ -151,6 +151,13 @@ actionHandlers["startCreateCompoundState"] = (state, payload) => {
   };
 };
 
+actionHandlers["cancelCreateCompoundState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+  };
+}
+
 actionHandlers["createCompoundState"] = (state, compoundState) => {
   return {
     ...state,

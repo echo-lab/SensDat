@@ -40,6 +40,7 @@ export function CompoundStatePane(
     userDefinedStates,
     chosenStates,
     toggleChosenState,
+    onCancel: ()=>dispatch(actions.cancelCreateCompoundState(null)),
     advanceStep: ()=>setStep(DEFINE_COMPOUND_STATE),
   };
 
@@ -53,28 +54,30 @@ export function CompoundStatePane(
 
   return (
     <Container>
-    <div className="compound-state-container debug def-visible">
+    <h2 className="text-center"> Create Compound State </h2>
       { step === CHOOSE_STATES ? (
         <PickTwoStates {...pickTwoStatesProps} />
       ) : (
         <DefineCompoundStateScreen {...defineCompoundStateProps} />
       )
       }
-    </div>
     </Container>
   );
 }
 
 function PickTwoStates(
-  {userDefinedStates, chosenStates, toggleChosenState, advanceStep}) {
+  {userDefinedStates, chosenStates, toggleChosenState, advanceStep, onCancel}) {
   return (
+    <Container className="p-3">
+    <Row>
+    <hr />
     <Form>
-      <h3> Choose two states: </h3>
-      <div className="mb-3">
+      <h4 className="mb-3"> Choose two states: </h4>
       {userDefinedStates.map(s=> (
         <Form.Check
           type="checkbox"
           id="choose-two-states"
+          className="mb-1"
           label={s.name}
           key={s.id}
           onClick={toggleChosenState(s)}
@@ -83,6 +86,15 @@ function PickTwoStates(
         />
       ))}
       <Button
+        className="mt-3"
+        variant="outline-secondary"
+        sz="lg"
+        onClick={onCancel}
+      >
+        Cancel
+      </Button>
+      <Button
+        className="mt-3 mx-3"
         variant="primary"
         sz="lg"
         onClick={advanceStep}
@@ -90,9 +102,9 @@ function PickTwoStates(
       >
         Next
       </Button>
-
-      </div>
     </Form>
+    </Row>
+    </Container>
   );
 }
 
@@ -118,8 +130,10 @@ function DefineCompoundStateScreen({
     dispatch(actions.highlightPoints(pts));
   }, [dataTable, compoundState, dispatch]);
 
-  const svgWidth = (dimensions.width * 0.97) || 500;
-  const svgHeight = (dimensions.height * 0.9 - 50) || 300;
+  // Somehow, this plus the viewBox attribute means the SVG scales properly
+  // if we make it really small...
+  const svgWidth = Math.max((dimensions.width * 0.97) || 500, 400);
+  const svgHeight = Math.max((dimensions.height * 0.9 - 50) || 300, 240);
 
   if (chosenStates.length !== 2) return null;
 
@@ -164,9 +178,12 @@ function DefineCompoundStateScreen({
   return (
     <>
     <Container>
-      <h2 className="text-center"> Create Compound State </h2>
-      <Row>
-      <svg style={svgStyle} className="mb-3" xmlns="http://www.w3.org/2000/svg">
+      <Row className="text-center">
+      <svg
+        style={svgStyle}
+        className="mb-3"
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        xmlns="http://www.w3.org/2000/svg">
         <StateMachineWidget {...stateMachineProps} />
       </svg>
       </Row>
