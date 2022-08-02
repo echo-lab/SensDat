@@ -7,4 +7,8 @@ export class UIState {
   constructor(name) {
     this.name = name;
   }
+
+  statePaneDisabled() {
+    return this === UIState.CreateCompound;
+  }
 }

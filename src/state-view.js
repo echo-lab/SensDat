@@ -23,6 +23,7 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
         <DropdownButton
           variant="outline-primary" size="sm" id="dropdown-basic-button"
           title="+ New State" className="mx-2"
+          disabled={uiState.statePaneDisabled()}
         >
           <Dropdown.Item onClick={handleCreateRegion}>
             Region
@@ -42,6 +43,7 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
               key={s.id}
               title={s.name}
               className="mx-2"
+              disabled={uiState.statePaneDisabled()}
             >
               <Dropdown.Item
                 onClick={()=>dispatch(actions.createSummary(s.id))}>
