@@ -42,6 +42,8 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
               id="dropdown-basic-button"
               key={s.id}
               title={s.name}
+              onMouseEnter={()=>dispatch(actions.highlightPointsForState(s))}
+              onMouseLeave={()=>dispatch(actions.highlightPoints([]))}
               className="mx-2"
               disabled={uiState.statePaneDisabled()}
             >

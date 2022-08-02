@@ -10,11 +10,11 @@ const TEST_DATA = [
 );
 
 const COL_TYPES = Object.freeze({
-    INDEX:   Symbol("index"),       // not used
-    X:  Symbol("x"),                // not used
-    Y: Symbol("y"),                 // not used
-    STATE: Symbol("state"),         // represents a user-defined T-F state
-    STATE_TMP: Symbol("state_tmp")  // represents a temporary state
+    INDEX:   "index",       // not used
+    X:  "x",                // not used
+    Y: "y",                 // not used
+    STATE: "state",         // represents a user-defined T-F state
+    STATE_TMP: "state_tmp"  // represents a temporary state
 });
 
 export class DataTable {
@@ -36,6 +36,7 @@ export class DataTable {
       accessor: key,
       type: colTypes[key],
     }));
+    this.stateToTrueRanges = {};
 
     this.cacheVizData();
   }
@@ -97,12 +98,36 @@ export class DataTable {
 
     let result = this.copy();
     result.cols = result.cols.map(col => {
-      if (col.type === COL_TYPES.STATE_TMP) {
-        col.type = COL_TYPES.STATE;
-      }
+      col.type = col.type === COL_TYPES.STATE_TMP ? COL_TYPES.STATE : col.type;
       return col;
     });
+    result.cacheStateData();
     return result;
+  }
+
+  cacheStateData() {
+    for (let col of this.cols) {
+      if (col.type !== COL_TYPES.STATE) continue;
+      this.stateToTrueRanges[col.accessor] = this.getTrueRanges(col.accessor);
+    }
+  }
+
+  getTrueRanges(stateID) {
+    if (!this.cols.some(c=>c.accessor === stateID)) return [];
+    if (this.stateToTrueRanges.hasOwnProperty(stateID)) return this.stateToTrueRanges[stateID];
+
+    let res = [];
+    for (let row of this.rows) {
+      if (row[stateID] !== "true") continue;
+      let i = row.Order;
+      if (res.length === 0 || res.at(-1)[1] !== i-1) {
+        res.push([i, i]);
+      } else {
+        res.at(-1)[1] = i;
+      }
+    }
+    this.stateToTrueRanges[stateID] = res;
+    return res;
   }
 
   get length() {
@@ -129,6 +154,7 @@ export class DataTable {
     res.rows = this.rows;
     res.cols = this.cols;
     res.vizData = this.vizData;
+    res.stateToTrueRanges = this.stateToTrueRanges;
     return res;
   }
 
@@ -140,7 +166,9 @@ export class DataTable {
     let res = new DataTable();
     res.rows = o.rows;
     res.cols = o.cols;
+    res.stateToTrueRanges = {};
     res.cacheVizData();
+    res.cacheStateData();
     return res;
   }
 

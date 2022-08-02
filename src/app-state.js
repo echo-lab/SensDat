@@ -224,6 +224,14 @@ actionHandlers["highlightPoints"] = (state, pointsRange) => ({
   },
 });
 
+actionHandlers["highlightPointsForState"] = (state, userState) => ({
+  ...state,
+  vizState: {
+    ...state.vizState,
+    highlightedPoints: state.dataTable.getTrueRanges(userState.id),
+  }
+});
+
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
 // which takes a payload and returns an action object which can be used w/ React's `dispatch`
 // function. So: you can do something like: dispatch(actions.loadTable(myTable));
