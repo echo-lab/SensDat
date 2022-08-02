@@ -109,7 +109,7 @@ actionHandlers["loadState"] = (state, serializedState) => {
 // payload: a valid DataTable object.
 actionHandlers["loadTable"] = (state, payload) => {
   return {
-    ...state,
+    ...initialState,  // Reset to the original state
     dataTable: payload,
     uiState: UIState.Default,
   };

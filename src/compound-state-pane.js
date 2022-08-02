@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
@@ -114,8 +114,9 @@ function DefineCompoundStateScreen({
   // NOTE: must reset if dataTable or chosenStates changes.
   // Or like... if we come back to this screen after being absent?
   let [compoundState, setCompoundState] = useState(new CompoundState(...chosenStates, [], []));
-  let [selectedNodes, selectedEdges] = [compoundState.nodes, compoundState.edges];
   let [showModal, setShowModal] = useState(false);
+  let [selectedNodes, selectedEdges] = [compoundState.nodes, compoundState.edges];
+  let pts = useRef([]);
 
   useEffect(()=>{
     setCompoundState(new CompoundState(...chosenStates, [], []));
@@ -126,8 +127,8 @@ function DefineCompoundStateScreen({
   let [existingNodes, existingEdges] = compoundState.getPossibleNodesAndEdges(dataTable);
 
   useEffect(()=>{
-    let pts = compoundState.getChosenPoints(dataTable);
-    dispatch(actions.highlightPoints(pts));
+    pts.current = compoundState.getChosenPoints(dataTable);
+    dispatch(actions.highlightPoints(pts.current));
   }, [dataTable, compoundState, dispatch]);
 
   // Somehow, this plus the viewBox attribute means the SVG scales properly
@@ -191,7 +192,15 @@ function DefineCompoundStateScreen({
         <Col />
         <Col xs={6} className="text-center">
           <Button variant="primary" sz="lg" className="mx-2" onClick={onGoBack}>Back</Button>
-          <Button variant="primary" sz="lg" className="mx-2" onClick={()=>setShowModal(true)}>Create State</Button>
+          <Button
+            variant="primary"
+            sz="lg"
+            className="mx-2"
+            onClick={()=>setShowModal(true)}
+            disabled={pts.current.length === 0}
+          >
+            Create State
+          </Button>
         </Col>
         <Col />
       </Row>
@@ -222,7 +231,7 @@ function StateNameModal({show, onClose, commit}) {
         <Modal.Title>Name your new state</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Form className="form-horizontal">
+        <Form onSubmit={e => e.preventDefault()} className="form-horizontal">
           <Form.Control
             as="input"
             type="text"

@@ -24,30 +24,35 @@ import {
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
 
-  // By default, load the test data.
+  let loadTestData = () => {
+    console.log("Loading test data!");
+    DataTable.FromTestData().then((dt) => {
+      dispatch(AppState.actions.loadTable(dt));
+    });
+  };
+
+  // Load the previous data if it exists. Else, load the test data.
   useEffect(
     () => {
-      DataTable.FromTestData().then((dt) => {
-        dispatch(AppState.actions.loadTable(dt));
-      });
+      let serializedState = window.localStorage["state"];
+      serializedState
+        ? dispatch(AppState.actions.loadState(serializedState))
+        : loadTestData();
     },
     /*dependencies=*/ []
   );
 
-  // Allow saving/loading/deleting/printing.
+  // Auto-save whenever something changes.
+  useEffect(() => {
+    window.localStorage["state"] = AppState.serialize(state);
+    console.log("saved state");
+  }, [state.dataTable, state.summaryTables, state.userDefinedStates]);
+
+  // Allow printing the current state for debugging.
   useEffect(
     () => {
       let onKeypress = (e) => {
         if (!e.altKey) return;
-        if (e.code === "KeyS") {
-          console.log("Saving state");
-          window.localStorage["state"] = AppState.serialize(state);
-        }
-        if (e.code === "KeyL") {
-          console.log("Loading state");
-          let serializedState = window.localStorage["state"];
-          dispatch(AppState.actions.loadState(serializedState));
-        }
         if (e.code === "KeyD") {
           console.log("Deleting saved state");
           window.localStorage.removeItem("state");
@@ -103,7 +108,9 @@ function App() {
       <Container>
         <Navbar.Brand >Octave</Navbar.Brand>
           <Nav className="justify-content-end">
-            <Nav.Link> Upload Data </Nav.Link>
+            <Nav.Link onClick={loadTestData}>
+              Upload Data
+            </Nav.Link>
             <Navbar.Text>|</Navbar.Text>
             <Nav.Link> Export Data </Nav.Link>
           </Nav>
