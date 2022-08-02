@@ -1,7 +1,11 @@
 import { EllipseRegion } from "./states/region.js";
+import { CompoundState } from "./states/compound-state.js";
 
 // This is slightly sad.
-const stateFactories = [o=>EllipseRegion.fromObject(o)];
+const stateFactories = [
+  o=>EllipseRegion.fromObject(o),
+  o=>CompoundState.fromObject(o),
+];
 
 // This assumes that the stateFactories will return null if the object isn't
 // the correct state type.
@@ -9,7 +13,7 @@ export function objectToState(o) {
   let res;
   for (let fromObject of stateFactories) {
     res = fromObject(o);
-    if (o) return res;
+    if (res) return res;
   }
   return null;
 }

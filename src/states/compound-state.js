@@ -11,10 +11,11 @@ NOTE:
 export class CompoundState {
   static typeName = "CompoundState";  // surely there's a better way?
 
-  constructor(state1, state2, nodes, edges) {
+  constructor(state1, state2, nodes, edges, name) {
     this.states = [state1, state2];
     this.nodes = nodes;
     this.edges = edges;
+    this.name = name || "";
     this.id = uid();
   }
 
@@ -59,6 +60,26 @@ export class CompoundState {
 
   getChosenPoints(dataTable) {
     return getChosenPoints(dataTable.rows, this.states, this.nodes, this.edges);
+  }
+
+  // Helper functions for serialization/deserialization
+  asObject() {
+    return {
+      type: CompoundState.typeName,
+      states: this.states,
+      name: this.name,
+      nodes: this.nodes,
+      edges: this.edges,
+      id: this.id,
+    };
+  }
+
+  static fromObject(o) {
+    if (o.type !== CompoundState.typeName) return false;
+
+    let res = new CompoundState(...o.states, o.nodes, o.edges, o.name);
+    res.id = o.id;
+    return res;
   }
 }
 
