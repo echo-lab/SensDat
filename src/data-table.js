@@ -105,6 +105,21 @@ export class DataTable {
     return result;
   }
 
+  withDeletedStates(states) {
+    let res = this.copy();
+
+    let toDeleteIDs = states.map(s=>s.id);
+    res.cols = res.cols.filter(col => !toDeleteIDs.includes(col.accessor));
+    res.rows = res.rows.map(r => {
+      toDeleteIDs.forEach(id=>delete r[id]);
+      return r;
+    });
+
+    res.stateToTrueRanges = {};
+    res.cacheStateData();
+    return res;
+  }
+
   cacheStateData() {
     for (let col of this.cols) {
       if (col.type !== COL_TYPES.STATE) continue;

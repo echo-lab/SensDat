@@ -6,15 +6,24 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Modal from 'react-bootstrap/Modal';
 
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
+import { getDependentStates } from "./utils.js";
 
 
 export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefinedState, createRegionInteraction }) {
   let handleCreateRegion = () => dispatch(actions.startCreateRegion({dispatch}));
   let handleCreateTimespan = () => {};
   let handleCreateCompoundState = () => dispatch(actions.startCreateCompoundState());
+  // maybeDeleteState contains the state which is being deleted (the user has to confirm).
+  let [maybeDeleteState, setMaybeDeleteState] = useState(null);
+
+  let onStateDelete = () => {
+    dispatch(actions.deleteState(maybeDeleteState));
+    setMaybeDeleteState(null);
+  };
 
   return (
     <>
@@ -51,6 +60,10 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
                 onClick={()=>dispatch(actions.createSummary(s.id))}>
                 Create Summary
               </Dropdown.Item>
+              <Dropdown.Item
+                onClick={() => setMaybeDeleteState(s)}>
+                Delete
+              </Dropdown.Item>
             </DropdownButton>
           ))
         }
@@ -62,7 +75,66 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
       tmpUserDefinedState={tmpUserDefinedState}
       createRegionInteraction={createRegionInteraction}
       />
+    {
+      maybeDeleteState ? (
+        <DeleteStateModal
+          state={maybeDeleteState}
+          states={userDefinedStates}
+          onConfirm={onStateDelete}
+          onCancel={()=>setMaybeDeleteState(null)}
+        />
+      ) : null
+    }
     </>
+  );
+}
+
+function DeleteStateModal({state, states, onConfirm, onCancel}) {
+
+  let deps = getDependentStates(state, states);
+
+  return (
+    <Modal show={true} onHide={onCancel}>
+      <Modal.Header closeButton>
+        <Modal.Title>Confirm delete state</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>
+          Are you sure you want to delete state: <br/>
+          <strong>
+            {state.name}?
+          </strong>
+        </p>
+        {
+          deps.length > 0 ? (
+            <>
+              <p className="mt-3 text-danger">
+                WARNING: the following states are dependent on {state.name} and will
+                also be deleted:
+              </p>
+              <ul className="text-danger">
+                {deps.map(dep => (
+                  <li key={dep.id}>
+                    <strong>{dep.name}</strong>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null
+        }
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="outline-secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          variant="outline-danger"
+          onClick={onConfirm}
+        >
+          Delete
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 

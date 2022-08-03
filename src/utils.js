@@ -24,3 +24,17 @@ export function objectToState(o) {
 export function uid() {
   return String(new Date().valueOf());
 }
+
+// Returns all entries in states which are downstream dependencies of state.
+// For example, if state is a region called A and states contains a compound
+// state called "AB" which combines regions A and B, then we should return
+// the compound state AB.
+export function getDependentStates(state, states) {
+  let deps = states.filter(s => (
+    s instanceof CompoundState &&
+    s.states.some(dep => dep.id === state.id)
+  ));
+  let res = [...deps];
+  deps.forEach(dep=>res.push(...getDependentStates(dep, states)));
+  return res;
+}

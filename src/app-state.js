@@ -2,7 +2,7 @@ import { UIState } from "./ui-state.js";
 import { CreateRegionInteraction } from "./create-region-interaction.js";
 import { DataTable } from "./data-table.js";
 import * as LZString from "lz-string";
-import { objectToState } from "./utils.js";
+import { objectToState, getDependentStates } from "./utils.js";
 
 /*
  * This file provides a way to organize the app state that is shared across components.
@@ -190,6 +190,19 @@ actionHandlers["commitTempState"] = (state, payload) => {
   };
 };
 
+actionHandlers["deleteState"] = (state, userState) => {
+  let toDelete = [userState, ...getDependentStates(userState, state.userDefinedStates)];
+  let toDeleteIDs = toDelete.map(s=>s.id);
+
+  return {
+    ...state,
+    activeTab: toDeleteIDs.includes(state.activeTab) ? "BASE_TABLE" : state.activeTab,
+    userDefinedStates: state.userDefinedStates.filter(s=>!toDeleteIDs.includes(s.id)),
+    summaryTables: state.summaryTables.filter(t=>!toDeleteIDs.includes(t.state.id)),
+    dataTable: state.dataTable.withDeletedStates(toDelete),
+  };
+};
+
 actionHandlers["createSummary"] = (state, stateID) => {
   // See if the summary already exists.
   let existingSummary = state.summaryTables.find(st=>st.state.id === stateID);
@@ -204,10 +217,10 @@ actionHandlers["createSummary"] = (state, stateID) => {
   let uds = state.userDefinedStates.find(s=>s.id === stateID);
   if (!uds) return state;
 
-  state.summaryTables.push({state: uds});
   return {
     ...state,
-    activeTab: stateID
+    activeTab: stateID,
+    summaryTables: [...state.summaryTables, {state: uds}],
   };
 };
 
