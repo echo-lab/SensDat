@@ -191,7 +191,7 @@ function DefineCompoundStateScreen({
       <Row>
         <Col />
         <Col xs={6} className="text-center">
-          <Button variant="primary" sz="lg" className="mx-2" onClick={onGoBack}>Back</Button>
+          <Button variant="outline-secondary" sz="lg" className="mx-2" onClick={onGoBack}>Back</Button>
           <Button
             variant="primary"
             sz="lg"
@@ -236,6 +236,7 @@ function StateNameModal({show, onClose, commit}) {
             as="input"
             type="text"
             placeholder="Compound State Name"
+            autoFocus
             htmlSize="10"
             value={stateName}
             onChange={onChange}
@@ -243,7 +244,7 @@ function StateNameModal({show, onClose, commit}) {
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={closeFn}>
+        <Button variant="outline-secondary" onClick={closeFn}>
           Back
         </Button>
         <Button

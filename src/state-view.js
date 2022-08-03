@@ -40,7 +40,10 @@ export function StateView({ uiState, dispatch, userDefinedStates, tmpUserDefined
           <Dropdown.Item onClick={handleCreateTimespan}>
             Timespan
           </Dropdown.Item>
-          <Dropdown.Item onClick={handleCreateCompoundState}>
+          <Dropdown.Item
+            onClick={handleCreateCompoundState}
+            disabled={userDefinedStates.length < 2}
+            >
             Compound
           </Dropdown.Item>
         </DropdownButton>
