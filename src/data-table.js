@@ -9,10 +9,11 @@ const TEST_DATA = [
   (s) => `${process.env.PUBLIC_URL}/${s}.csv`
 );
 
-const COL_TYPES = Object.freeze({
-    INDEX:   "index",       // not used
-    X:  "x",                // not used
-    Y: "y",                 // not used
+export const COL_TYPES = Object.freeze({
+    INDEX: "index",
+    X:  "x",                // i.e., longitude
+    Y: "y",                 // i.e., latitude
+    T: "t",                 // the timestamp
     STATE: "state",         // represents a user-defined T-F state
     STATE_TMP: "state_tmp"  // represents a temporary state
 });
@@ -53,6 +54,16 @@ export class DataTable {
     // returns null or col object, i.e., {displayName, accessor, type}
     let res = this.cols.filter(col => col.type === COL_TYPES.STATE_TMP);
     return res.length > 0 ? res[0] : null;
+  }
+
+  // NOTE: Returns a NEW DataTable
+  withColumnTypes(colTypes) {
+    let res = this.copy();
+    res.cols = res.cols.map(col=>({
+        ...col,
+        type: colTypes[col.accessor] || col.type,
+    }));
+    return res;
   }
 
   // NOTE: This returns a NEW DataTable (!!)
@@ -155,7 +166,7 @@ export class DataTable {
         Header: c.displayName,
         accessor: c.accessor,
       };
-      if (c.type === "INDEX") col.width = 60;
+      if (c.type === COL_TYPES.INDEX) col.width = 60;
       return col;
     });
   }
@@ -187,10 +198,28 @@ export class DataTable {
     return res;
   }
 
+  // onSuccess: passed a new table, with no lat/long/time/order columns specified
+  static FromFile(file, {onError, onSuccess}) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true,
+      error: onError,
+      complete: (res) => {
+        onSuccess(new DataTable(res.data, {}));
+      },
+    });
+  }
+
   static FromTestData(i) {
     i = Number.isInteger(i) ? i % TEST_DATA.length : TEST_DATA.length - 1;
     const fName = TEST_DATA[i];
-    const colMapping = { Order: "INDEX", Longitude: "X", Latitude: "Y" };
+    const colMapping = {
+      Order: COL_TYPES.INDEX,
+      Longitude: COL_TYPES.X,
+      Latitude: COL_TYPES.Y,
+      "Date Created": COL_TYPES.T,
+    };
 
     return new Promise((resolve, reject) => {
       Papa.parse(fName, {

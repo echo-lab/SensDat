@@ -111,3 +111,8 @@ div .tr:hover:not(.table-header) {
 .def-visible {
   z-index: 2;
 }
+
+.preview-table {
+  /* max-height: 400px; */
+  overflow: scroll;
+}

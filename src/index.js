@@ -1,10 +1,11 @@
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { DataTable } from "./data-table.js";
+import { UploadDataWidget } from "./upload-data.js";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
@@ -23,13 +24,7 @@ import {
 
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
-
-  let loadTestData = () => {
-    console.log("Loading test data!");
-    DataTable.FromTestData().then((dt) => {
-      dispatch(AppState.actions.loadTable(dt));
-    });
-  };
+  const [uploadActive, setUploadActive] = useState(false);
 
   // Load the previous data if it exists. Else, load the test data.
   useEffect(
@@ -37,7 +32,7 @@ function App() {
       let serializedState = window.localStorage["state"];
       serializedState
         ? dispatch(AppState.actions.loadState(serializedState))
-        : loadTestData();
+        : setUploadActive(true);
     },
     /*dependencies=*/ []
   );
@@ -101,6 +96,11 @@ function App() {
     dispatch
   };
 
+  let uploadDataProps = {
+    onCancel: ()=>setUploadActive(false),
+    dispatch,
+  };
+
   // let modalHidden = state.uiState === UIState.Default || state.uiState === UIState.NotLoaded;
 
   let PageHeader = () => (
@@ -108,7 +108,7 @@ function App() {
       <Container>
         <Navbar.Brand >Octave</Navbar.Brand>
           <Nav className="justify-content-end">
-            <Nav.Link onClick={loadTestData}>
+            <Nav.Link onClick={()=>setUploadActive(true)}>
               Upload Data
             </Nav.Link>
             <Navbar.Text>|</Navbar.Text>
@@ -154,6 +154,11 @@ function App() {
     </ReflexContainer>
     </div>
     </Container>
+    {
+      uploadActive ? (
+        <UploadDataWidget {...uploadDataProps} />
+      ) : null
+    }
     </>
     );
 }
