@@ -38,3 +38,14 @@ export function getDependentStates(state, states) {
   deps.forEach(dep=>res.push(...getDependentStates(dep, states)));
   return res;
 }
+
+export function hhmmss(d) {
+  if (!d.getHours || !d.getMinutes || !d.getSeconds) return "00:00:00";
+
+  return [
+    d.getHours() < 10 ? '0' + d.getHours() : d.getHours(),
+    d.getMinutes() < 10 ? '0' + d.getMinutes() : d.getMinutes(),
+    d.getSeconds() < 10 ? '0' + d.getSeconds() : d.getSeconds(),
+  ].join(":");
+  // return [d.getHours(), d.getMinutes(), d.getSeconds()].join(":");
+}
