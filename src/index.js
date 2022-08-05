@@ -4,7 +4,6 @@ import "./index.css";
 import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
-import { DataTable } from "./data-table.js";
 import { UploadDataWidget } from "./upload-data.js";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";

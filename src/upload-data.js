@@ -105,9 +105,12 @@ function UploadFileStep({setTable, advanceFn, onCancel, loadTestData}) {
       </Form.Group>
       <p>
         Or use already-existing test data:
-      <a href="#" className="mx-2" onClick={(e)=>{e.preventDefault(); loadTestData();}}>
+      <button
+        type="button" class="btn btn-link"
+        onClick={(e)=>{e.preventDefault(); loadTestData();}}
+      >
         Use Test Data
-      </a>
+      </button>
       </p>
     </Modal.Body>
     <Modal.Footer>
@@ -179,6 +182,7 @@ function ClassifyColumnsStep({onSuccess, table, backFn}) {
       </Form>
 
       <Row className="my-3 pt-3">
+        <h5> Table Preview </h5>
         <TablePreview table={table} />
       </Row>
       </Container>
