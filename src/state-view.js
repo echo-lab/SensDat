@@ -143,59 +143,114 @@ function DeleteStateModal({state, states, onConfirm, onCancel}) {
 
 // Returns null if it shouldn't be shown.
 function CreateRegionPane({ uiState, dispatch, tmpUserDefinedState, createRegionInteraction }) {
-  let [regionName, setRegionName] = useState("");
+  // let [regionName, setRegionName] = useState("");
+  let [modalActive, setModalActive] = useState(false);
 
   if (uiState !== UIState.CreateRegion) return null;
 
-  let handleChange = (e) => {
-    setRegionName(e.target.value);
-    createRegionInteraction.setName(e.target.value);
-  };
-  let handleSubmit = () => {
-    dispatch(actions.commitTempState());
-    setRegionName("");
-  };
   let handleCancel = () => {
     dispatch(actions.cancelCreateRegion());
-    setRegionName("");
+    setModalActive(false);
+  };
+
+  let nameStateProps = {
+    onClose: ()=>setModalActive(false),
+    onSubmit: () => {
+      dispatch(actions.commitTempState());
+      setModalActive(false);
+    },
+    setNameInTable: (name) => {
+      createRegionInteraction.setName(name)
+    },
   };
 
   return (
     <Row className="pb-2">
-    <Col></Col>
-    <Col xs={5} className="p-1">
+    <hr />
+    <Col xs={1}></Col>
+    <Col xs={8} className="p-1">
       <Form className="form-horizontal">
       <Form.Group as={Row}>
         <Col>
-          <Form.Control
-            type="text"
-            placeholder="Region Name"
-            value={regionName}
-            onChange={handleChange}
-            className="mt-1"
-          />
+          <h5 className="mt-2">
+            Click on the Map to create a new Region
+          </h5>
         </Col>
         <Col>
-          <Button
-            variant="outline-dark"
-            size="md"
-            className="m-1"
-            onClick={handleSubmit}
-            disabled={!tmpUserDefinedState || tmpUserDefinedState.name === ""}
-          >
-            Done
-          </Button>
           <Button
             variant="outline-dark"
             className="m-1"
             size="md" onClick={handleCancel}>
             Cancel
           </Button>
+          <Button
+            variant="outline-primary"
+            size="md"
+            className="m-1"
+            onClick={()=>setModalActive(true)}
+            disabled={!tmpUserDefinedState}
+          >
+            Next
+          </Button>
         </Col>
       </Form.Group>
       </Form>
     </Col>
     <Col></Col>
+    {
+      modalActive ? (
+        <StateNameModal {...nameStateProps} />
+      ) : null
+    }
     </Row>
+  );
+}
+
+function StateNameModal({onClose, onSubmit, setNameInTable}) {
+  let [name, setName] = useState("");
+
+  let onChange = (e) => {
+    let name = e.target.value;
+    if (name.length > 20) return;
+    setName(name);
+    setNameInTable(name);
+  };
+
+  let onCancel = () => {
+    setNameInTable("");
+    onClose();
+  };
+
+  return (
+    <Modal show={true} onHide={onCancel} backdrop="static">
+      <Modal.Header closeButton>
+        <Modal.Title>Name your new region</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form onSubmit={e => e.preventDefault()} className="form-horizontal">
+          <Form.Control
+            as="input"
+            type="text"
+            placeholder="Region Name"
+            autoFocus
+            htmlSize="10"
+            value={name}
+            onChange={onChange}
+          />
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="outline-secondary" onClick={onCancel}>
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={onSubmit}
+          disabled={name === ""}
+        >
+          Create Region
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
