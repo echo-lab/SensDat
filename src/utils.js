@@ -49,3 +49,14 @@ export function hhmmss(d) {
   ].join(":");
   // return [d.getHours(), d.getMinutes(), d.getSeconds()].join(":");
 }
+
+export function timeDiffString(t1, t2) {
+  let seconds = parseInt((t2.getTime() - t1.getTime()) / 1000);
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+
+  let minutes = parseInt(seconds / 60);
+  seconds = seconds % 60;
+  return `${minutes}m ${seconds}s`;
+}

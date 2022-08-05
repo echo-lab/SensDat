@@ -1,9 +1,21 @@
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 
-// Accessor for the index row. Probably should live in the DataTable object.
-const INDEX = "Order";
+import {COL_TYPES} from './data-table.js';
+import { hhmmss, timeDiffString } from './utils.js';
 
+const SUMMARY_COLS = Object.freeze({
+  CYCLE: "CYCLE",
+  STATE: "STATE",
+  START_TIME: "START_TIME",
+  END_TIME: "END_TIME",
+  ELAPSED_TIME: "ELAPSED_TIME",
+});
+
+const TIME_COLS = [
+  SUMMARY_COLS.START_TIME,
+  SUMMARY_COLS.END_TIME,
+];
 
 export function SummaryTable({table, state, highlightFn}) {
 
@@ -38,18 +50,25 @@ export function SummaryTable({table, state, highlightFn}) {
             >
               {cols.map(({accessor}, idx)=> {
                 if (!row[accessor]) return null;
-                if (accessor === "cycle") {
+                if (accessor === SUMMARY_COLS.CYCLE) {
                   return (
                     <td role="cell" key={idx} rowSpan={row["cycleRowspan"] || 1}>
                       {row[accessor]}
                     </td>
                   );
+                } else if (TIME_COLS.includes(accessor)) {
+                  return (
+                    <td role="cell" key={idx}>
+                      {hhmmss(row[accessor])}
+                    </td>
+                  );
+                } else {
+                  return (
+                    <td role="cell" key={idx}>
+                      {row[accessor]}
+                    </td>
+                  );
                 }
-                return (
-                  <td role="cell" key={idx}>
-                    {row[accessor]}
-                  </td>
-                );
               })}
               <td role="cell" className="add-col"></td>
             </tr>
@@ -61,8 +80,11 @@ export function SummaryTable({table, state, highlightFn}) {
 
 // Helper functions
 function getTime(dataTable, idx) {
-  let row = dataTable.rows.find(x=>x[INDEX]===idx);
-  return row ? row["Date Created"] : null;
+  let idxAccessor = dataTable.getAccessor(COL_TYPES.INDEX);
+  let row = dataTable.rows.find(x=>x[idxAccessor]===idx);
+
+  let timeAccessor = dataTable.getAccessor(COL_TYPES.T_CLEAN);
+  return row && timeAccessor ? row[timeAccessor] : null;
 }
 
 // Returns cycle ranges broken down by T/F.
@@ -70,23 +92,26 @@ function getTime(dataTable, idx) {
 function getCycleRanges(table, state) {
   if (!table.rows || table.rows.length === 0) return [];
 
+  const indexAccessor = table.getAccessor(COL_TYPES.INDEX);
+  const index = (row) => row[indexAccessor];
+
   let r0 = table.rows[0];
   let res = [{
     cycle: 1,
     state: r0[state.id],
-    range: [r0[INDEX], r0[INDEX]],
+    range: [index(r0), index(r0)],
   }];
 
   for (let row of table.rows) {
     if (res.at(-1).state === row[state.id]) {
       // Our state is the same, so we just update the end of the range.
-      res.at(-1).range[1] = row[INDEX];
+      res.at(-1).range[1] = index(row);
     } else {
       // Our state changed, so we need to add a new item to the result.
       res.push({
         cycle: res.at(-1).cycle + (row[state.id] === "true" ? 1 : 0),
         state: row[state.id],
-        range: [row[INDEX], row[INDEX]],
+        range: [index(row), index(row)],
       });
     }
   }
@@ -107,19 +132,23 @@ function getCycleRanges(table, state) {
 //   }]
 function getBreakdownByTF(table, state) {
   let cols = [
-    {Header: "Cycle", accessor: "cycle"},
-    {Header: "State", accessor: "state"},
-    {Header: "Start Time", accessor: "startTime"},
-    {Header: "End Time", accessor: "endTime"},
+    {Header: "Cycle", accessor: SUMMARY_COLS.CYCLE},
+    {Header: "State", accessor: SUMMARY_COLS.STATE},
+    {Header: "Start Time", accessor: SUMMARY_COLS.START_TIME},
+    {Header: "End Time", accessor: SUMMARY_COLS.END_TIME},
+    {Header: "Total Time", accessor: SUMMARY_COLS.ELAPSED_TIME},
   ];
 
   let cycleRanges = getCycleRanges(table, state);
 
   let rows = cycleRanges.map((cycleRange, idx) => {
+    let t0 = getTime(table, cycleRange.range[0]);
+    let t1 = getTime(table, cycleRange.range[1]);
     let res = {
-      state: (cycleRange.state === "true" ? state.name : `NOT ${state.name}`),
-      startTime: getTime(table, cycleRange.range[0]),
-      endTime: getTime(table, cycleRange.range[1]),
+      [SUMMARY_COLS.STATE]: (cycleRange.state === "true" ? state.name : `NOT ${state.name}`),
+      [SUMMARY_COLS.START_TIME]: t0,
+      [SUMMARY_COLS.END_TIME]: t1,
+      [SUMMARY_COLS.ELAPSED_TIME]: timeDiffString(t0, t1),
       pointsRange: cycleRange.range,
     };
 
@@ -128,7 +157,7 @@ function getBreakdownByTF(table, state) {
     let next = (cycleRanges.length > idx+1 ? cycleRanges[idx+1] : null);
     if (!prev || prev.cycle !== cycleRange.cycle) {
       // This is the first row of the cycle.
-      res.cycle = cycleRange.cycle;
+      res[SUMMARY_COLS.CYCLE] = cycleRange.cycle;
       // If the next entry has the same cycle, make the rowspan 2.
       res.cycleRowspan = (next && next.cycle === cycleRange.cycle ? 2 : 1);
     }
@@ -139,18 +168,15 @@ function getBreakdownByTF(table, state) {
   return [cols, rows];
 }
 
-function getBreakdownByWholeCycle(table, state) {
-  let cols = [
-    {Header: "Cycle", accessor: "cycle"},
-    {Header: "State", accessor: "state"},
-    {Header: "Start Time", accessor: "startTime"},
-    {Header: "End Time", accessor: "endTime"},
-  ];
-
-  let cycleRanges = getCycleRanges(table, state);
-
-  // TODO: do this...
-
-
-
-}
+// function getBreakdownByWholeCycle(table, state) {
+//   let cols = [
+//     {Header: "Cycle", accessor: "cycle"},
+//     {Header: "State", accessor: "state"},
+//     {Header: "Start Time", accessor: "startTime"},
+//     {Header: "End Time", accessor: "endTime"},
+//   ];
+//
+//   let cycleRanges = getCycleRanges(table, state);
+//
+//   // TODO: do this...
+// }

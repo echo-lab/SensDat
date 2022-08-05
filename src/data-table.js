@@ -77,6 +77,11 @@ export class DataTable {
     return res.length > 0 ? res[0] : null;
   }
 
+  getAccessor(colType) {
+    let col = this.getColByType(colType);
+    return col ? col.accessor : null;
+  }
+
   sortColumns() {
     let cols = this.cols;
     let nextIdx = 0;
@@ -94,10 +99,6 @@ export class DataTable {
 
   // NOTE: Returns a NEW DataTable
   withColumnTypes(colTypes) {
-    // console.log(Date.fromString("11/11/2021 03:22:21 PM"));
-    // d.setTime(d.getTime() + (h*60*60*1000));
-    // Can get the offset: d.getTimezoneOffset(); lol. terrible!
-
     let res = this.copy();
     res.cols = res.cols.map(col=>({
         ...col,
