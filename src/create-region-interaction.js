@@ -4,6 +4,7 @@ import { EllipseRegion } from "./states/region.js";
 import debounce from 'lodash.debounce'
 
 const RADIUS = 30;
+const DEFAULT_NAME = "[New Region]";
 
 // A class for handling the user interactions for creating a new region state.
 // The user creates the new region by clicking on the svgElement.
@@ -20,7 +21,7 @@ export class CreateRegionInteraction {
     this.debouncedCreateTempState = debounce((userDefinedState)=>{
       this.dispatch(actions.createTempState({userDefinedState}));
     },
-    1000);
+    200);
   }
 
   initializeSvg(svgElement, svgCoordMapping) {
@@ -31,6 +32,7 @@ export class CreateRegionInteraction {
     this.callbacks.forEach((args) => this.svg.addEventListener(...args));
 
     this.element = null;
+    this.nameElement = null;
   }
 
   setName(name) {
@@ -39,7 +41,11 @@ export class CreateRegionInteraction {
 
     let userDefinedState = this.userDefinedState.withName(name);
     this.userDefinedState = userDefinedState;
-    this.debouncedCreateTempState(userDefinedState);
+    let uds = this.userDefinedState.name === ""
+      ? this.userDefinedState.withName(DEFAULT_NAME)
+      : this.userDefinedState;
+    this.nameElement.innerHTML = uds.name;
+    this.debouncedCreateTempState(uds);
   }
 
   onClick(e) {
@@ -70,6 +76,16 @@ export class CreateRegionInteraction {
         ["fill", "transparent"],
       ].forEach(([attr, val]) => this.element.setAttribute(attr, val));
       this.svg.appendChild(this.element);
+
+      this.nameElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      [
+        ["x", x],
+        ["y", y - RADIUS],
+        ["text-anchor", "middle"],
+        ["dy", "-.35em"],
+      ].forEach(([attr, val]) => this.nameElement.setAttribute(attr, val));
+      this.nameElement.innerHTML = "[New Region]";
+      this.svg.appendChild(this.nameElement);
     }
 
     // Possibly redundant, but whatevs!
@@ -77,11 +93,17 @@ export class CreateRegionInteraction {
     this.element.setAttribute("cy", y);
     this.element.setAttribute("r", RADIUS);
 
+    this.nameElement.setAttribute("x", x);
+    this.nameElement.setAttribute("y", y-RADIUS);
+
     let [cx, cy] = [xToLong(x), yToLat(y)];
     let rx = xToLong(x+RADIUS) - cx;
     let ry = yToLat(y-RADIUS) - cy;
     this.userDefinedState = new EllipseRegion([cx, cy], rx, ry, this.name);
-    this.debouncedCreateTempState(this.userDefinedState);
+    let uds = this.userDefinedState.name === ""
+      ? this.userDefinedState.withName(DEFAULT_NAME)
+      : this.userDefinedState;
+    this.debouncedCreateTempState(uds);
   }
 
   // Need to pass in the Lat/Long -> pixel mapping again - it may have changed,
@@ -93,11 +115,20 @@ export class CreateRegionInteraction {
 
     let s = this.userDefinedState;  // Has Lat/Long coordinates.
     let {longToX, latToY} = this.svgCoordMapping;
-    this.element.setAttribute("cx", longToX(s.cx));
-    this.element.setAttribute("cy", latToY(s.cy));
-    this.element.setAttribute("r", longToX(s.cx + s.rx) - longToX(s.cx));
+    let [x, y, r] = [
+      longToX(s.cx),
+      latToY(s.cy),
+      longToX(s.cx + s.rx) - longToX(s.cx),
+    ];
+    this.element.setAttribute("cx", x);
+    this.element.setAttribute("cy", y);
+    this.element.setAttribute("r", r);
+
+    this.nameElement.setAttribute("x", x);
+    this.nameElement.setAttribute("y", y - r);
 
     this.svg.appendChild(this.element);
+    this.svg.appendChild(this.nameElement);
   }
 
   cleanup() {

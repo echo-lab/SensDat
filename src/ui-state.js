@@ -9,6 +9,6 @@ export class UIState {
   }
 
   statePaneDisabled() {
-    return this === UIState.CreateCompound;
+    return this !== UIState.Default;
   }
 }
