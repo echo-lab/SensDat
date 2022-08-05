@@ -55,6 +55,7 @@ export class DataTable {
     this.stateToTrueRanges = {};
 
     this.cacheVizData();
+    this.sortColumns();
   }
 
   cacheVizData() {
@@ -77,12 +78,18 @@ export class DataTable {
   }
 
   sortColumns() {
-    // TODO!
-    // let cols = this.cols;
-    // let nextIdx = 0;
-    // for (let ctype of COL_ORDER) {
-    //
-    // }
+    let cols = this.cols;
+    let nextIdx = 0;
+    for (let ctype of COL_ORDER) {
+      for (let j = nextIdx; j < cols.length; j++) {
+        if (cols[j].type !== ctype) continue;
+        // Else: we found a column of the correct type, and we need to swap it back
+        for (let k = j; k > nextIdx; k--) {
+          [cols[k], cols[k-1]] = [cols[k-1], cols[k]];
+        }
+        nextIdx++;
+      }
+    }
   }
 
   // NOTE: Returns a NEW DataTable
@@ -97,7 +104,9 @@ export class DataTable {
         type: colTypes[col.accessor] || col.type,
     }));
 
-    return res.withCleanedTime();
+    res = res.withCleanedTime();
+    res.sortColumns();
+    return res;
   }
 
   // NOTE: This returns a NEW DataTable (!!)
@@ -203,6 +212,7 @@ export class DataTable {
       ...row,
       CLEANED_TIME: times[idx],
     }));
+    res.sortColumns();
     return res;
   }
 
