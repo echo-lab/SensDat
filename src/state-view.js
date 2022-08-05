@@ -184,7 +184,11 @@ function CreateRegionPane({ uiState, dispatch, tmpUserDefinedState, createRegion
             Cancel
           </Button>
           <Button
+<<<<<<< HEAD
             variant="primary"
+=======
+            variant="outline-primary"
+>>>>>>> 870176cd64fa1adf403a5d773e4336a7ea4f386a
             size="md"
             className="m-1"
             onClick={()=>setModalActive(true)}
