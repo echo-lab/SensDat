@@ -75,6 +75,8 @@ function App() {
     vizData: state.dataTable ? state.dataTable.vizData : null,
     dispatch,
     vizTimespan: state.vizState.timespan,
+    shownPoints: state.vizState.shownPoints,
+    useShownPoints: state.activeTab === "BASE_TABLE",
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,

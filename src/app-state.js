@@ -60,6 +60,7 @@ export const initialState = {
   // TODO: add more as they're implemented.
   vizState: {
     timespan: [0, 100],
+    shownPoints: [-1, -1],
     highlightedPoints: null,
   },
 };
@@ -227,6 +228,14 @@ actionHandlers["createSummary"] = (state, stateID) => {
 actionHandlers["selectTab"] = (state, tabID) => ({
   ...state,
   activeTab: tabID,
+});
+
+actionHandlers["setShownPoints"] = (state, shownRange) => ({
+  ...state,
+  vizState: {
+    ...state.vizState,
+    shownPoints: shownRange,
+  },
 });
 
 actionHandlers["highlightPoints"] = (state, pointsRange) => ({

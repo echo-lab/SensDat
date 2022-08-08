@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import styled from "styled-components";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
@@ -12,6 +12,7 @@ import {SummaryTable} from "./summary-table.js";
 
 export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch}) {
   let highlightFn = (points)=>dispatch(actions.highlightPoints(points));
+  let showPointsFn = (pointsRange)=>dispatch(actions.setShownPoints(pointsRange));
 
   return (
     <div className="data-container debug def-visible">
@@ -21,7 +22,11 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
         className="m-3"
       >
         <Tab eventKey="BASE_TABLE" title="Base Table">
-          <VirtualizedTable dataTable={dataTable} highlightFn={highlightFn} />
+          <VirtualizedTable
+            dataTable={dataTable}
+            highlightFn={highlightFn}
+            showPointsFn={showPointsFn}
+            />
         </Tab>
         {
           summaryTables.map(st=>
@@ -44,7 +49,7 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-function VirtualizedTable({ dataTable, highlightFn }) {
+function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -69,6 +74,13 @@ function VirtualizedTable({ dataTable, highlightFn }) {
     },
     useBlockLayout
   );
+
+  let onItemsRendered = ({ visibleStartIndex, visibleStopIndex }) => {
+    // This is off by up to 2 for some reason? Not sure how to debug... deafult
+    // to just showing more points...
+    showPointsFn([visibleStartIndex, visibleStopIndex+3]);
+  };
+
 
   const RenderRow = useCallback(
     ({ index, style }) => {
@@ -118,6 +130,7 @@ function VirtualizedTable({ dataTable, highlightFn }) {
               itemSize={35}
               width={totalColumnsWidth + scrollBarSize}
               overscanCount={25}
+              onItemsRendered={onItemsRendered}
             >
               {RenderRow}
             </FixedSizeList>

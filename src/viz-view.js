@@ -12,6 +12,7 @@ const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
+const INVISIBLE_COLOR = "#00000000";
 const PATH_COLOR = "#69b3a2";
 
 /*
@@ -26,8 +27,8 @@ const PATH_COLOR = "#69b3a2";
  */
 export function VizView({
   vizData, vizTimespan, uistate, dispatch,
-  createRegionInteraction, highlightedPoints, userDefinedStates,
-  dimensions
+  createRegionInteraction, highlightedPoints, shownPoints, useShownPoints,
+  userDefinedStates, dimensions
  }) {
   const svgRef = useRef();
   const d3Dots = useRef();
@@ -70,20 +71,31 @@ export function VizView({
   // Function to highlight points.
   useEffect(
     () => {
-      if (!d3Dots.current || !highlightedPoints) return;
+      if (!d3Dots.current) return;
 
-      // let [lo, hi] = highlightedPoints;
-      // let withinBounds = d=>highlightedPoints.some(([lo, hi])=> lo <= d.Order && d.Order <= hi);
-      let matches = d3Dots.current
-        .filter(d=>highlightedPoints.some(
+      let shownDoobs = d3Dots.current
+        .filter(d=>shownPoints[0] <= d.Order && d.Order <= shownPoints[1]);
+      useShownPoints &&
+        shownDoobs.attr("fill", DOT_COLOR).attr("stroke", "black").raise();
+
+      let highlightPoints = highlightedPoints || [];
+
+      let highlights = d3Dots.current
+        .filter(d=>highlightPoints.some(
           ([lo, hi])=>(lo <= d.Order && d.Order <= hi)));
-      matches.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").attr("r", 3.5).raise();
+      highlights.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").attr("r", 3.5).raise();
 
       return () => {
-        matches.attr("fill", DOT_COLOR).attr("stroke", null).attr("r", 3);
+        useShownPoints &&
+          shownDoobs.attr("fill", INVISIBLE_COLOR).attr("stroke", null);
+        highlights.attr("fill", INVISIBLE_COLOR).attr("stroke", null).attr("r", 3);
       };
     },
-    /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints, dimensions]
+    // TODO: These dependencies are kind of sad... It's basically set so that we
+    // redo this whenever d3Dots changes, which is whenever a resize happens, etc.
+    // I think we might be able to do a viewbox thing w/ the SVG to avoid
+    // recalculating everything on resizes?
+    /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints, shownPoints, dimensions, useShownPoints]
   );
 
 
@@ -214,7 +226,7 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
     .attr("cx", (d) => longToX(d.Longitude))
     .attr("cy", (d) => latToY(d.Latitude))
     .attr("r", 3)
-    .attr("fill", DOT_COLOR);
+    .attr("fill", INVISIBLE_COLOR);
     // .on("click", selectPoint)
     // .on("mouseenter", (e) => {
     //   console.log("mouseenter event: ", e);
