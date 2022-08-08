@@ -17,8 +17,6 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
     let highlightFn = (points)=>dispatch(actions.highlightPoints(points));
     let showPointsFn = (pointsRange)=>dispatch(actions.setShownPoints(pointsRange));
 
-    console.log("Rendering the DataView...");
-
     return (
       <div className="data-container debug def-visible">
         <Tabs
