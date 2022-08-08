@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
@@ -11,39 +11,45 @@ import {SummaryTable} from "./summary-table.js";
 
 
 export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch}) {
-  let highlightFn = (points)=>dispatch(actions.highlightPoints(points));
-  let showPointsFn = (pointsRange)=>dispatch(actions.setShownPoints(pointsRange));
+  // Should absolutely NOT re-render this if we don't have to!!
+  return useMemo(()=>{
 
-  return (
-    <div className="data-container debug def-visible">
-      <Tabs
-        activeKey={activeTab}
-        onSelect={(k)=>dispatch(actions.selectTab(k))}
-        className="m-3"
-      >
-        <Tab eventKey="BASE_TABLE" title="Base Table">
-          <VirtualizedTable
-            dataTable={dataTable}
-            highlightFn={highlightFn}
-            showPointsFn={showPointsFn}
-            />
-        </Tab>
-        {
-          summaryTables.map(st=>
-            <Tab eventKey={st.state.id} key={st.state.id} title={`Summary: ${st.state.name}`}>
-              <Styles>
-                <SummaryTable
-                  table={dataTable}
-                  state={st.state}
-                  highlightFn={highlightFn}
-                />
-              </Styles>
-            </Tab>
-          )
-        }
-      </Tabs>
-    </div>
-  );
+    let highlightFn = (points)=>dispatch(actions.highlightPoints(points));
+    let showPointsFn = (pointsRange)=>dispatch(actions.setShownPoints(pointsRange));
+
+    console.log("Rendering the DataView...");
+
+    return (
+      <div className="data-container debug def-visible">
+        <Tabs
+          activeKey={activeTab}
+          onSelect={(k)=>dispatch(actions.selectTab(k))}
+          className="m-3"
+        >
+          <Tab eventKey="BASE_TABLE" title="Base Table">
+            <VirtualizedTable
+              dataTable={dataTable}
+              highlightFn={highlightFn}
+              showPointsFn={showPointsFn}
+              />
+          </Tab>
+          {
+            summaryTables.map(st=>
+              <Tab eventKey={st.state.id} key={st.state.id} title={`Summary: ${st.state.name}`}>
+                <Styles>
+                  <SummaryTable
+                    table={dataTable}
+                    state={st.state}
+                    highlightFn={highlightFn}
+                  />
+                </Styles>
+              </Tab>
+            )
+          }
+        </Tabs>
+      </div>
+    );
+}, [dataTable, summaryTables, uistate, activeTab, dispatch]);
 }
 
 
@@ -79,6 +85,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
     // This is off by up to 2 for some reason? Not sure how to debug... deafult
     // to just showing more points...
     showPointsFn([visibleStartIndex, visibleStopIndex+3]);
+    highlightFn([[-1, -1]]);
   };
 
 
