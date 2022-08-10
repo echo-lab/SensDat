@@ -59,10 +59,12 @@ export class DataTable {
   }
 
   cacheVizData() {
+    let timeCol = this.getColByType(COL_TYPES.T_CLEAN);
     this.vizData = this.rows.map(row => ({
       Order: row.Order,
       Latitude: row.Latitude,
       Longitude: row.Longitude,
+      Timestamp: timeCol && row[timeCol.accessor],
     }));
   }
 
@@ -107,6 +109,7 @@ export class DataTable {
 
     res = res.withCleanedTime();
     res.sortColumns();
+    this.cacheVizData();
     return res;
   }
 
@@ -214,6 +217,7 @@ export class DataTable {
       CLEANED_TIME: times[idx],
     }));
     res.sortColumns();
+    this.cacheVizData();
     return res;
   }
 

@@ -59,7 +59,7 @@ export const initialState = {
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
   vizState: {
-    timespan: [0, 100],
+    timespan: [0, 1e15],
     shownPoints: [-1, -1],
     highlightedPoints: null,
   },

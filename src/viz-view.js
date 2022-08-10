@@ -1,9 +1,11 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import * as d3 from "d3";
-import { Range } from "rc-slider";
+import debounce from 'lodash.debounce'
+import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import { actions } from "./app-state.js";
 import {EllipseRegion} from "./states/region.js";
+import { hhmmss } from "./utils.js";
 
 const PADDING_FRACTION = 1.1;
 
@@ -14,6 +16,9 @@ const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
 const INVISIBLE_COLOR = "#00000000";
 const PATH_COLOR = "#69b3a2";
+
+const createSliderWithTooltip = Slider.createSliderWithTooltip;
+const Range = createSliderWithTooltip(Slider.Range);
 
 /*
  * Creates a visualization of the data.
@@ -98,17 +103,6 @@ export function VizView({
     /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints, shownPoints, dimensions, useShownPoints]
   );
 
-
-  let rangeSliderProps = {
-    // TODO: investigate why settings this to dataTable.length - 1 doesn't work
-    max: 100,
-    defaultValue: [0, 100],
-    allowCross: false,
-    draggableTrack: true,
-    // onAfterChange: ...,
-    onChange: (val) => dispatch(actions.changeTimespan(val)),
-  };
-
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
     height: svgHeight,
@@ -117,20 +111,51 @@ export function VizView({
     marginLeft: "0px",
     border: "solid 1px black",
   };
+
+  let timeSliderProps = {vizData, vizTimespan, svgWidth, dispatch};
+  let timeSlider = useMemo(
+    ()=><TimeSlider {...timeSliderProps} />,
+    [vizData, vizTimespan, svgWidth]);
+
+  return (
+    <div className="viz-container debug def-visible">
+      <svg ref={svgRef} style={svgStyle}></svg>
+      {timeSlider}
+    </div>
+  );
+}
+
+// TODO: would this be simpler to just... implement without a library??
+function TimeSlider({vizData, vizTimespan, svgWidth, dispatch}) {
+  // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
+  let tipFormatter = useMemo(()=>{
+    let [tMin, tMax] = d3.extent(vizData, d => d.Timestamp.getTime());
+    return (val) =>
+      hhmmss(new Date(tMin + (val / vizData.length) * (tMax - tMin)));
+  }, [vizData]);
+
+  let rangeProps = {
+    max: vizData.length,
+    defaultValue: [0, vizData.length],
+    allowCross: false,
+    draggableTrack: true,
+    onChange: debounce((val)=>dispatch(actions.changeTimespan(val)), 18),
+    tipFormatter,
+  };
+
   const sliderDivStyle = {
     width: svgWidth - 150,  // TODO: fix this - it's a weird magic value
     margin: 50
   };
 
   return (
-    <div className="viz-container debug def-visible">
-      <svg ref={svgRef} style={svgStyle}></svg>
-      <div style={sliderDivStyle}>
-        <p>Timespan</p>
-        <Range {...rangeSliderProps} />
-      </div>
+    <div style={sliderDivStyle}>
+      <p>Timespan</p>
+      <Range {...rangeProps} />
     </div>
   );
+
+
 }
 
 // Get information about how the SVG's xy-coordinates should correspond to
@@ -333,9 +358,19 @@ function getLatLongDomain([long0, long1], [lat0, lat1], [width, height]) {
 // TODO: this should probably filter by actual time instead of "order"/"index".
 // Plus: we should not be assuming the index column is called 'Order'.
 function filterByTimespan(data, timespan) {
+  // Note sure if this is good or not :)
+  if (data[0].Timestamp) {
+    let [minTime, maxTime] = d3.extent(data, d => d.Timestamp.getTime());
+    let [r1, r2] = timespan;
+    let t1 = minTime + (r1 / data.length) * (maxTime - minTime);
+    let t2 = minTime + (r2 / data.length) * (maxTime - minTime);
+    return data.filter(
+      (row) => row.Timestamp.getTime() >= t1 && row.Timestamp.getTime() <= t2);
+  }
+
   let [minOrder, maxOrder] = d3.extent(data, (d) => d.Order);
   let [r1, r2] = timespan;
-  let mno = minOrder + (r1 / 100) * (maxOrder - minOrder);
-  let mxo = minOrder + (r2 / 100) * (maxOrder - minOrder);
+  let mno = minOrder + (r1 / data.length) * (maxOrder - minOrder);
+  let mxo = minOrder + (r2 / data.length) * (maxOrder - minOrder);
   return data.filter((row) => row.Order >= mno && row.Order <= mxo);
 }
