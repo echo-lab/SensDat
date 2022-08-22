@@ -6,8 +6,8 @@ import { hhmmss } from "./utils.js";
 const TEST_DATA = [
   "test_data",
   "demo_data_student",
+  "demo_data_classroom_clean",
   "demo_data_classroom",
-  "demo_data_classroom_clean"
 ].map(
   (s) => `${process.env.PUBLIC_URL}/${s}.csv`
 );
@@ -19,7 +19,8 @@ export const COL_TYPES = Object.freeze({
     T: "t",                 // the timestamp
     T_CLEAN: "t_clean",     // the timestamp, in DateTime format, interpolated to the second.
     STATE: "state",         // represents a user-defined T-F state
-    STATE_TMP: "state_tmp"  // represents a temporary state
+    STATE_TMP: "state_tmp", // represents a temporary state
+    DIST: "distance",       // distance from previous point
 });
 
 const COL_ORDER = [
@@ -27,6 +28,7 @@ const COL_ORDER = [
   COL_TYPES.X,
   COL_TYPES.Y,
   COL_TYPES.T_CLEAN,
+  COL_TYPES.DIST,
   COL_TYPES.T,
   undefined,  // LOL, dirty hack.
   COL_TYPES.STATE,
@@ -334,6 +336,7 @@ export class DataTable {
       Longitude: COL_TYPES.X,
       Latitude: COL_TYPES.Y,
       "Date Created": COL_TYPES.T,
+      "Distance from Last": COL_TYPES.DIST,
     };
 
     return new Promise((resolve, reject) => {

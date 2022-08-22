@@ -10,6 +10,7 @@ const SUMMARY_COLS = Object.freeze({
   START_TIME: "START_TIME",
   END_TIME: "END_TIME",
   ELAPSED_TIME: "ELAPSED_TIME",
+  DISTANCE: "DISTANCE",
 });
 
 const TIME_COLS = [
@@ -131,6 +132,7 @@ function getCycleRanges(table, state) {
 //     cycleRowspan: 2 | 1 | null
 //   }]
 function getBreakdownByTF(table, state) {
+  let hasDistCol = table.getColByType(COL_TYPES.DIST);
   let cols = [
     {Header: "Cycle", accessor: SUMMARY_COLS.CYCLE},
     {Header: "State", accessor: SUMMARY_COLS.STATE},
@@ -138,6 +140,7 @@ function getBreakdownByTF(table, state) {
     {Header: "End Time", accessor: SUMMARY_COLS.END_TIME},
     {Header: "Total Time", accessor: SUMMARY_COLS.ELAPSED_TIME},
   ];
+  if (hasDistCol) cols.push({Header: "Total Distance", accessor: SUMMARY_COLS.DISTANCE})
 
   let cycleRanges = getCycleRanges(table, state);
 
@@ -151,6 +154,7 @@ function getBreakdownByTF(table, state) {
       [SUMMARY_COLS.ELAPSED_TIME]: timeDiffString(t0, t1),
       pointsRange: cycleRange.range,
     };
+    if (hasDistCol) res[SUMMARY_COLS.DISTANCE] = getDistance(table, ...cycleRange.range);
 
     // Populate 'cycle' and 'cycleRowspan' conditionally.
     let prev = (idx > 0 ? cycleRanges[idx-1] : null);
@@ -166,6 +170,21 @@ function getBreakdownByTF(table, state) {
   });
 
   return [cols, rows];
+}
+
+function getDistance(table, idx0, idx1) {
+  console.log("Calling getDistance w/ indexes: ", idx0, idx1);
+  const indexAccessor = table.getAccessor(COL_TYPES.INDEX);
+  const index = (row) => row[indexAccessor];
+
+  const distAccessor = table.getAccessor(COL_TYPES.DIST);
+
+  let precision = 1e3;
+  return Math.round(
+    precision *
+    table.rows
+      .filter(row => idx0 < index(row) && index(row) <= idx1)
+      .reduce((prev, row) => prev + row[distAccessor], 0)) / precision;
 }
 
 // function getBreakdownByWholeCycle(table, state) {

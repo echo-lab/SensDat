@@ -134,6 +134,8 @@ function TimeSlider({vizData, vizTimespan, svgWidth, dispatch}) {
       hhmmss(new Date(tMin + (val / vizData.length) * (tMax - tMin)));
   }, [vizData]);
 
+  if (!vizData) return null;
+
   let rangeProps = {
     max: vizData.length,
     defaultValue: [0, vizData.length],

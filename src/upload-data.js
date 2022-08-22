@@ -134,12 +134,14 @@ function ClassifyColumnsStep({onSuccess, table, backFn}) {
   let [xCol, setXCol] = useState(guessCol("x", table));
   let [yCol, setYCol] = useState(guessCol("y", table));
   let [tCol, setTCol] = useState(guessCol("t", table));
+  let [distCol, setDistCol] = useState(guessCol("dist", table));
 
   let props = [
     {name: "Index", val: indexCol, setter: setIndexCol, table, type: COL_TYPES.INDEX},
     {name: "Timestamp", val: tCol, setter: setTCol, table, type: COL_TYPES.T},
     {name: "Longitude/X-Coordinate", val: xCol, setter: setXCol, table, type: COL_TYPES.X},
     {name: "Latitude/Y-Coordinate", val: yCol, setter: setYCol, table, type: COL_TYPES.Y},
+    {name: "Distance", val: distCol, setter: setDistCol, table, type: COL_TYPES.DIST, optional: true},
   ];
   for (let p of props) {
     if (p.val && props.some(other => p !== other && p.val === other.val)) {
@@ -149,7 +151,7 @@ function ClassifyColumnsStep({onSuccess, table, backFn}) {
     }
   }
 
-  let weGood = props.every(p=>p.val !== null && p.error === null);
+  let weGood = props.every(p=>(p.optional || p.val !== null) && p.error === null);
 
   let onDone = () => {
     let colTypes = props.reduce((res, {val, type})=>({...res, [val]:type}), {});
@@ -179,6 +181,12 @@ function ClassifyColumnsStep({onSuccess, table, backFn}) {
             <ColumnDropdown {...props[3]} />
           </Col>
         </Row>
+        <Row className="mb-3">
+          <Col lg="5">
+            <ColumnDropdown {...props[4]} />
+          </Col>
+          <Col lg="6" />
+        </Row>
       </Form>
 
       <Row className="my-3 pt-3">
@@ -204,7 +212,7 @@ function ClassifyColumnsStep({onSuccess, table, backFn}) {
   );
 }
 
-function ColumnDropdown({table, name, val, setter, error}) {
+function ColumnDropdown({table, name, val, setter, error, optional}) {
   return (
     <Form.Group
       className="mb-3"
@@ -219,6 +227,7 @@ function ColumnDropdown({table, name, val, setter, error}) {
         value={val || ""}
       >
         <option value="" disabled>select a column</option>
+        { optional && <option value="NOT_PRESENT"> None </option> }
         {table.cols.map(c => (
           <option value={c.accessor} key={c.accessor}> {c.displayName} </option>
         ))}
@@ -271,6 +280,7 @@ function guessCol(type, table) {
     x: ["longitude"],
     y: ["latitude"],
     t: ["time", "timestamp", "date created"],
+    dist: ["distance from last"],
   };
 
   if (!guesses[type]) return null;
