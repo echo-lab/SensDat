@@ -217,7 +217,7 @@ export class DataTable {
       CLEANED_TIME: times[idx],
     }));
     res.sortColumns();
-    this.cacheVizData();
+    res.cacheVizData();
     return res;
   }
 
