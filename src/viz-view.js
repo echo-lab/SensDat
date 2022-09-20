@@ -114,7 +114,11 @@ export function VizView({
 
   let timeSliderProps = {vizData, vizTimespan, svgWidth, dispatch};
   let timeSlider = useMemo(
-    ()=><TimeSlider {...timeSliderProps} />,
+    ()=>{
+      return vizData
+        ? <TimeSlider {...timeSliderProps} />
+        : null;
+    },
     [vizData, vizTimespan, svgWidth]);
 
   return (
