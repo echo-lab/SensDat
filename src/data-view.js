@@ -4,24 +4,29 @@ import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
 import Tab from "react-bootstrap/Tab";
-import Tabs from 'react-bootstrap/Tabs';
+import Tabs from "react-bootstrap/Tabs";
 
 import { actions } from "./app-state.js";
-import {SummaryTable} from "./summary-table.js";
+import { SummaryTable } from "./summary-table.js";
 
-
-export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch}) {
+export function DataView({
+  dataTable,
+  summaryTables,
+  uistate,
+  activeTab,
+  dispatch,
+}) {
   // Should absolutely NOT re-render this if we don't have to!!
-  return useMemo(()=>{
-
-    let highlightFn = (points)=>dispatch(actions.highlightPoints(points));
-    let showPointsFn = (pointsRange)=>dispatch(actions.setShownPoints(pointsRange));
+  return useMemo(() => {
+    let highlightFn = (points) => dispatch(actions.highlightPoints(points));
+    let showPointsFn = (pointsRange) =>
+      dispatch(actions.setShownPoints(pointsRange));
 
     return (
       <div className="data-container debug def-visible">
         <Tabs
           activeKey={activeTab}
-          onSelect={(k)=>dispatch(actions.selectTab(k))}
+          onSelect={(k) => dispatch(actions.selectTab(k))}
           className="m-3"
         >
           <Tab eventKey="BASE_TABLE" title="Base Table">
@@ -29,27 +34,28 @@ export function DataView({dataTable, summaryTables, uistate, activeTab, dispatch
               dataTable={dataTable}
               highlightFn={highlightFn}
               showPointsFn={showPointsFn}
-              />
+            />
           </Tab>
-          {
-            summaryTables.map(st=>
-              <Tab eventKey={st.state.id} key={st.state.id} title={`Summary: ${st.state.name}`}>
-                <Styles>
-                  <SummaryTable
-                    table={dataTable}
-                    state={st.state}
-                    highlightFn={highlightFn}
-                  />
-                </Styles>
-              </Tab>
-            )
-          }
+          {summaryTables.map((st) => (
+            <Tab
+              eventKey={st.state.id}
+              key={st.state.id}
+              title={`Summary: ${st.state.name}`}
+            >
+              <Styles>
+                <SummaryTable
+                  table={dataTable}
+                  state={st.state}
+                  highlightFn={highlightFn}
+                />
+              </Styles>
+            </Tab>
+          ))}
         </Tabs>
       </div>
     );
-}, [dataTable, summaryTables, uistate, activeTab, dispatch]);
+  }, [dataTable, summaryTables, uistate, activeTab, dispatch]);
 }
-
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
@@ -82,10 +88,9 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   let onItemsRendered = ({ visibleStartIndex, visibleStopIndex }) => {
     // This is off by up to 2 for some reason? Not sure how to debug... deafult
     // to just showing more points...
-    showPointsFn([visibleStartIndex, visibleStopIndex+3]);
+    showPointsFn([visibleStartIndex, visibleStopIndex + 3]);
     highlightFn([[-1, -1]]);
   };
-
 
   const RenderRow = useCallback(
     ({ index, style }) => {
@@ -93,8 +98,10 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
       prepareRow(row);
       return (
         <div
-          onMouseEnter={()=>highlightFn([[row.original.Order, row.original.Order]])}
-          onMouseLeave={()=>highlightFn([])}
+          onMouseEnter={() =>
+            highlightFn([[row.original.Order, row.original.Order]])
+          }
+          onMouseLeave={() => highlightFn([])}
           {...row.getRowProps({
             style,
           })}
@@ -114,34 +121,37 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   );
 
   return (
-      <Styles>
-        <div {...getTableProps()} className="table">
-          <div>
-            {headerGroups.map((headerGroup) => (
-              <div {...headerGroup.getHeaderGroupProps()} className="tr table-header">
-                {headerGroup.headers.map((column) => (
-                  <div {...column.getHeaderProps()} className="th">
-                    {column.render("Header")}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          <div {...getTableBodyProps()}>
-            <FixedSizeList
-              height={500}
-              itemCount={rows.length}
-              itemSize={35}
-              width={totalColumnsWidth + scrollBarSize}
-              overscanCount={25}
-              onItemsRendered={onItemsRendered}
+    <Styles>
+      <div {...getTableProps()} className="table">
+        <div>
+          {headerGroups.map((headerGroup) => (
+            <div
+              {...headerGroup.getHeaderGroupProps()}
+              className="tr table-header"
             >
-              {RenderRow}
-            </FixedSizeList>
-          </div>
+              {headerGroup.headers.map((column) => (
+                <div {...column.getHeaderProps()} className="th">
+                  {column.render("Header")}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
-      </Styles>
+
+        <div {...getTableBodyProps()}>
+          <FixedSizeList
+            height={500}
+            itemCount={rows.length}
+            itemSize={35}
+            width={totalColumnsWidth + scrollBarSize}
+            overscanCount={25}
+            onItemsRendered={onItemsRendered}
+          >
+            {RenderRow}
+          </FixedSizeList>
+        </div>
+      </div>
+    </Styles>
   );
 }
 
@@ -208,7 +218,7 @@ export const Styles = styled.div`
     th,
     td {
       margin: 0;
-      padding: 0.5rem 1.0rem 0.5rem 1.0rem;
+      padding: 0.5rem 1rem 0.5rem 1rem;
       border-bottom: 1px solid black;
       border-right: 1px solid black;
       text-align: center;

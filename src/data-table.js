@@ -8,19 +8,17 @@ const TEST_DATA = [
   "demo_data_student",
   "demo_data_classroom_clean",
   "demo_data_classroom",
-].map(
-  (s) => `${process.env.PUBLIC_URL}/${s}.csv`
-);
+].map((s) => `${process.env.PUBLIC_URL}/${s}.csv`);
 
 export const COL_TYPES = Object.freeze({
-    INDEX: "index",
-    X:  "x",                // i.e., longitude
-    Y: "y",                 // i.e., latitude
-    T: "t",                 // the timestamp
-    T_CLEAN: "t_clean",     // the timestamp, in DateTime format, interpolated to the second.
-    STATE: "state",         // represents a user-defined T-F state
-    STATE_TMP: "state_tmp", // represents a temporary state
-    DIST: "distance",       // distance from previous point
+  INDEX: "index",
+  X: "x", // i.e., longitude
+  Y: "y", // i.e., latitude
+  T: "t", // the timestamp
+  T_CLEAN: "t_clean", // the timestamp, in DateTime format, interpolated to the second.
+  STATE: "state", // represents a user-defined T-F state
+  STATE_TMP: "state_tmp", // represents a temporary state
+  DIST: "distance", // distance from previous point
 });
 
 const COL_ORDER = [
@@ -30,7 +28,7 @@ const COL_ORDER = [
   COL_TYPES.T_CLEAN,
   COL_TYPES.DIST,
   COL_TYPES.T,
-  undefined,  // LOL, dirty hack.
+  undefined, // LOL, dirty hack.
   COL_TYPES.STATE,
   COL_TYPES.STATE_TMP,
 ];
@@ -62,7 +60,7 @@ export class DataTable {
 
   cacheVizData() {
     let timeCol = this.getColByType(COL_TYPES.T_CLEAN);
-    this.vizData = this.rows.map(row => ({
+    this.vizData = this.rows.map((row) => ({
       Order: row.Order,
       Latitude: row.Latitude,
       Longitude: row.Longitude,
@@ -72,12 +70,12 @@ export class DataTable {
 
   getTempCol() {
     // returns null or col object, i.e., {displayName, accessor, type}
-    let res = this.cols.filter(col => col.type === COL_TYPES.STATE_TMP);
+    let res = this.cols.filter((col) => col.type === COL_TYPES.STATE_TMP);
     return res.length > 0 ? res[0] : null;
   }
 
   getColByType(type) {
-    let res = this.cols.filter(c=>c.type === type);
+    let res = this.cols.filter((c) => c.type === type);
     return res.length > 0 ? res[0] : null;
   }
 
@@ -94,7 +92,7 @@ export class DataTable {
         if (cols[j].type !== ctype) continue;
         // Else: we found a column of the correct type, and we need to swap it back
         for (let k = j; k > nextIdx; k--) {
-          [cols[k], cols[k-1]] = [cols[k-1], cols[k]];
+          [cols[k], cols[k - 1]] = [cols[k - 1], cols[k]];
         }
         nextIdx++;
       }
@@ -104,9 +102,9 @@ export class DataTable {
   // NOTE: Returns a NEW DataTable
   withColumnTypes(colTypes) {
     let res = this.copy();
-    res.cols = res.cols.map(col=>({
-        ...col,
-        type: colTypes[col.accessor] || col.type,
+    res.cols = res.cols.map((col) => ({
+      ...col,
+      type: colTypes[col.accessor] || col.type,
     }));
 
     res = res.withCleanedTime();
@@ -121,8 +119,12 @@ export class DataTable {
     let tmpCol = this.getTempCol();
 
     // Filter out any current temp-state columns and add the new one.
-    result.cols = result.cols.filter(col => col.type !== COL_TYPES.STATE_TMP);
-    result.cols.push({displayName: state.name, accessor: state.id, type: COL_TYPES.STATE_TMP});
+    result.cols = result.cols.filter((col) => col.type !== COL_TYPES.STATE_TMP);
+    result.cols.push({
+      displayName: state.name,
+      accessor: state.id,
+      type: COL_TYPES.STATE_TMP,
+    });
 
     // Get the values for our new state. Note: this can't necessarily be done
     // row-by-row (e.g., for compound states).
@@ -144,8 +146,8 @@ export class DataTable {
     let tmpCol = result.getTempCol();
     if (!tmpCol) return result;
 
-    result.cols = result.cols.filter(col => col.type !== COL_TYPES.STATE_TMP);
-    result.rows = result.rows.map(row => {
+    result.cols = result.cols.filter((col) => col.type !== COL_TYPES.STATE_TMP);
+    result.rows = result.rows.map((row) => {
       delete row[tmpCol.accessor];
       return row;
     });
@@ -157,7 +159,7 @@ export class DataTable {
     if (!this.getTempCol()) return this;
 
     let result = this.copy();
-    result.cols = result.cols.map(col => {
+    result.cols = result.cols.map((col) => {
       col.type = col.type === COL_TYPES.STATE_TMP ? COL_TYPES.STATE : col.type;
       return col;
     });
@@ -168,10 +170,10 @@ export class DataTable {
   withDeletedStates(states) {
     let res = this.copy();
 
-    let toDeleteIDs = states.map(s=>s.id);
-    res.cols = res.cols.filter(col => !toDeleteIDs.includes(col.accessor));
-    res.rows = res.rows.map(r => {
-      toDeleteIDs.forEach(id=>delete r[id]);
+    let toDeleteIDs = states.map((s) => s.id);
+    res.cols = res.cols.filter((col) => !toDeleteIDs.includes(col.accessor));
+    res.rows = res.rows.map((r) => {
+      toDeleteIDs.forEach((id) => delete r[id]);
       return r;
     });
 
@@ -184,37 +186,45 @@ export class DataTable {
     let tCol = this.getColByType(COL_TYPES.T);
     if (!tCol || this.getColByType(COL_TYPES.T_CLEAN)) return this;
 
-    let times = this.rows.map(r => {
+    let times = this.rows.map((r) => {
       let t = Date.fromString(r[tCol.accessor]);
       // Interpret it in the current timezone instead of GMT...
-      t.setTime(t.getTime() + (t.getTimezoneOffset() * 60 * 1000));
+      t.setTime(t.getTime() + t.getTimezoneOffset() * 60 * 1000);
       return t;
     });
 
     // Now we interpolate...
     // This definitely assumes stuff....
-    for (let i = 0; i < times.length-1; i++) {
-      if (times[i].getTime() !== times[i+1].getTime()) continue;
+    for (let i = 0; i < times.length - 1; i++) {
+      if (times[i].getTime() !== times[i + 1].getTime()) continue;
       // OKAY: The times are the same, so we need to interpolate...
-      let j = i+1;
-      while (j < times.length && times[j].getTime() === times[j-1].getTime()) {
+      let j = i + 1;
+      while (
+        j < times.length &&
+        times[j].getTime() === times[j - 1].getTime()
+      ) {
         j++;
       }
       // Target time is either: the next different time OR a minute later, if
       // we're at the end.
       let start = times[i].getTime();
-      let target = j < times.length ? times[j].getTime() : times[i].getTime() + 60*1000;
-      for (let k = 1; k < (j-i); k++ ){
-        let t = start + (k / (j-i)) * (target - start);
-        times[i+k].setTime(t);
+      let target =
+        j < times.length ? times[j].getTime() : times[i].getTime() + 60 * 1000;
+      for (let k = 1; k < j - i; k++) {
+        let t = start + (k / (j - i)) * (target - start);
+        times[i + k].setTime(t);
       }
       i = j;
     }
 
     let res = this.copy();
-    let newCol = {displayName: "Time", accessor: "CLEANED_TIME", type: COL_TYPES.T_CLEAN};
+    let newCol = {
+      displayName: "Time",
+      accessor: "CLEANED_TIME",
+      type: COL_TYPES.T_CLEAN,
+    };
     res.cols = [...res.cols, newCol]; //.splice(3, 0, newCol);
-    res.rows = res.rows.map((row, idx)=>({
+    res.rows = res.rows.map((row, idx) => ({
       ...row,
       CLEANED_TIME: times[idx],
     }));
@@ -231,14 +241,15 @@ export class DataTable {
   }
 
   getTrueRanges(stateID) {
-    if (!this.cols.some(c=>c.accessor === stateID)) return [];
-    if (this.stateToTrueRanges.hasOwnProperty(stateID)) return this.stateToTrueRanges[stateID];
+    if (!this.cols.some((c) => c.accessor === stateID)) return [];
+    if (this.stateToTrueRanges.hasOwnProperty(stateID))
+      return this.stateToTrueRanges[stateID];
 
     let res = [];
     for (let row of this.rows) {
       if (row[stateID] !== "true") continue;
       let i = row.Order;
-      if (res.length === 0 || res.at(-1)[1] !== i-1) {
+      if (res.length === 0 || res.at(-1)[1] !== i - 1) {
         res.push([i, i]);
       } else {
         res.at(-1)[1] = i;
@@ -253,7 +264,7 @@ export class DataTable {
   }
 
   getReactTableCols() {
-    return this.cols.map(c => {
+    return this.cols.map((c) => {
       let col = {
         Header: c.displayName,
         accessor: c.accessor,
@@ -262,7 +273,7 @@ export class DataTable {
 
       // Need to tell React Table how to render the timestamp column
       if (c.type === COL_TYPES.T_CLEAN) {
-        col.Cell = ({cell: { value } }) => hhmmss(value);
+        col.Cell = ({ cell: { value } }) => hhmmss(value);
       }
       return col;
     });
@@ -284,15 +295,15 @@ export class DataTable {
   asObject() {
     let tsCol = this.getColByType(COL_TYPES.T_CLEAN);
     if (!tsCol) {
-      return {rows: this.rows, cols: this.cols};
+      return { rows: this.rows, cols: this.cols };
     }
 
     // We need to serialize the timestamp...
-    let rows = this.rows.map(r=> ({
+    let rows = this.rows.map((r) => ({
       ...r,
       [tsCol.accessor]: r[tsCol.accessor].toGMTString(),
     }));
-    return {rows, cols: this.cols};
+    return { rows, cols: this.cols };
   }
 
   static fromObject(o) {
@@ -303,7 +314,7 @@ export class DataTable {
     // Deserialize the timestamp column
     let tsCol = res.getColByType(COL_TYPES.T_CLEAN);
     if (tsCol) {
-      res.rows = res.rows.map(r=>({
+      res.rows = res.rows.map((r) => ({
         ...r,
         [tsCol.accessor]: Date.fromString(r[tsCol.accessor]),
       }));
@@ -316,7 +327,7 @@ export class DataTable {
   }
 
   // onSuccess: passed a new table, with no lat/long/time/order columns specified
-  static FromFile(file, {onError, onSuccess}) {
+  static FromFile(file, { onError, onSuccess }) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,

@@ -42,11 +42,11 @@ import { objectToState, getDependentStates } from "./utils.js";
 export const initialState = {
   // Eventually, we'll want a map from tableName: table.
   dataTable: undefined,
-  summaryTables: [],  // [{state}, ...]
+  summaryTables: [], // [{state}, ...]
   uiState: UIState.NotLoaded,
 
   // User-defined states
-  userDefinedStates: [],  // list of state objects
+  userDefinedStates: [], // list of state objects
   tmpUserDefinedState: null,
 
   // Interactions :D
@@ -65,7 +65,6 @@ export const initialState = {
   },
 };
 
-
 /* Helper functions */
 
 function cleanupInteractions(state) {
@@ -78,8 +77,8 @@ export function serialize(state) {
 
   let res = {
     dataTable: state.dataTable.asObject(),
-    userDefinedStates: state.userDefinedStates.map(s=>s.asObject()),
-    summaryTables: state.summaryTables.map(({state})=>state.asObject()),
+    userDefinedStates: state.userDefinedStates.map((s) => s.asObject()),
+    summaryTables: state.summaryTables.map(({ state }) => state.asObject()),
   };
   return LZString.compress(JSON.stringify(res));
 }
@@ -92,25 +91,25 @@ let actionHandlers = {};
 
 actionHandlers["loadState"] = (state, serializedState) => {
   if (!serializedState) {
-    console.log("No state to load")
+    console.log("No state to load");
     return state;
   }
 
-  cleanupInteractions(state);  // in case we're in the middle of something
+  cleanupInteractions(state); // in case we're in the middle of something
   let data = JSON.parse(LZString.decompress(serializedState));
   return {
     ...initialState,
     dataTable: DataTable.fromObject(data.dataTable),
-    userDefinedStates: data.userDefinedStates.map(o=>objectToState(o)),
+    userDefinedStates: data.userDefinedStates.map((o) => objectToState(o)),
     uiState: UIState.Default,
-    summaryTables: data.summaryTables.map(s=>({state: objectToState(s)})),
+    summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
   };
-}
+};
 
 // payload: a valid DataTable object.
 actionHandlers["loadTable"] = (state, payload) => {
   return {
-    ...initialState,  // Reset to the original state
+    ...initialState, // Reset to the original state
     dataTable: payload,
     uiState: UIState.Default,
   };
@@ -126,7 +125,7 @@ actionHandlers["changeTimespan"] = (state, payload) => {
   };
 };
 
-actionHandlers["startCreateRegion"] = (state, {dispatch}) => {
+actionHandlers["startCreateRegion"] = (state, { dispatch }) => {
   return {
     ...state,
     uiState: UIState.CreateRegion,
@@ -157,18 +156,20 @@ actionHandlers["cancelCreateCompoundState"] = (state, payload) => {
     ...state,
     uiState: UIState.Default,
   };
-}
+};
 
 actionHandlers["createCompoundState"] = (state, compoundState) => {
   return {
     ...state,
     userDefinedStates: state.userDefinedStates.concat(compoundState),
-    dataTable: state.dataTable.withTempState(compoundState).withCommittedTempState(),
+    dataTable: state.dataTable
+      .withTempState(compoundState)
+      .withCommittedTempState(),
     uiState: UIState.Default,
   };
-}
+};
 
-actionHandlers["createTempState"] = (state, {userDefinedState}) => {
+actionHandlers["createTempState"] = (state, { userDefinedState }) => {
   // return a new DataTable with the temp state column.
   // Note: clobbers any existing temp columns (!)
   return {
@@ -183,7 +184,9 @@ actionHandlers["commitTempState"] = (state, payload) => {
   // return a new DataTablewith the temp columns committed!
   return {
     ...state,
-    userDefinedStates: state.userDefinedStates.concat(state.tmpUserDefinedState),
+    userDefinedStates: state.userDefinedStates.concat(
+      state.tmpUserDefinedState
+    ),
     tmpUserDefinedState: null,
     createRegionInteraction: null,
     dataTable: state.dataTable.withCommittedTempState(),
@@ -192,21 +195,32 @@ actionHandlers["commitTempState"] = (state, payload) => {
 };
 
 actionHandlers["deleteState"] = (state, userState) => {
-  let toDelete = [userState, ...getDependentStates(userState, state.userDefinedStates)];
-  let toDeleteIDs = toDelete.map(s=>s.id);
+  let toDelete = [
+    userState,
+    ...getDependentStates(userState, state.userDefinedStates),
+  ];
+  let toDeleteIDs = toDelete.map((s) => s.id);
 
   return {
     ...state,
-    activeTab: toDeleteIDs.includes(state.activeTab) ? "BASE_TABLE" : state.activeTab,
-    userDefinedStates: state.userDefinedStates.filter(s=>!toDeleteIDs.includes(s.id)),
-    summaryTables: state.summaryTables.filter(t=>!toDeleteIDs.includes(t.state.id)),
+    activeTab: toDeleteIDs.includes(state.activeTab)
+      ? "BASE_TABLE"
+      : state.activeTab,
+    userDefinedStates: state.userDefinedStates.filter(
+      (s) => !toDeleteIDs.includes(s.id)
+    ),
+    summaryTables: state.summaryTables.filter(
+      (t) => !toDeleteIDs.includes(t.state.id)
+    ),
     dataTable: state.dataTable.withDeletedStates(toDelete),
   };
 };
 
 actionHandlers["createSummary"] = (state, stateID) => {
   // See if the summary already exists.
-  let existingSummary = state.summaryTables.find(st=>st.state.id === stateID);
+  let existingSummary = state.summaryTables.find(
+    (st) => st.state.id === stateID
+  );
   if (existingSummary) {
     return {
       ...state,
@@ -215,13 +229,13 @@ actionHandlers["createSummary"] = (state, stateID) => {
   }
 
   // Find the state w/ the given ID
-  let uds = state.userDefinedStates.find(s=>s.id === stateID);
+  let uds = state.userDefinedStates.find((s) => s.id === stateID);
   if (!uds) return state;
 
   return {
     ...state,
     activeTab: stateID,
-    summaryTables: [...state.summaryTables, {state: uds}],
+    summaryTables: [...state.summaryTables, { state: uds }],
   };
 };
 
@@ -251,7 +265,7 @@ actionHandlers["highlightPointsForState"] = (state, userState) => ({
   vizState: {
     ...state.vizState,
     highlightedPoints: state.dataTable.getTrueRanges(userState.id),
-  }
+  },
 });
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function

@@ -9,7 +9,7 @@ NOTE:
 */
 
 export class CompoundState {
-  static typeName = "CompoundState";  // surely there's a better way?
+  static typeName = "CompoundState"; // surely there's a better way?
 
   constructor(state1, state2, nodes, edges, name) {
     this.states = [state1, state2];
@@ -26,19 +26,25 @@ export class CompoundState {
   }
 
   toggleNode(node) {
-    let nodes = this.nodes.includes(node) ? this.nodes.filter(x=>x!==node) : [...this.nodes, node];
+    let nodes = this.nodes.includes(node)
+      ? this.nodes.filter((x) => x !== node)
+      : [...this.nodes, node];
     return new CompoundState(...this.states, nodes, this.edges);
   }
 
   toggleEdge(edge) {
-    let edges = this.edges.includes(edge) ? this.edges.filter(x=>x!==edge) : [...this.edges, edge];
+    let edges = this.edges.includes(edge)
+      ? this.edges.filter((x) => x !== edge)
+      : [...this.edges, edge];
     return new CompoundState(...this.states, this.nodes, edges);
   }
 
   getValues(rows) {
     let truePoints = getChosenPoints(rows, this.states, this.nodes, this.edges);
-    return rows.map(row => {
-      return "" + truePoints.some(([lo, hi]) => lo <= row[INDEX] && row[INDEX] <= hi);
+    return rows.map((row) => {
+      return (
+        "" + truePoints.some(([lo, hi]) => lo <= row[INDEX] && row[INDEX] <= hi)
+      );
     });
   }
 
@@ -47,12 +53,12 @@ export class CompoundState {
     let [existingNodes, existingEdges] = [[], []];
     let summary = summarizeByStates(dataTable.rows, this.states);
 
-    summary.forEach(({state, range}, i)=>{
+    summary.forEach(({ state, range }, i) => {
       if (!existingNodes.includes(state)) existingNodes.push(state);
 
-      if (i+1 === summary.length) return;
+      if (i + 1 === summary.length) return;
 
-      let edge = `${state}${summary[i+1].state}`;
+      let edge = `${state}${summary[i + 1].state}`;
       if (!existingEdges.includes(edge)) existingEdges.push(edge);
     });
     return [existingNodes, existingEdges];
@@ -83,26 +89,27 @@ export class CompoundState {
   }
 }
 
-const stateToString = (s1, s2) => `${s1 === "true" ? "T" : "F"}${s2 === "true" ? "T" : "F"}`;
+const stateToString = (s1, s2) =>
+  `${s1 === "true" ? "T" : "F"}${s2 === "true" ? "T" : "F"}`;
 
 function summarizeByStates(rows, [s1, s2]) {
-  let res = [];  // e.g., [{state: 'TF', range: [1, 10]}, {state: 'TT', range: 11, 15}, ...]
+  let res = []; // e.g., [{state: 'TF', range: [1, 10]}, {state: 'TT', range: 11, 15}, ...]
   for (let row of rows) {
     let state = stateToString(row[s1.id], row[s2.id]);
     if (res.length === 0 || res.at(-1).state !== state) {
       let range = [row[INDEX], row[INDEX]];
-      res.push({state, range});
+      res.push({ state, range });
     } else {
-      res.at(-1).range[1] = row[INDEX];  // extend the range
+      res.at(-1).range[1] = row[INDEX]; // extend the range
     }
   }
   return res;
 }
 
 function getChosenPoints(rows, states, selectedNodes, selectedEdges) {
-  let forward = {'TT': [], 'TF': [], 'FF': [], 'FT': []};
-  let backward = {'TT': [], 'TF': [], 'FF': [], 'FT': []};
-  selectedEdges.forEach(edge=>{
+  let forward = { TT: [], TF: [], FF: [], FT: [] };
+  let backward = { TT: [], TF: [], FF: [], FT: [] };
+  selectedEdges.forEach((edge) => {
     let [u, v] = [edge.slice(0, 2), edge.slice(2, 4)];
     forward[u].push(v);
     backward[v].push(u);
@@ -111,13 +118,13 @@ function getChosenPoints(rows, states, selectedNodes, selectedEdges) {
   let sumTable = summarizeByStates(rows, states);
   let res = [];
 
-  sumTable.forEach(({state, range}, i) => {
+  sumTable.forEach(({ state, range }, i) => {
     let node = state;
 
     if (!selectedNodes.includes(node)) return;
 
-    let prevNode = i > 0 ? sumTable[i-1].state : null;
-    let nextNode = i+1 < sumTable.length ? sumTable[i+1].state : null;
+    let prevNode = i > 0 ? sumTable[i - 1].state : null;
+    let nextNode = i + 1 < sumTable.length ? sumTable[i + 1].state : null;
 
     if (forward[node].length > 0 && !forward[node].includes(nextNode)) return;
     if (backward[node].length > 0 && !backward[node].includes(prevNode)) return;

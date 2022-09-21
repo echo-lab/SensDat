@@ -3,8 +3,8 @@ import { CompoundState } from "./states/compound-state.js";
 
 // This is slightly sad.
 const stateFactories = [
-  o=>EllipseRegion.fromObject(o),
-  o=>CompoundState.fromObject(o),
+  (o) => EllipseRegion.fromObject(o),
+  (o) => CompoundState.fromObject(o),
 ];
 
 // This assumes that the stateFactories will return null if the object isn't
@@ -30,12 +30,12 @@ export function uid() {
 // state called "AB" which combines regions A and B, then we should return
 // the compound state AB.
 export function getDependentStates(state, states) {
-  let deps = states.filter(s => (
-    s instanceof CompoundState &&
-    s.states.some(dep => dep.id === state.id)
-  ));
+  let deps = states.filter(
+    (s) =>
+      s instanceof CompoundState && s.states.some((dep) => dep.id === state.id)
+  );
   let res = [...deps];
-  deps.forEach(dep=>res.push(...getDependentStates(dep, states)));
+  deps.forEach((dep) => res.push(...getDependentStates(dep, states)));
   return res;
 }
 
@@ -43,9 +43,9 @@ export function hhmmss(d) {
   if (!d.getHours || !d.getMinutes || !d.getSeconds) return "00:00:00";
 
   return [
-    d.getHours() < 10 ? '0' + d.getHours() : d.getHours(),
-    d.getMinutes() < 10 ? '0' + d.getMinutes() : d.getMinutes(),
-    d.getSeconds() < 10 ? '0' + d.getSeconds() : d.getSeconds(),
+    d.getHours() < 10 ? "0" + d.getHours() : d.getHours(),
+    d.getMinutes() < 10 ? "0" + d.getMinutes() : d.getMinutes(),
+    d.getSeconds() < 10 ? "0" + d.getSeconds() : d.getSeconds(),
   ].join(":");
   // return [d.getHours(), d.getMinutes(), d.getSeconds()].join(":");
 }

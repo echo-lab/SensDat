@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { actions } from "./app-state.js";
 import { EllipseRegion } from "./states/region.js";
-import debounce from 'lodash.debounce'
+import debounce from "lodash.debounce";
 
 const RADIUS = 30;
 const DEFAULT_NAME = "[New Region]";
@@ -18,10 +18,9 @@ export class CreateRegionInteraction {
     this.name = "";
     this.userDefinedState = null;
 
-    this.debouncedCreateTempState = debounce((userDefinedState)=>{
-      this.dispatch(actions.createTempState({userDefinedState}));
-    },
-    200);
+    this.debouncedCreateTempState = debounce((userDefinedState) => {
+      this.dispatch(actions.createTempState({ userDefinedState }));
+    }, 200);
   }
 
   initializeSvg(svgElement, svgCoordMapping) {
@@ -41,16 +40,17 @@ export class CreateRegionInteraction {
 
     let userDefinedState = this.userDefinedState.withName(name);
     this.userDefinedState = userDefinedState;
-    let uds = this.userDefinedState.name === ""
-      ? this.userDefinedState.withName(DEFAULT_NAME)
-      : this.userDefinedState;
+    let uds =
+      this.userDefinedState.name === ""
+        ? this.userDefinedState.withName(DEFAULT_NAME)
+        : this.userDefinedState;
     this.nameElement.innerHTML = uds.name;
     this.debouncedCreateTempState(uds);
   }
 
   onClick(e) {
     e.preventDefault();
-    let {xToLong, yToLat, svgX, svgY} = this.svgCoordMapping;
+    let { xToLong, yToLat, svgX, svgY } = this.svgCoordMapping;
     let [x, y] = d3.pointer(e, this.svg);
 
     let [[minX, maxX], [maxY, minY]] = [svgX, svgY];
@@ -66,7 +66,10 @@ export class CreateRegionInteraction {
       // An alternative is that we use two SVGs which are overlaid :)
       // If we do that, we might need to do something fancy to allow events in general, e.g.,
       // style="pointer-events:none;" on the overlay, maybe.
-      this.element = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      this.element = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
       [
         ["cx", x],
         ["cy", y],
@@ -77,7 +80,10 @@ export class CreateRegionInteraction {
       ].forEach(([attr, val]) => this.element.setAttribute(attr, val));
       this.svg.appendChild(this.element);
 
-      this.nameElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      this.nameElement = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text"
+      );
       [
         ["x", x],
         ["y", y - RADIUS],
@@ -94,15 +100,16 @@ export class CreateRegionInteraction {
     this.element.setAttribute("r", RADIUS);
 
     this.nameElement.setAttribute("x", x);
-    this.nameElement.setAttribute("y", y-RADIUS);
+    this.nameElement.setAttribute("y", y - RADIUS);
 
     let [cx, cy] = [xToLong(x), yToLat(y)];
-    let rx = xToLong(x+RADIUS) - cx;
-    let ry = yToLat(y-RADIUS) - cy;
+    let rx = xToLong(x + RADIUS) - cx;
+    let ry = yToLat(y - RADIUS) - cy;
     this.userDefinedState = new EllipseRegion([cx, cy], rx, ry, this.name);
-    let uds = this.userDefinedState.name === ""
-      ? this.userDefinedState.withName(DEFAULT_NAME)
-      : this.userDefinedState;
+    let uds =
+      this.userDefinedState.name === ""
+        ? this.userDefinedState.withName(DEFAULT_NAME)
+        : this.userDefinedState;
     this.debouncedCreateTempState(uds);
   }
 
@@ -113,8 +120,8 @@ export class CreateRegionInteraction {
     if (!this.element) return;
     if (!this.userDefinedState) return;
 
-    let s = this.userDefinedState;  // Has Lat/Long coordinates.
-    let {longToX, latToY} = this.svgCoordMapping;
+    let s = this.userDefinedState; // Has Lat/Long coordinates.
+    let { longToX, latToY } = this.svgCoordMapping;
     let [x, y, r] = [
       longToX(s.cx),
       latToY(s.cy),

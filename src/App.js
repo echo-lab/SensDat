@@ -1,6 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 
+// TODO: this should either be deleted OR the code in index.js should be mostly moved here :)
 function App() {
   return (
     <div className="App">

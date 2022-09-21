@@ -1,16 +1,18 @@
 import React, { useRef, useEffect, useMemo } from "react";
-import * as d3 from "d3";
-import debounce from 'lodash.debounce'
+
 import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
+
+import * as d3 from "d3";
+import debounce from "lodash.debounce";
+
 import { actions } from "./app-state.js";
-import {EllipseRegion} from "./states/region.js";
+import { EllipseRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
 
-const PADDING_FRACTION = 1.1;
-
-const SVG_ASPECT_RATIO = 8/5;  // width/height
+const SVG_ASPECT_RATIO = 8 / 5; // width/height
 const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
+const PADDING_FRACTION = 1.1;  // How much to pad the data w.r.t. the graph axes.
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
@@ -31,22 +33,33 @@ const Range = createSliderWithTooltip(Slider.Range);
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
 export function VizView({
-  vizData, vizTimespan, uistate, dispatch,
-  createRegionInteraction, highlightedPoints, shownPoints, useShownPoints,
-  userDefinedStates, dimensions
- }) {
+  vizData,
+  vizTimespan,
+  uistate,
+  dispatch,
+  createRegionInteraction,
+  highlightedPoints,
+  shownPoints,
+  useShownPoints,
+  userDefinedStates,
+  dimensions,
+}) {
   const svgRef = useRef();
   const d3Dots = useRef();
   const svgCoordMapping = useRef(null);
 
-  let svgWidth = (dimensions.width * 0.97) || 500;  // Default to 500 to avoid an error message
+  let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
   // Update the coordinate mapping.
   useEffect(
     () => {
       if (!vizData) return;
-      svgCoordMapping.current = getSvgCoordMapping(vizData, svgWidth, svgHeight);
+      svgCoordMapping.current = getSvgCoordMapping(
+        vizData,
+        svgWidth,
+        svgHeight
+      );
     },
     /*dependencies=*/ [vizData, svgWidth, svgHeight]
   );
@@ -57,18 +70,35 @@ export function VizView({
       let svg = d3.select(svgRef.current);
       if (!vizData) return;
 
-      d3Dots.current = drawToSVG(svg, vizData, vizTimespan, svgCoordMapping.current, userDefinedStates);
-      createRegionInteraction && createRegionInteraction.redraw(svgCoordMapping.current);
+      d3Dots.current = drawToSVG(
+        svg,
+        vizData,
+        vizTimespan,
+        svgCoordMapping.current,
+        userDefinedStates
+      );
+      createRegionInteraction &&
+        createRegionInteraction.redraw(svgCoordMapping.current);
 
       return () => {};
     },
-    /*dependencies=*/ [vizData, vizTimespan, createRegionInteraction, userDefinedStates, dimensions]
+    /*dependencies=*/ [
+      vizData,
+      vizTimespan,
+      createRegionInteraction,
+      userDefinedStates,
+      dimensions,
+    ]
   );
 
   // This initializes the createRegionInteraction with the SVG.
   useEffect(
     () => {
-      createRegionInteraction && createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping.current);
+      createRegionInteraction &&
+        createRegionInteraction.initializeSvg(
+          svgRef.current,
+          svgCoordMapping.current
+        );
     },
     /*dependencies=*/ [createRegionInteraction]
   );
@@ -78,29 +108,45 @@ export function VizView({
     () => {
       if (!d3Dots.current) return;
 
-      let shownDoobs = d3Dots.current
-        .filter(d=>shownPoints[0] <= d.Order && d.Order <= shownPoints[1]);
+      let shownDoobs = d3Dots.current.filter(
+        (d) => shownPoints[0] <= d.Order && d.Order <= shownPoints[1]
+      );
       useShownPoints &&
         shownDoobs.attr("fill", DOT_COLOR).attr("stroke", "black").raise();
 
       let highlightPoints = highlightedPoints || [];
 
-      let highlights = d3Dots.current
-        .filter(d=>highlightPoints.some(
-          ([lo, hi])=>(lo <= d.Order && d.Order <= hi)));
-      highlights.attr("fill", DOT_HIGHLIGHT_COLOR).attr("stroke", "black").attr("r", 3.5).raise();
+      let highlights = d3Dots.current.filter((d) =>
+        highlightPoints.some(([lo, hi]) => lo <= d.Order && d.Order <= hi)
+      );
+      highlights
+        .attr("fill", DOT_HIGHLIGHT_COLOR)
+        .attr("stroke", "black")
+        .attr("r", 3.5)
+        .raise();
 
       return () => {
         useShownPoints &&
           shownDoobs.attr("fill", INVISIBLE_COLOR).attr("stroke", null);
-        highlights.attr("fill", INVISIBLE_COLOR).attr("stroke", null).attr("r", 3);
+        highlights
+          .attr("fill", INVISIBLE_COLOR)
+          .attr("stroke", null)
+          .attr("r", 3);
       };
     },
     // TODO: These dependencies are kind of sad... It's basically set so that we
     // redo this whenever d3Dots changes, which is whenever a resize happens, etc.
     // I think we might be able to do a viewbox thing w/ the SVG to avoid
     // recalculating everything on resizes?
-    /*deps=*/[vizData, vizTimespan, createRegionInteraction, highlightedPoints, shownPoints, dimensions, useShownPoints]
+    /*deps=*/ [
+      vizData,
+      vizTimespan,
+      createRegionInteraction,
+      highlightedPoints,
+      shownPoints,
+      dimensions,
+      useShownPoints,
+    ]
   );
 
   // TODO: Figure out what these should be and probably move them.
@@ -112,14 +158,10 @@ export function VizView({
     border: "solid 1px black",
   };
 
-  let timeSliderProps = {vizData, vizTimespan, svgWidth, dispatch};
-  let timeSlider = useMemo(
-    ()=>{
-      return vizData
-        ? <TimeSlider {...timeSliderProps} />
-        : null;
-    },
-    [vizData, vizTimespan, svgWidth]);
+  let timeSliderProps = { vizData, vizTimespan, svgWidth, dispatch };
+  let timeSlider = useMemo(() => {
+    return vizData ? <TimeSlider {...timeSliderProps} /> : null;
+  }, [vizData, vizTimespan, svgWidth]);
 
   return (
     <div className="viz-container debug def-visible">
@@ -130,10 +172,10 @@ export function VizView({
 }
 
 // TODO: would this be simpler to just... implement without a library??
-function TimeSlider({vizData, vizTimespan, svgWidth, dispatch}) {
+function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
   // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
-  let tipFormatter = useMemo(()=>{
-    let [tMin, tMax] = d3.extent(vizData, d => d.Timestamp.getTime());
+  let tipFormatter = useMemo(() => {
+    let [tMin, tMax] = d3.extent(vizData, (d) => d.Timestamp.getTime());
     return (val) =>
       hhmmss(new Date(tMin + (val / vizData.length) * (tMax - tMin)));
   }, [vizData]);
@@ -145,13 +187,13 @@ function TimeSlider({vizData, vizTimespan, svgWidth, dispatch}) {
     defaultValue: [0, vizData.length],
     allowCross: false,
     draggableTrack: true,
-    onChange: debounce((val)=>dispatch(actions.changeTimespan(val)), 18),
+    onChange: debounce((val) => dispatch(actions.changeTimespan(val)), 18),
     tipFormatter,
   };
 
   const sliderDivStyle = {
-    width: svgWidth - 150,  // TODO: fix this - it's a weird magic value
-    margin: 50
+    width: svgWidth - 150, // TODO: fix this - it's a weird magic value
+    margin: 50,
   };
 
   return (
@@ -160,8 +202,6 @@ function TimeSlider({vizData, vizTimespan, svgWidth, dispatch}) {
       <Range {...rangeProps} />
     </div>
   );
-
-
 }
 
 // Get information about how the SVG's xy-coordinates should correspond to
@@ -191,7 +231,8 @@ function getSvgCoordMapping(data, width, height) {
   let svgY = [height - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
 
   return {
-    svgX, svgY,
+    svgX,
+    svgY,
     xToLong: d3.scaleLinear().domain(svgX).range(longitude),
     yToLat: d3.scaleLinear().domain(svgY).range(latitude),
     longToX: d3.scaleLinear().domain(longitude).range(svgX),
@@ -200,8 +241,8 @@ function getSvgCoordMapping(data, width, height) {
 }
 
 function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
-  let {longToX, latToY} = svgCoordMapping;  // These are functions
-  let {svgX, svgY} = svgCoordMapping;  // These are range values, i.e., [low, high]
+  let { longToX, latToY } = svgCoordMapping; // These are functions
+  let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
 
   // Filter to the selected timespan range.
   data = filterByTimespan(data, timespan);
@@ -258,17 +299,18 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
     .attr("cy", (d) => latToY(d.Latitude))
     .attr("r", 3)
     .attr("fill", INVISIBLE_COLOR);
-    // .on("click", selectPoint)
-    // .on("mouseenter", (e) => {
-    //   console.log("mouseenter event: ", e);
-    // })
-    // .on("mouseleave", (e) => {
-    //   console.log("mouseleave event: ", e);
-    // });
+  // .on("click", selectPoint)
+  // .on("mouseenter", (e) => {
+  //   console.log("mouseenter event: ", e);
+  // })
+  // .on("mouseleave", (e) => {
+  //   console.log("mouseleave event: ", e);
+  // });
 
   // Draw the current regions
-  let regions = svg.selectAll("regionStates")
-    .data(userDefinedStates.filter(s=>s instanceof EllipseRegion))
+  let regions = svg
+    .selectAll("regionStates")
+    .data(userDefinedStates.filter((s) => s instanceof EllipseRegion))
     .enter()
     .append("g");
 
@@ -276,17 +318,18 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
     .append("ellipse")
     .style("stroke", "black")
     .style("fill-opacity", 0.0)
-    .attr("cx", d=>longToX(d.cx))
-    .attr("cy", d=>latToY(d.cy))
-    .attr("rx", d=>Math.abs(longToX(d.cx+d.rx) - longToX(d.cx)))
-    .attr("ry", d=>Math.abs(latToY(d.cy+d.ry) - latToY(d.cy)));
+    .attr("cx", (d) => longToX(d.cx))
+    .attr("cy", (d) => latToY(d.cy))
+    .attr("rx", (d) => Math.abs(longToX(d.cx + d.rx) - longToX(d.cx)))
+    .attr("ry", (d) => Math.abs(latToY(d.cy + d.ry) - latToY(d.cy)));
 
-  regions.append("text")
-      .attr("x", d=>longToX(d.cx))
-      .attr("y", d=>latToY(d.cy+d.ry))
-      .attr("text-anchor", "middle")
-      .attr("dy", "-.35em")
-      .text(d=>d.name);
+  regions
+    .append("text")
+    .attr("x", (d) => longToX(d.cx))
+    .attr("y", (d) => latToY(d.cy + d.ry))
+    .attr("text-anchor", "middle")
+    .attr("dy", "-.35em")
+    .text((d) => d.name);
 
   return dots;
 }
@@ -366,12 +409,13 @@ function getLatLongDomain([long0, long1], [lat0, lat1], [width, height]) {
 function filterByTimespan(data, timespan) {
   // Note sure if this is good or not :)
   if (data[0].Timestamp) {
-    let [minTime, maxTime] = d3.extent(data, d => d.Timestamp.getTime());
+    let [minTime, maxTime] = d3.extent(data, (d) => d.Timestamp.getTime());
     let [r1, r2] = timespan;
     let t1 = minTime + (r1 / data.length) * (maxTime - minTime);
     let t2 = minTime + (r2 / data.length) * (maxTime - minTime);
     return data.filter(
-      (row) => row.Timestamp.getTime() >= t1 && row.Timestamp.getTime() <= t2);
+      (row) => row.Timestamp.getTime() >= t1 && row.Timestamp.getTime() <= t2
+    );
   }
 
   let [minOrder, maxOrder] = d3.extent(data, (d) => d.Order);
