@@ -27,7 +27,7 @@ export function UploadDataWidget({ onCancel, onDone, dispatch }) {
     onCancel,
     advanceFn: () => setStep(STEPS.CHOOSE_COLUMNS),
     loadTestData: () => {
-      DataTable.FromTestData().then((dt) => {
+      DataTable.FromTestData(1).then((dt) => {
         dispatch(actions.loadTable(dt));
         onDone();
       });
