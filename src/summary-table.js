@@ -9,6 +9,7 @@ const SUMMARY_COLS = Object.freeze({
   STATE: "STATE",
   START_TIME: "START_TIME",
   END_TIME: "END_TIME",
+  NEXT_TIME: "NEXT_TIME",
   ELAPSED_TIME: "ELAPSED_TIME",
   DISTANCE: "DISTANCE",
 });
@@ -44,7 +45,7 @@ export function SummaryTable({ table, state, highlightFn }) {
             onMouseLeave={() => highlightFn([])}
           >
             {cols.map(({ accessor }, idx) => {
-              if (!row[accessor]) return null;
+              if (row[accessor] === undefined) return null;
               if (accessor === SUMMARY_COLS.CYCLE) {
                 return (
                   <td role="cell" key={idx} rowSpan={row["cycleRowspan"] || 1}>
@@ -123,6 +124,7 @@ function getCycleRanges(table, state) {
 //     state: "NOT <state name>" | "<state name>"
 //     startTime: <string>,
 //     endTime: <string>,
+//     nextCycleTime: <string> (??)
 //     pointsRange: [startIdx, endIdx],
 //     cycle: <number> | null  // null if previous row's cell has rowspan 2
 //     cycleRowspan: 2 | 1 | null
@@ -133,7 +135,7 @@ function getBreakdownByTF(table, state) {
     { Header: "Cycle", accessor: SUMMARY_COLS.CYCLE },
     { Header: "State", accessor: SUMMARY_COLS.STATE },
     { Header: "Start Time", accessor: SUMMARY_COLS.START_TIME },
-    { Header: "End Time", accessor: SUMMARY_COLS.END_TIME },
+    // { Header: "End Time", accessor: SUMMARY_COLS.END_TIME },
     { Header: "Total Time", accessor: SUMMARY_COLS.ELAPSED_TIME },
   ];
   if (hasDistCol)
@@ -142,18 +144,29 @@ function getBreakdownByTF(table, state) {
   let cycleRanges = getCycleRanges(table, state);
 
   let rows = cycleRanges.map((cycleRange, idx) => {
-    let t0 = getTime(table, cycleRange.range[0]);
-    let t1 = getTime(table, cycleRange.range[1]);
+    let [startIdx, endIdx] = cycleRange.range;
+    let tStart = getTime(table, startIdx);
+    let tEnd = getTime(table, endIdx);
+    let tNext;  // The time the next stretch starts...
+    if (idx !== cycleRanges.length - 1) {
+      tNext = getTime(table, cycleRange.range[1] + 1);
+    } else {
+      // Guess the time of the next point based on the current sampling rate.
+      let dt = tEnd.getTime() - getTime(table, endIdx-1).getTime();
+      tNext = new Date(tEnd.getTime() + dt);  
+    }
     let res = {
       [SUMMARY_COLS.STATE]:
         cycleRange.state === "true" ? state.name : `NOT ${state.name}`,
-      [SUMMARY_COLS.START_TIME]: t0,
-      [SUMMARY_COLS.END_TIME]: t1,
-      [SUMMARY_COLS.ELAPSED_TIME]: timeDiffString(t0, t1),
+      [SUMMARY_COLS.START_TIME]: tStart,
+      [SUMMARY_COLS.END_TIME]: tEnd,
+      [SUMMARY_COLS.NEXT_TIME]: tNext,
+      [SUMMARY_COLS.ELAPSED_TIME]: timeDiffString(tStart, tNext),
       pointsRange: cycleRange.range,
     };
-    if (hasDistCol)
+    if (hasDistCol) {
       res[SUMMARY_COLS.DISTANCE] = getDistance(table, ...cycleRange.range);
+    }
 
     // Populate 'cycle' and 'cycleRowspan' conditionally.
     let prev = idx > 0 ? cycleRanges[idx - 1] : null;
@@ -172,7 +185,6 @@ function getBreakdownByTF(table, state) {
 }
 
 function getDistance(table, idx0, idx1) {
-  console.log("Calling getDistance w/ indexes: ", idx0, idx1);
   const indexAccessor = table.getAccessor(COL_TYPES.INDEX);
   const index = (row) => row[indexAccessor];
 
