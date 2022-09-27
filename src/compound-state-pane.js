@@ -58,7 +58,7 @@ export function CompoundStatePane({
 
   return (
     <Container>
-      <h2 className="text-center"> Create Compound State </h2>
+      <h2 className="text-center"> Create Combination State </h2>
       {step === CHOOSE_STATES ? (
         <PickTwoStates {...pickTwoStatesProps} />
       ) : (
@@ -265,7 +265,7 @@ function StateNameModal({ show, onClose, commit }) {
           <Form.Control
             as="input"
             type="text"
-            placeholder="Compound State Name"
+            placeholder="Combination State Name"
             autoFocus
             htmlSize="10"
             value={stateName}
@@ -282,7 +282,7 @@ function StateNameModal({ show, onClose, commit }) {
           onClick={onSubmit}
           disabled={stateName === ""}
         >
-          Create Compound State
+          Create Combination State
         </Button>
       </Modal.Footer>
     </Modal>

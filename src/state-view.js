@@ -52,7 +52,7 @@ export function StateView({
               onClick={handleCreateCompoundState}
               disabled={userDefinedStates.length < 2}
             >
-              Compound
+              Combination
             </Dropdown.Item>
           </DropdownButton>
           {userDefinedStates.map((s) => (
