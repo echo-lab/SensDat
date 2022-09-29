@@ -35,20 +35,17 @@ export function SummaryTab({ table, state, highlightFn }) {
 
 function SummaryModeDropdown({ trueOnly, setTrueOnly }) {
   const CustomToggle = forwardRef(({ children, onClick }, ref) => (
-    <>
-      <span
-        ref={ref}
-        className="mx-1"
-        style={{ cursor: "pointer" }}
-        onClick={(e) => {
-          e.preventDefault();
-          onClick(e);
-        }}
-      >
-        {children}
-        <span className="mx-1">▼</span>
-      </span>
-    </>
+    <span
+      ref={ref}
+      className="mx-1 dropdown-toggle"
+      style={{ cursor: "pointer" }}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(e);
+      }}
+    >
+      {children}
+    </span>
   ));
 
   return (
