@@ -7,7 +7,8 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 
 import { actions } from "./app-state.js";
-import { SummaryTable } from "./summary-table.js";
+import { SummaryTab } from "./summary-table.js";
+import { TableStyles } from "./utils.js";
 
 export function DataView({
   dataTable,
@@ -42,13 +43,11 @@ export function DataView({
               key={st.state.id}
               title={`Summary: ${st.state.name}`}
             >
-              <Styles>
-                <SummaryTable
-                  table={dataTable}
-                  state={st.state}
-                  highlightFn={highlightFn}
-                />
-              </Styles>
+              <SummaryTab
+                table={dataTable}
+                state={st.state}
+                highlightFn={highlightFn}
+              />
             </Tab>
           ))}
         </Tabs>
@@ -121,7 +120,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   );
 
   return (
-    <Styles>
+    <TableStyles>
       <div {...getTableProps()} className="table">
         <div>
           {headerGroups.map((headerGroup) => (
@@ -151,7 +150,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           </FixedSizeList>
         </div>
       </div>
-    </Styles>
+    </TableStyles>
   );
 }
 
@@ -167,65 +166,3 @@ const scrollbarWidth = () => {
   document.body.removeChild(scrollDiv);
   return scrollbarWidth;
 };
-
-export const Styles = styled.div`
-  padding: 1rem;
-
-  .table {
-    display: inline-block;
-    border-spacing: 0;
-    border: 1px solid black;
-    width: auto;
-
-    .tr {
-      :last-child {
-        .td {
-          border-bottom: 0;
-        }
-      }
-    }
-
-    .th {
-      font-weight: bold;
-    }
-
-    .th,
-    .td {
-      margin: 0;
-      padding: 0.5rem;
-      border-bottom: 1px solid black;
-      border-right: 1px solid black;
-      text-align: center;
-
-      :last-child {
-        border-right: 1px solid black;
-      }
-    }
-  }
-
-  table {
-    border-spacing: 0;
-    border: 1px solid black;
-
-    tr {
-      :last-child {
-        td {
-          border-bottom: 0;
-        }
-      }
-    }
-
-    th,
-    td {
-      margin: 0;
-      padding: 0.5rem 1rem 0.5rem 1rem;
-      border-bottom: 1px solid black;
-      border-right: 1px solid black;
-      text-align: center;
-
-      :last-child {
-        border-right: 0;
-      }
-    }
-  }
-`;

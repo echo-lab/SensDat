@@ -1,5 +1,6 @@
 import { EllipseRegion } from "./states/region.js";
 import { CompoundState } from "./states/compound-state.js";
+import styled from "styled-components";
 
 // This is slightly sad.
 const stateFactories = [
@@ -60,3 +61,67 @@ export function timeDiffString(t1, t2) {
   seconds = seconds % 60;
   return `${minutes}m ${seconds}s`;
 }
+
+// This is a silly place for this, but... oh well.
+// TODO: consider just moving this into CSS.
+export const TableStyles = styled.div`
+  padding: 1rem;
+
+  .table {
+    display: inline-block;
+    border-spacing: 0;
+    border: 1px solid black;
+    width: auto;
+
+    .tr {
+      :last-child {
+        .td {
+          border-bottom: 0;
+        }
+      }
+    }
+
+    .th {
+      font-weight: bold;
+    }
+
+    .th,
+    .td {
+      margin: 0;
+      padding: 0.5rem;
+      border-bottom: 1px solid black;
+      border-right: 1px solid black;
+      text-align: center;
+
+      :last-child {
+        border-right: 1px solid black;
+      }
+    }
+  }
+
+  table {
+    border-spacing: 0;
+    border: 1px solid black;
+
+    tr {
+      :last-child {
+        td {
+          border-bottom: 0;
+        }
+      }
+    }
+
+    th,
+    td {
+      margin: 0;
+      padding: 0.5rem 1rem 0.5rem 1rem;
+      border-bottom: 1px solid black;
+      border-right: 1px solid black;
+      text-align: center;
+
+      :last-child {
+        border-right: 0;
+      }
+    }
+  }
+`;

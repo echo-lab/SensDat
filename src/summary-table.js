@@ -1,12 +1,17 @@
+import { useState, useMemo, forwardRef } from "react";
+
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
+import Dropdown from "react-bootstrap/Dropdown";
+import Container from "react-bootstrap/Container";
 
 import { COL_TYPES } from "./data-table.js";
-import { hhmmss, timeDiffString } from "./utils.js";
+import { TableStyles, hhmmss, timeDiffString } from "./utils.js";
 
 const SUMMARY_COLS = Object.freeze({
   CYCLE: "CYCLE",
   STATE: "STATE",
+  STATE_VALUE: "STATE_VALUE",
   START_TIME: "START_TIME",
   END_TIME: "END_TIME",
   NEXT_TIME: "NEXT_TIME",
@@ -16,8 +21,71 @@ const SUMMARY_COLS = Object.freeze({
 
 const TIME_COLS = [SUMMARY_COLS.START_TIME, SUMMARY_COLS.END_TIME];
 
-export function SummaryTable({ table, state, highlightFn }) {
-  let [cols, rows] = getBreakdownByTF(table, state);
+export function SummaryTab({ table, state, highlightFn }) {
+  let [trueOnly, setTrueOnly] = useState(true);
+  let props = { table, state, highlightFn, trueOnly, setTrueOnly };
+  return (
+    <Container>
+      <TableStyles>
+        <SummaryTable {...props}></SummaryTable>
+      </TableStyles>
+    </Container>
+  );
+}
+
+function SummaryModeDropdown({ trueOnly, setTrueOnly }) {
+  const CustomToggle = forwardRef(({ children, onClick }, ref) => (
+    <>
+      <span
+        ref={ref}
+        className="mx-1"
+        style={{ cursor: "pointer" }}
+        onClick={(e) => {
+          e.preventDefault();
+          onClick(e);
+        }}
+      >
+        {children}
+        <span className="mx-1">▼</span>
+      </span>
+    </>
+  ));
+
+  return (
+    <Dropdown>
+      <Dropdown.Toggle as={CustomToggle} id="dropdown-summary-mode">
+        Period
+      </Dropdown.Toggle>
+
+      <Dropdown.Menu>
+        <Dropdown.Item onClick={() => setTrueOnly(true)}>
+          Show True Segments Only {trueOnly ? "✓" : ""}
+        </Dropdown.Item>
+        <Dropdown.Item onClick={() => setTrueOnly(false)}>
+          Show True and False Segments {trueOnly ? "" : "✓"}
+        </Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
+  );
+}
+
+export function SummaryTable({
+  table,
+  state,
+  highlightFn,
+  trueOnly,
+  setTrueOnly,
+}) {
+  let [cols, rows] = useMemo(
+    () => getBreakdownByTF(table, state),
+    [table, state]
+  );
+
+  let summaryModeProps = { trueOnly, setTrueOnly };
+
+  if (trueOnly) {
+    rows = rows.filter((r) => r[SUMMARY_COLS.STATE_VALUE] === true);
+  }
 
   return (
     <Table hover>
@@ -25,7 +93,11 @@ export function SummaryTable({ table, state, highlightFn }) {
         <tr role="row">
           {cols.map((col, idx) => (
             <th key={idx} role="columnheader">
-              {col.Header}
+              {col.Header === "Period" ? (
+                <SummaryModeDropdown {...summaryModeProps} />
+              ) : (
+                col.Header
+              )}
             </th>
           ))}
           <th role="columnheader" className="add-col">
@@ -48,7 +120,11 @@ export function SummaryTable({ table, state, highlightFn }) {
               if (row[accessor] === undefined) return null;
               if (accessor === SUMMARY_COLS.CYCLE) {
                 return (
-                  <td role="cell" key={idx} rowSpan={row["cycleRowspan"] || 1}>
+                  <td
+                    role="cell"
+                    key={idx}
+                    rowSpan={trueOnly ? 1 : row["cycleRowspan"] || 1}
+                  >
                     {row[accessor]}
                   </td>
                 );
@@ -94,7 +170,7 @@ function getCycleRanges(table, state) {
   let r0 = table.rows[0];
   let res = [
     {
-      cycle: 1,
+      cycle: r0[state.id] === "true" ? 1 : 0,
       state: r0[state.id],
       range: [index(r0), index(r0)],
     },
@@ -132,7 +208,7 @@ function getCycleRanges(table, state) {
 function getBreakdownByTF(table, state) {
   let hasDistCol = table.getColByType(COL_TYPES.DIST);
   let cols = [
-    { Header: "Cycle", accessor: SUMMARY_COLS.CYCLE },
+    { Header: "Period", accessor: SUMMARY_COLS.CYCLE },
     { Header: "State", accessor: SUMMARY_COLS.STATE },
     { Header: "Start Time", accessor: SUMMARY_COLS.START_TIME },
     // { Header: "End Time", accessor: SUMMARY_COLS.END_TIME },
@@ -147,17 +223,18 @@ function getBreakdownByTF(table, state) {
     let [startIdx, endIdx] = cycleRange.range;
     let tStart = getTime(table, startIdx);
     let tEnd = getTime(table, endIdx);
-    let tNext;  // The time the next stretch starts...
+    let tNext; // The time the next stretch starts...
     if (idx !== cycleRanges.length - 1) {
       tNext = getTime(table, cycleRange.range[1] + 1);
     } else {
       // Guess the time of the next point based on the current sampling rate.
-      let dt = tEnd.getTime() - getTime(table, endIdx-1).getTime();
-      tNext = new Date(tEnd.getTime() + dt);  
+      let dt = tEnd.getTime() - getTime(table, endIdx - 1).getTime();
+      tNext = new Date(tEnd.getTime() + dt);
     }
     let res = {
       [SUMMARY_COLS.STATE]:
         cycleRange.state === "true" ? state.name : `NOT ${state.name}`,
+      [SUMMARY_COLS.STATE_VALUE]: cycleRange.state === "true",
       [SUMMARY_COLS.START_TIME]: tStart,
       [SUMMARY_COLS.END_TIME]: tEnd,
       [SUMMARY_COLS.NEXT_TIME]: tNext,

@@ -110,3 +110,7 @@ div .tr:hover:not(.table-header) {
   /* max-height: 400px; */
   overflow: scroll;
 }
+
+.summary-mode-dropdown {
+  padding: 0px;
+}

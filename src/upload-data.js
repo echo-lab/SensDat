@@ -9,7 +9,7 @@ import Col from "react-bootstrap/Col";
 import Table from "react-bootstrap/Table";
 
 import { DataTable, COL_TYPES } from "./data-table.js";
-import { Styles } from "./data-view.js";
+import { TableStyles } from "./utils.js";
 import { actions } from "./app-state.js";
 
 // Define different screens lol.
@@ -279,7 +279,7 @@ function ColumnDropdown({ table, name, val, setter, error, optional }) {
 function TablePreview({ table }) {
   return (
     <div className="preview-table">
-      <Styles>
+      <TableStyles>
         <Table hover>
           <thead>
             <tr role="row">
@@ -302,7 +302,7 @@ function TablePreview({ table }) {
             ))}
           </tbody>
         </Table>
-      </Styles>
+      </TableStyles>
     </div>
   );
 }
