@@ -52,10 +52,12 @@ export function hhmmss(d) {
 }
 
 export function timeDiffString(t1, t2) {
-  let seconds = parseInt((t2.getTime() - t1.getTime()) / 1000);
-  if (seconds < 60) {
-    return `${seconds}s`;
-  }
+  return millisToTimeString(t2.getTime() - t1.getTime());
+}
+
+export function millisToTimeString(ms) {
+  let seconds = parseInt(Math.round(ms / 1000));
+  if (seconds < 60) return `${seconds}s`;
 
   let minutes = parseInt(seconds / 60);
   seconds = seconds % 60;

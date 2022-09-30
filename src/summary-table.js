@@ -6,7 +6,12 @@ import Dropdown from "react-bootstrap/Dropdown";
 import Container from "react-bootstrap/Container";
 
 import { COL_TYPES } from "./data-table.js";
-import { TableStyles, hhmmss, timeDiffString } from "./utils.js";
+import {
+  TableStyles,
+  hhmmss,
+  timeDiffString,
+  millisToTimeString,
+} from "./utils.js";
 
 const SUMMARY_COLS = Object.freeze({
   CYCLE: "CYCLE",
@@ -19,13 +24,31 @@ const SUMMARY_COLS = Object.freeze({
   DISTANCE: "DISTANCE",
 });
 
+const AGG_SUMMARY = Object.freeze({
+  VISITS: "VISITS",
+  TOTAL_DURATION: "TOTAL_DURATION",
+  AVG_DURATION: "AVG_DURATION",
+  TOTAL_DISTANCE: "TOTAL_DISTANCE",
+  TOTAL_OUTSIDE_DURATION: "TOTAL_OUTSIDE_DURATION",
+});
+
 const TIME_COLS = [SUMMARY_COLS.START_TIME, SUMMARY_COLS.END_TIME];
 
 export function SummaryTab({ table, state, highlightFn }) {
   let [trueOnly, setTrueOnly] = useState(true);
-  let props = { table, state, highlightFn, trueOnly, setTrueOnly };
+  let summaryBreakdown = useMemo(
+    () => getBreakdownByTF(table, state),
+    [table, state]
+  );
+  let aggSummaryData = getAggregateSummaryData(summaryBreakdown);
+  let props = { summaryBreakdown, highlightFn, trueOnly, setTrueOnly };
   return (
     <Container>
+      <h4 className="mx-3"> Total </h4>
+      <TableStyles>
+        <AggregateSummary aggSummaryData={aggSummaryData} />
+      </TableStyles>
+      <h4 className="mx-3"> Breakdown </h4>
       <TableStyles>
         <SummaryTable {...props}></SummaryTable>
       </TableStyles>
@@ -67,16 +90,12 @@ function SummaryModeDropdown({ trueOnly, setTrueOnly }) {
 }
 
 export function SummaryTable({
-  table,
-  state,
+  summaryBreakdown,
   highlightFn,
   trueOnly,
   setTrueOnly,
 }) {
-  let [cols, rows] = useMemo(
-    () => getBreakdownByTF(table, state),
-    [table, state]
-  );
+  let [cols, rows] = summaryBreakdown;
 
   let summaryModeProps = { trueOnly, setTrueOnly };
 
@@ -142,6 +161,48 @@ export function SummaryTable({
             <td role="cell" className="add-col"></td>
           </tr>
         ))}
+      </tbody>
+    </Table>
+  );
+}
+
+function AggregateSummary({ aggSummaryData }) {
+  let hasDistance = aggSummaryData[AGG_SUMMARY.TOTAL_DISTANCE] !== undefined;
+
+  // list of [key, name] pairs.
+  let cols = [
+    [AGG_SUMMARY.VISITS, "Visits"],
+    [AGG_SUMMARY.TOTAL_DURATION, "Time in State"],
+    [AGG_SUMMARY.AVG_DURATION, "Average time in State"],
+    [AGG_SUMMARY.TOTAL_OUTSIDE_DURATION, "Time Outside State"],
+  ];
+  if (hasDistance) cols.push([AGG_SUMMARY.TOTAL_DISTANCE, "Total Distance"]);
+
+  return (
+    <Table>
+      <thead>
+        <tr role="row">
+          {cols.map(([_, name], idx) => (
+            <th key={idx} role="columnheader">
+              {name}
+            </th>
+          ))}
+          <th role="columnheader" className="add-col">
+            <Button variant="outline-primary" size="sm" id="new-total-agg-col">
+              +
+            </Button>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr role="row">
+          {cols.map(([key, _], idx) => (
+            <td role="cell" key={idx}>
+              {aggSummaryData[key]}
+            </td>
+          ))}
+          <td role="cell" className="add-col"></td>
+        </tr>
       </tbody>
     </Table>
   );
@@ -275,15 +336,38 @@ function getDistance(table, idx0, idx1) {
   );
 }
 
-// function getBreakdownByWholeCycle(table, state) {
-//   let cols = [
-//     {Header: "Cycle", accessor: "cycle"},
-//     {Header: "State", accessor: "state"},
-//     {Header: "Start Time", accessor: "startTime"},
-//     {Header: "End Time", accessor: "endTime"},
-//   ];
-//
-//   let cycleRanges = getCycleRanges(table, state);
-//
-//   // TODO: do this...
-// }
+function getAggregateSummaryData(summaryBreakdown) {
+  let [_, breakdownRows] = summaryBreakdown;
+  // Change the format
+  let rows = breakdownRows.map((r) => ({
+    state: r[SUMMARY_COLS.STATE_VALUE] === true,
+    durationMSecs:
+      r[SUMMARY_COLS.NEXT_TIME].getTime() -
+      r[SUMMARY_COLS.START_TIME].getTime(),
+    distance: r[SUMMARY_COLS.DISTANCE], // possibly undefined.
+  }));
+  let trueRows = rows.filter((r) => r.state === true);
+
+  let res = {};
+
+  let totalMSecs = trueRows.reduce((prev, cur) => prev + cur.durationMSecs, 0);
+
+  res[AGG_SUMMARY.VISITS] = trueRows.length;
+  res[AGG_SUMMARY.TOTAL_DURATION] = millisToTimeString(totalMSecs);
+  res[AGG_SUMMARY.AVG_DURATION] = millisToTimeString(
+    trueRows.length > 0 ? totalMSecs / trueRows.length : 0
+  );
+  res[AGG_SUMMARY.TOTAL_OUTSIDE_DURATION] = millisToTimeString(
+    rows
+      .filter((r) => r.state === false)
+      .reduce((prev, cur) => prev + cur.durationMSecs, 0)
+  );
+  let distance = trueRows.reduce(
+    (prev, cur) =>
+      cur["distance"] ? cur["distance"] + (prev || 0) : undefined,
+    undefined
+  );
+  if (distance)
+    res[AGG_SUMMARY.TOTAL_DISTANCE] = Math.round(1e3 * distance) / 1e3;
+  return res;
+}
