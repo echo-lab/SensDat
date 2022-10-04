@@ -11,57 +11,97 @@ NOTE:
 export class CompoundState {
   static typeName = "CompoundState"; // surely there's a better way?
 
-  constructor(state1, state2, nodes, edges, name) {
+  constructor(
+    state1,
+    state2,
+    possibleNodes,
+    possibleEdges,
+    nodes,
+    edges,
+    name
+  ) {
     this.states = [state1, state2];
-    this.nodes = nodes;
-    this.edges = edges;
+    this.possibleNodes = possibleNodes || [];
+    this.possibleEdges = possibleEdges || [];
+    this.nodes = nodes || [];
+    this.edges = edges || [];
     this.name = name || "";
     this.id = uid();
   }
 
+  copy() {
+    return new CompoundState(
+      ...this.states,
+      this.possibleNodes,
+      this.possibleEdges,
+      this.nodes,
+      this.edges,
+      this.name
+    );
+  }
+
   withName(name) {
-    let res = new CompoundState(...this.states, this.nodes, this.edges);
+    let res = this.copy();
     res.name = name;
     return res;
   }
 
   toggleNode(node) {
-    let nodes = this.nodes.includes(node)
-      ? this.nodes.filter((x) => x !== node)
-      : [...this.nodes, node];
-    return new CompoundState(...this.states, nodes, this.edges);
+    let res = this.copy();
+    if (!this.nodes.includes(node)) {
+      // Selecting a node: selects adjacent edges.
+      res.nodes = [...this.nodes, node];
+      res.edges = this.possibleEdges.filter(
+        (edge) => this.edges.includes(edge) || asNodes(edge).includes(node)
+      );
+    } else {
+      // Deselecting a node: deselects edges that no longer connect to selected nodes
+      res.nodes = this.nodes.filter((x) => x !== node);
+      res.edges = this.edges.filter((edge) =>
+        asNodes(edge).some((node) => res.nodes.includes(node))
+      );
+    }
+    return res;
   }
 
   toggleEdge(edge) {
-    let edges = this.edges.includes(edge)
-      ? this.edges.filter((x) => x !== edge)
-      : [...this.edges, edge];
-    return new CompoundState(...this.states, this.nodes, edges);
+    let res = this.copy();
+    if (!this.edges.includes(edge)) {
+      // Selecting an edge: does nothing if neither end-point is a selected node.
+      if (!asNodes(edge).some((node) => this.nodes.includes(node))) return this;
+      res.edges = [...this.edges, edge];
+    } else {
+      // Deselecting an edge: also deselects any nodes with no more edges.
+      res.edges = this.edges.filter((x) => x !== edge);
+      res.nodes = this.nodes.filter((node) =>
+        res.edges.some((edge) => asNodes(edge).includes(node))
+      );
+    }
+    return res;
   }
 
   getValues(rows) {
     let truePoints = getChosenPoints(rows, this.states, this.nodes, this.edges);
-    return rows.map((row) => {
-      return (
+    return rows.map(
+      (row) =>
         "" + truePoints.some(([lo, hi]) => lo <= row[INDEX] && row[INDEX] <= hi)
-      );
-    });
+    );
   }
 
   // Helper functions for CompoundStatePane
-  getPossibleNodesAndEdges(dataTable) {
-    let [existingNodes, existingEdges] = [[], []];
-    let summary = summarizeByStates(dataTable.rows, this.states);
+  static getPossibleNodesAndEdges(dataTable, states) {
+    let [possibleNodes, possibleEdges] = [[], []];
+    let summary = summarizeByStates(dataTable.rows, states);
 
     summary.forEach(({ state, range }, i) => {
-      if (!existingNodes.includes(state)) existingNodes.push(state);
+      if (!possibleNodes.includes(state)) possibleNodes.push(state);
 
       if (i + 1 === summary.length) return;
 
       let edge = `${state}${summary[i + 1].state}`;
-      if (!existingEdges.includes(edge)) existingEdges.push(edge);
+      if (!possibleEdges.includes(edge)) possibleEdges.push(edge);
     });
-    return [existingNodes, existingEdges];
+    return [possibleNodes, possibleEdges];
   }
 
   getChosenPoints(dataTable) {
@@ -73,6 +113,8 @@ export class CompoundState {
     return {
       type: CompoundState.typeName,
       states: this.states,
+      possibleNodes: this.possibleNodes,
+      possibleEdges: this.possibleEdges,
       name: this.name,
       nodes: this.nodes,
       edges: this.edges,
@@ -83,7 +125,14 @@ export class CompoundState {
   static fromObject(o) {
     if (o.type !== CompoundState.typeName) return false;
 
-    let res = new CompoundState(...o.states, o.nodes, o.edges, o.name);
+    let res = new CompoundState(
+      ...o.states,
+      o.possibleNodes,
+      o.possibleEdges,
+      o.nodes,
+      o.edges,
+      o.name
+    );
     res.id = o.id;
     return res;
   }
@@ -133,4 +182,8 @@ function getChosenPoints(rows, states, selectedNodes, selectedEdges) {
   });
 
   return res;
+}
+
+function asNodes(edge) {
+  return [edge.substring(0, 2), edge.substring(2, 4)];
 }

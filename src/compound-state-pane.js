@@ -123,27 +123,23 @@ function DefineCompoundStateScreen({
   dispatch,
   goBack,
 }) {
-  // NOTE: must reset if dataTable or chosenStates changes.
-  // Or like... if we come back to this screen after being absent?
+  // compoundState holds the information about the node/edge selections.
   let [compoundState, setCompoundState] = useState(
-    new CompoundState(...chosenStates, [], [])
+    () => new CompoundState(...chosenStates)
   );
-  let [showModal, setShowModal] = useState(false);
-  let [selectedNodes, selectedEdges] = [
-    compoundState.nodes,
-    compoundState.edges,
-  ];
-  let pts = useRef([]);
-
   useEffect(() => {
-    setCompoundState(new CompoundState(...chosenStates, [], []));
-    // TODO: ALSO: set the possible states...??
+    let [existingNodes, existingEdges] = CompoundState.getPossibleNodesAndEdges(
+      dataTable,
+      chosenStates
+    );
+    setCompoundState(
+      new CompoundState(...chosenStates, existingNodes, existingEdges)
+    );
   }, [dataTable, chosenStates]);
 
-  // TODO: Some of this can be memoized and sped up :D
-  let [existingNodes, existingEdges] =
-    compoundState.getPossibleNodesAndEdges(dataTable);
+  let [showModal, setShowModal] = useState(false);
 
+  let pts = useRef([]);
   useEffect(() => {
     pts.current = compoundState.getChosenPoints(dataTable);
     dispatch(actions.highlightPoints(pts.current));
@@ -186,10 +182,10 @@ function DefineCompoundStateScreen({
     width: svgWidth,
     height: svgHeight,
     chosenStates,
-    existingNodes,
-    existingEdges,
-    selectedNodes,
-    selectedEdges,
+    existingNodes: compoundState.possibleNodes,
+    existingEdges: compoundState.possibleEdges,
+    selectedNodes: compoundState.nodes,
+    selectedEdges: compoundState.edges,
     toggleNode,
     toggleEdge,
   };
