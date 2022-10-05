@@ -443,7 +443,7 @@ function ArrowTo({ p1, p2, isSelected, onSelect }) {
       [x2, y2] = [sourceX - OFFSET, targetY + NODE_HEIGHT / 2 + GAP];
       ctrlX = sourceX - CTRL_DX;
     }
-  } else if (sourceX < targetX === sourceY < targetY) {
+  } else if ((sourceX < targetX) === (sourceY < targetY)) {
     // UpperLeft <-> BottomRight
 
     if (sourceY < targetY) {
