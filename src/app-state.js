@@ -59,6 +59,7 @@ export const initialState = {
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
   vizState: {
+    dataPoints: null, // This should be updated only when new data is loaded!
     timespan: [0, 1e15],
     shownPoints: [-1, -1],
     highlightedPoints: null,
@@ -97,21 +98,35 @@ actionHandlers["loadState"] = (state, serializedState) => {
 
   cleanupInteractions(state); // in case we're in the middle of something
   let data = JSON.parse(LZString.decompress(serializedState));
+  let table = DataTable.fromObject(data.dataTable);
+  if (!table.isReady()) return state;  // If it ain't good, don't load it!
   return {
     ...initialState,
-    dataTable: DataTable.fromObject(data.dataTable),
+    dataTable: table,
     userDefinedStates: data.userDefinedStates.map((o) => objectToState(o)),
     uiState: UIState.Default,
     summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
+    vizState: {
+      ...initialState.vizState,
+      dataPoints: table.getVizData(),
+    },
   };
 };
 
-// payload: a valid DataTable object.
-actionHandlers["loadTable"] = (state, payload) => {
+// table: a valid DataTable object.
+// Note: we throw out the old state here :)
+actionHandlers["loadTable"] = (state, table) => {
+  if (!table.isReady()) {
+    throw "Table not ready for use!";
+  }
   return {
     ...initialState, // Reset to the original state
-    dataTable: payload,
+    dataTable: table,
     uiState: UIState.Default,
+    vizState: {
+      ...initialState.vizState,
+      dataPoints: table.getVizData(),
+    },
   };
 };
 
