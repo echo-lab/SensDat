@@ -54,17 +54,23 @@ export class DataTable {
     }));
     this.stateToTrueRanges = {};
 
-    this.cacheVizData();
     this.sortColumns();
   }
 
-  cacheVizData() {
-    let timeCol = this.getColByType(COL_TYPES.T_CLEAN);
-    this.vizData = this.rows.map((row) => ({
+  // Is the table ready to be used in the UI? i.e., does it have a cleaned time column?
+  isReady() {
+    return !!this.getColByType(COL_TYPES.T_CLEAN);
+  }
+
+  // Note: MUST have the cleaned Time column!
+  getVizData() {
+    if (!this.isReady()) return false;
+    let timeCol = this.getAccessor(COL_TYPES.T_CLEAN);
+    return this.rows.map((row) => ({
       Order: row.Order,
       Latitude: row.Latitude,
       Longitude: row.Longitude,
-      Timestamp: timeCol && row[timeCol.accessor],
+      Timestamp: timeCol && row[timeCol],
     }));
   }
 
@@ -109,7 +115,6 @@ export class DataTable {
 
     res = res.withCleanedTime();
     res.sortColumns();
-    this.cacheVizData();
     return res;
   }
 
@@ -229,7 +234,6 @@ export class DataTable {
       CLEANED_TIME: times[idx],
     }));
     res.sortColumns();
-    res.cacheVizData();
     return res;
   }
 
@@ -287,7 +291,6 @@ export class DataTable {
     let res = new DataTable();
     res.rows = this.rows;
     res.cols = this.cols;
-    res.vizData = this.vizData;
     res.stateToTrueRanges = this.stateToTrueRanges;
     return res;
   }
@@ -321,12 +324,12 @@ export class DataTable {
     }
 
     res.stateToTrueRanges = {};
-    res.cacheVizData();
     res.cacheStateData();
     return res;
   }
 
-  // onSuccess: passed a new table, with no lat/long/time/order columns specified
+  // onSuccess: passed a new table
+  // NOTE: Column types are NOT specified! You MUST specify them before using!
   static FromFile(file, { onError, onSuccess }) {
     Papa.parse(file, {
       header: true,

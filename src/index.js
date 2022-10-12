@@ -68,10 +68,12 @@ function App() {
   };
 
   let vizViewProps = {
-    vizData: state.dataTable ? state.dataTable.vizData : null,
+    vizData: state.vizState.dataPoints,
     vizTimespan: state.vizState.timespan,
     shownPoints: state.vizState.shownPoints,
-    useShownPoints: state.activeTab === "BASE_TABLE" && state.uiState !== UIState.CreateCompound,
+    useShownPoints:
+      state.activeTab === "BASE_TABLE" &&
+      state.uiState !== UIState.CreateCompound,
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
