@@ -11,8 +11,14 @@ import { EllipseRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
-const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
-const PADDING_FRACTION = 1.1;  // How much to pad the data w.r.t. the graph axes.
+// If we want axes, use the commented out versions
+// const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
+// const PADDING_FRACTION = 1.1; // How much to pad the data w.r.t. the graph axes.
+const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 30 };
+const PADDING_FRACTION = 1.0; // How much to pad the data w.r.t. the graph axes.
+
+// This is the svg-pixel-space.
+const [PXL_WIDTH, PXL_HEIGHT] = [800, 500];
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
@@ -35,7 +41,6 @@ const Range = createSliderWithTooltip(Slider.Range);
 export function VizView({
   vizData,
   vizTimespan,
-  uistate,
   dispatch,
   createRegionInteraction,
   highlightedPoints,
@@ -46,22 +51,15 @@ export function VizView({
 }) {
   const svgRef = useRef();
   const d3Dots = useRef();
-  const svgCoordMapping = useRef(null);
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
-  // Update the coordinate mapping.
-  useEffect(
-    () => {
-      if (!vizData) return;
-      svgCoordMapping.current = getSvgCoordMapping(
-        vizData,
-        svgWidth,
-        svgHeight
-      );
-    },
-    /*dependencies=*/ [vizData, svgWidth, svgHeight]
+  // TODO: try keeping the same mapping for each vizData, and use viewBox to capture 100% of the data (!).
+  // THEN: see what happens if we use D3 zoom
+  let svgCoordMapping = useMemo(
+    () => (vizData ? getSvgCoordMapping(vizData, PXL_WIDTH, PXL_HEIGHT) : null),
+    [vizData]
   );
 
   // Function to update the SVG.
@@ -74,11 +72,11 @@ export function VizView({
         svg,
         vizData,
         vizTimespan,
-        svgCoordMapping.current,
+        svgCoordMapping,
         userDefinedStates
       );
       createRegionInteraction &&
-        createRegionInteraction.redraw(svgCoordMapping.current);
+        createRegionInteraction.redraw(svgCoordMapping);
 
       return () => {};
     },
@@ -87,7 +85,6 @@ export function VizView({
       vizTimespan,
       createRegionInteraction,
       userDefinedStates,
-      dimensions,
     ]
   );
 
@@ -95,10 +92,7 @@ export function VizView({
   useEffect(
     () => {
       createRegionInteraction &&
-        createRegionInteraction.initializeSvg(
-          svgRef.current,
-          svgCoordMapping.current
-        );
+        createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping);
     },
     /*dependencies=*/ [createRegionInteraction]
   );
@@ -134,17 +128,15 @@ export function VizView({
           .attr("r", 3);
       };
     },
-    // TODO: These dependencies are kind of sad... It's basically set so that we
-    // redo this whenever d3Dots changes, which is whenever a resize happens, etc.
-    // I think we might be able to do a viewbox thing w/ the SVG to avoid
-    // recalculating everything on resizes?
+    // Note: the dependencies are such that we need to rerun this whenever d3Dots
+    // changes OR when the set of shown/highlighted points changes.
     /*deps=*/ [
       vizData,
       vizTimespan,
       createRegionInteraction,
+      userDefinedStates,
       highlightedPoints,
       shownPoints,
-      dimensions,
       useShownPoints,
     ]
   );
@@ -165,7 +157,7 @@ export function VizView({
 
   return (
     <div className="viz-container debug def-visible">
-      <svg ref={svgRef} style={svgStyle}></svg>
+      <svg ref={svgRef} style={svgStyle} viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}></svg>
       {timeSlider}
     </div>
   );
@@ -204,42 +196,6 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
   );
 }
 
-// Get information about how the SVG's xy-coordinates should correspond to
-// latitude/longitude based on the data table.
-// Returns: {
-//   svgX: [minXPixel, maxXPixel],
-//   xvgY: [bottomYPixel, topYPixel],
-//   xToLong: function(),
-//   yToLat: function(),
-//   longToX: function(),
-//   latToY: function(),
-// }
-//
-// NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
-// in the graph and the XY distance is true-to-life.
-function getSvgCoordMapping(data, width, height) {
-  // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
-  // plot data right on the axes. Of course, we could also constrict the svgX
-  // and svgY range instead.
-  let [latitude, longitude] = getLatLongDomain(
-    d3.extent(data, (d) => d.Longitude),
-    d3.extent(data, (d) => d.Latitude),
-    [width, height]
-  ).map((rng) => scaleRange(rng, PADDING_FRACTION));
-
-  let svgX = [SVG_MARGIN.LEFT, width - SVG_MARGIN.RIGHT];
-  let svgY = [height - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
-
-  return {
-    svgX,
-    svgY,
-    xToLong: d3.scaleLinear().domain(svgX).range(longitude),
-    yToLat: d3.scaleLinear().domain(svgY).range(latitude),
-    longToX: d3.scaleLinear().domain(longitude).range(svgX),
-    latToY: d3.scaleLinear().domain(latitude).range(svgY),
-  };
-}
-
 function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   let { longToX, latToY } = svgCoordMapping; // These are functions
   let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
@@ -262,16 +218,16 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   // https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
 
   // X-axis
-  svg
-    .append("g")
-    .attr("transform", `translate(0, ${svgY[0]})`)
-    .call(d3.axisBottom(longToX).ticks(4));
+  // svg
+  //   .append("g")
+  //   .attr("transform", `translate(0, ${svgY[0]})`)
+  //   .call(d3.axisBottom(longToX).ticks(4));
 
   // Y-axis
-  svg
-    .append("g")
-    .attr("transform", `translate(${svgX[0]}, 0)`)
-    .call(d3.axisLeft(latToY).ticks(4));
+  // svg
+  //   .append("g")
+  //   .attr("transform", `translate(${svgX[0]}, 0)`)
+  //   .call(d3.axisLeft(latToY).ticks(4));
 
   // Trajectory
   svg
@@ -359,6 +315,43 @@ function makeHandlers() {
 /* ----------------- */
 /* UTILITY FUNCTIONS */
 /* ----------------- */
+
+// Get information about how the SVG's xy-coordinates should correspond to
+// latitude/longitude based on the data table.
+// Returns: {
+//   svgX: [minXPixel, maxXPixel],
+//   xvgY: [bottomYPixel, topYPixel],
+//   xToLong: function(),
+//   yToLat: function(),
+//   longToX: function(),
+//   latToY: function(),
+// }
+//
+// NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
+// in the graph and the XY distance is true-to-life.
+function getSvgCoordMapping(data, width, height) {
+  // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
+  // plot data right on the axes. Of course, we could also constrict the svgX
+  // and svgY range instead.
+  let [latitude, longitude] = getLatLongDomain(
+    d3.extent(data, (d) => d.Longitude),
+    d3.extent(data, (d) => d.Latitude),
+    [width, height]
+  ).map((rng) => scaleRange(rng, PADDING_FRACTION));
+
+  let svgX = [SVG_MARGIN.LEFT, width - SVG_MARGIN.RIGHT];
+  let svgY = [height - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
+
+  return {
+    svgX,
+    svgY,
+    xToLong: d3.scaleLinear().domain(svgX).range(longitude),
+    yToLat: d3.scaleLinear().domain(svgY).range(latitude),
+    longToX: d3.scaleLinear().domain(longitude).range(svgX),
+    latToY: d3.scaleLinear().domain(latitude).range(svgY),
+  };
+}
+
 
 // Copied from: https://www.movable-type.co.uk/scripts/latlong.html
 function latLongDist(lat1, lon1, lat2, lon2) {
