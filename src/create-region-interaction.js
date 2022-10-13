@@ -23,8 +23,9 @@ export class CreateRegionInteraction {
     }, 200);
   }
 
-  initializeSvg(svgElement, svgCoordMapping) {
+  initializeSvg(svgElement, gElement, svgCoordMapping) {
     this.svg = svgElement;
+    this.g = gElement;
     this.svgCoordMapping = svgCoordMapping;
 
     this.callbacks = [["click", this.onClick.bind(this)]];
@@ -51,7 +52,7 @@ export class CreateRegionInteraction {
   onClick(e) {
     e.preventDefault();
     let { xToLong, yToLat, svgX, svgY } = this.svgCoordMapping;
-    let [x, y] = d3.pointer(e, this.svg);
+    let [x, y] = d3.pointer(e, this.g);
 
     let [[minX, maxX], [maxY, minY]] = [svgX, svgY];
     if (x < minX || x > maxX || y < minY || y > maxY) {
@@ -78,7 +79,7 @@ export class CreateRegionInteraction {
         ["stroke-width", 1],
         ["fill", "transparent"],
       ].forEach(([attr, val]) => this.element.setAttribute(attr, val));
-      this.svg.appendChild(this.element);
+      this.g.appendChild(this.element);
 
       this.nameElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -91,7 +92,7 @@ export class CreateRegionInteraction {
         ["dy", "-.35em"],
       ].forEach(([attr, val]) => this.nameElement.setAttribute(attr, val));
       this.nameElement.innerHTML = "[New Region]";
-      this.svg.appendChild(this.nameElement);
+      this.g.appendChild(this.nameElement);
     }
 
     // Possibly redundant, but whatevs!

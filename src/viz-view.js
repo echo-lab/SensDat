@@ -65,11 +65,11 @@ export function VizView({
   // Function to update the SVG.
   useEffect(
     () => {
-      let svg = d3.select(svgRef.current);
       if (!vizData) return;
+      let svgG = d3.select(svgRef.current.childNodes[0]);
 
       d3Dots.current = drawToSVG(
-        svg,
+        svgG,
         vizData,
         vizTimespan,
         svgCoordMapping,
@@ -92,7 +92,11 @@ export function VizView({
   useEffect(
     () => {
       createRegionInteraction &&
-        createRegionInteraction.initializeSvg(svgRef.current, svgCoordMapping);
+        createRegionInteraction.initializeSvg(
+          svgRef.current,
+          svgRef.current.childNodes[0],
+          svgCoordMapping
+        );
     },
     /*dependencies=*/ [createRegionInteraction]
   );
@@ -157,7 +161,13 @@ export function VizView({
 
   return (
     <div className="viz-container debug def-visible">
-      <svg ref={svgRef} style={svgStyle} viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}></svg>
+      <svg
+        ref={svgRef}
+        style={svgStyle}
+        viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
+      >
+        <g></g>
+      </svg>
       {timeSlider}
     </div>
   );
@@ -196,15 +206,28 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
   );
 }
 
+// NOTE: svg should actually be the outer <g> tag in the svg :)
 function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   let { longToX, latToY } = svgCoordMapping; // These are functions
-  let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
+  // let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
 
   // Filter to the selected timespan range.
   data = filterByTimespan(data, timespan);
 
   // Clear the SVG! Maybe there's a nicer way?
   svg.selectAll("*").remove();
+
+  // Allow Zoom + Pan
+  let handleZoom = (e) => svg.attr("transform", e.transform);
+  let zoom = d3
+    .zoom()
+    .scaleExtent([1.0, 3.0])
+    .translateExtent([
+      [0, 0],
+      [PXL_WIDTH, PXL_HEIGHT],
+    ])
+    .on("zoom", handleZoom);
+  d3.select("svg").call(zoom);
 
   let [selectPoint, deselectPoints] = makeHandlers();
 
@@ -351,7 +374,6 @@ function getSvgCoordMapping(data, width, height) {
     latToY: d3.scaleLinear().domain(latitude).range(svgY),
   };
 }
-
 
 // Copied from: https://www.movable-type.co.uk/scripts/latlong.html
 function latLongDist(lat1, lon1, lat2, lon2) {
