@@ -99,7 +99,7 @@ actionHandlers["loadState"] = (state, serializedState) => {
   cleanupInteractions(state); // in case we're in the middle of something
   let data = JSON.parse(LZString.decompress(serializedState));
   let table = DataTable.fromObject(data.dataTable);
-  if (!table.isReady()) return state;  // If it ain't good, don't load it!
+  if (!table.isReady()) return state; // If it ain't good, don't load it!
   return {
     ...initialState,
     dataTable: table,
@@ -137,6 +137,27 @@ actionHandlers["changeTimespan"] = (state, payload) => {
       ...state.vizState,
       timespan: payload,
     },
+  };
+};
+
+actionHandlers["startEditData"] = (state) => {
+  return {
+    ...state,
+    uiState: UIState.MoveDataPoints,
+  };
+};
+
+actionHandlers["cancelEditData"] = (state) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+  };
+};
+
+actionHandlers["finishEditData"] = (state, transforms) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
   };
 };
 

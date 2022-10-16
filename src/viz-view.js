@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useMemo } from "react";
 
+import Container from "react-bootstrap/Container";
+
 import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 
@@ -9,6 +11,8 @@ import debounce from "lodash.debounce";
 import { actions } from "./app-state.js";
 import { EllipseRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
+import { UIState } from "./ui-state.js";
+import { DataEditor } from "./viz-data-editor.js";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 // If we want axes, use the commented out versions
@@ -48,6 +52,7 @@ export function VizView({
   useShownPoints,
   userDefinedStates,
   dimensions,
+  uiState,
 }) {
   const svgRef = useRef();
   const d3Dots = useRef();
@@ -55,8 +60,6 @@ export function VizView({
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
-  // TODO: try keeping the same mapping for each vizData, and use viewBox to capture 100% of the data (!).
-  // THEN: see what happens if we use D3 zoom
   let svgCoordMapping = useMemo(
     () => (vizData ? getSvgCoordMapping(vizData, PXL_WIDTH, PXL_HEIGHT) : null),
     [vizData]
@@ -66,10 +69,9 @@ export function VizView({
   useEffect(
     () => {
       if (!vizData) return;
-      let svgG = d3.select(svgRef.current.childNodes[0]);
 
       d3Dots.current = drawToSVG(
-        svgG,
+        svgRef.current,
         vizData,
         vizTimespan,
         svgCoordMapping,
@@ -154,13 +156,36 @@ export function VizView({
     border: "solid 1px black",
   };
 
+  let dataEditorData = null;
+  if (svgCoordMapping) {
+    let { longToX, latToY } = svgCoordMapping;
+    dataEditorData = vizData.map(({ Latitude, Longitude }) => [
+      longToX(Longitude),
+      latToY(Latitude),
+    ]);
+  }
+  const dataEditorProps = {
+    data: dataEditorData,
+    dispatch,
+  };
+
   let timeSliderProps = { vizData, vizTimespan, svgWidth, dispatch };
   let timeSlider = useMemo(() => {
     return vizData ? <TimeSlider {...timeSliderProps} /> : null;
   }, [vizData, vizTimespan, svgWidth]);
 
   return (
-    <div className="viz-container debug def-visible">
+    <Container className="viz-container" style={{ paddingLeft: "5px" }}>
+      <button
+        type="button"
+        class="btn btn-sm btn-link"
+        onClick={(e) => {
+          e.preventDefault();
+          dispatch(actions.startEditData());
+        }}
+      >
+        Edit Datapoints
+      </button>
       <svg
         ref={svgRef}
         style={svgStyle}
@@ -169,7 +194,10 @@ export function VizView({
         <g></g>
       </svg>
       {timeSlider}
-    </div>
+      {uiState === UIState.MoveDataPoints && (
+        <DataEditor {...dataEditorProps} />
+      )}
+    </Container>
   );
 }
 
@@ -210,30 +238,32 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
 function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   let { longToX, latToY } = svgCoordMapping; // These are functions
   // let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
+  
+  let rootG = d3.select(svg.childNodes[0]);
 
   // Filter to the selected timespan range.
   data = filterByTimespan(data, timespan);
 
   // Clear the SVG! Maybe there's a nicer way?
-  svg.selectAll("*").remove();
+  rootG.selectAll("*").remove();
 
   // Allow Zoom + Pan
-  let handleZoom = (e) => svg.attr("transform", e.transform);
+  let handleZoom = (e) => rootG.attr("transform", e.transform);
   let zoom = d3
     .zoom()
-    .scaleExtent([1.0, 3.0])
+    .scaleExtent([0.5, 3.0])
     .translateExtent([
-      [0, 0],
-      [PXL_WIDTH, PXL_HEIGHT],
+      [-PXL_WIDTH / 2, -PXL_HEIGHT / 2],
+      [1.5 * PXL_WIDTH, 1.5 * PXL_HEIGHT],
     ])
     .on("zoom", handleZoom);
-  d3.select("svg").call(zoom);
+  d3.select(svg).call(zoom);
 
   let [selectPoint, deselectPoints] = makeHandlers();
 
   // TODO: can we rely on this getting called after the on-click handler for each
   // datapoint?
-  svg.on("click", (e) => {
+  rootG.on("click", (e) => {
     if (!e.defaultPrevented) deselectPoints();
   });
 
@@ -241,19 +271,19 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   // https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
 
   // X-axis
-  // svg
+  // rootG
   //   .append("g")
   //   .attr("transform", `translate(0, ${svgY[0]})`)
   //   .call(d3.axisBottom(longToX).ticks(4));
 
   // Y-axis
-  // svg
+  // rootG
   //   .append("g")
   //   .attr("transform", `translate(${svgX[0]}, 0)`)
   //   .call(d3.axisLeft(latToY).ticks(4));
 
   // Trajectory
-  svg
+  rootG
     .append("path")
     .datum(data)
     .attr("fill", "none")
@@ -268,7 +298,7 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
     );
 
   // Datapoints
-  let dots = svg
+  let dots = rootG
     .append("g")
     .selectAll("dot")
     .data(data)
@@ -287,7 +317,7 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   // });
 
   // Draw the current regions
-  let regions = svg
+  let regions = rootG
     .selectAll("regionStates")
     .data(userDefinedStates.filter((s) => s instanceof EllipseRegion))
     .enter()
