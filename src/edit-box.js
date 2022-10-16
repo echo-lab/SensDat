@@ -10,33 +10,42 @@ const MIN_DIM = -1e10; // Can set to something like 20 to limit how much we can 
  * scale, rotate, and translate its contents.
  */
 export class EditBox {
-  // TODO: Change the constructor to take in the width/height, etc (probably)
-  // x1, y1 is top-left, x2, y2 is bottom-right
-  constructor(x1, y1, x2, y2) {
-    // These params are easy to update on drag events :)
-    // NOTE: initialParams is ONLY used to determine the transform :)
+  constructor(center, width, height, angle) {
+    // These params are easy to update as the user resizes the box :)
+    // initialParams should never change; it's used ONLY to determine the transform.
     this.initialParams = {
-      center: [(x1 + x2) / 2, (y1 + y2) / 2],
-      width: x2 - x1,
-      height: y2 - y1,
-      angle: 0,
+      center: center || [0, 0],
+      width: width || 0,
+      height: height || 0,
+      angle: angle || 0,
     };
     this.currentParams = {
       ...this.initialParams,
     };
   }
 
+  serialize() {
+    return {
+      initialParams: this.initialParams,
+      currentParams: this.currentParams,
+    };
+  }
+
+  static deserialize({ initialParams, currentParams }) {
+    let res = new EditBox();
+    res.initialParams = { ...initialParams };
+    res.currentParams = { ...currentParams };
+    return res;
+  }
+
   // This must be called to actually add the editable box to the SVG.
-  //   g:     the group the elements will be added to.
-  //   dataG: if provided, a group which will receive the same transforms the user
+  //   g:     The group the elements will be added to.
+  //   dataG: If provided, a group which will receive the same transforms the user
   //          performs on the EditBox. Should be a sibling of g.
   attachToSVG(g, dataG) {
-    this.g = g;
-    this.dataG = dataG;
-
     // Add all the SVG elements.
     // They will be positioned in the end with a call to this.updateSVG();
-    this.box = g
+    let box = g
       .append("polygon")
       .attr("stroke", BOX_COLOR)
       .attr("stroke-width", 1)
@@ -46,7 +55,7 @@ export class EditBox {
       .attr("cursor", "grab");
 
     // Add the handle for rotation
-    this.handle = g
+    let handleLine = g
       .append("path")
       .attr("fill", "none")
       .attr("stroke", BOX_COLOR)
@@ -62,20 +71,28 @@ export class EditBox {
         .attr("fill", BOX_COLOR)
         .attr("cursor", "pointer");
 
-    this.knobs = Object.entries(this.#getPoints()).reduce(
+    let knobs = Object.entries(this.#getPoints()).reduce(
       (prev, [key, point]) => ({
         ...prev,
         [key]: addRect(point),
       }),
       {}
     );
-    this.knobs.handle.attr("cursor", "crosshair");
+    knobs.handle.attr("cursor", "crosshair");
 
-    this.#updateSVG();
-    this.#attachListeners();
+    let svgElements = {
+      dataG,
+      box,
+      handleLine,
+      knobs,
+    };
+
+    this.#updateSVG(svgElements);
+    this.#attachListeners(svgElements);
   }
 
-  #attachListeners() {
+  #attachListeners(svgElements) {
+    let { box, knobs } = svgElements;
     /////////////////
     // Translation //
     /////////////////
@@ -85,23 +102,23 @@ export class EditBox {
     let startTranslate = (e) => {
       let [cx, cy] = this.currentParams.center;
       translateOffset = [cx - e.x, cy - e.y];
-      this.box.attr("cursor", "grabbing");
+      box.attr("cursor", "grabbing");
     };
     let onTranslating = (e) => {
       let [dx, dy] = translateOffset;
       this.currentParams.center = [e.x + dx, e.y + dy];
-      this.#updateSVG();
+      this.#updateSVG(svgElements);
     };
     let onTranslateEnd = (e) => {
       onTranslating(e);
-      this.box.attr("cursor", "grab");
+      box.attr("cursor", "grab");
     };
     let translateDrag = d3
       .drag()
       .on("start", startTranslate)
       .on("drag", onTranslating)
       .on("end", onTranslateEnd);
-    this.box.call(translateDrag);
+    box.call(translateDrag);
 
     //////////////
     // Rotation //
@@ -119,14 +136,14 @@ export class EditBox {
       let degs = (rads / (Math.PI * 2)) * 360;
       let sign = e.x > cx ? 1 : -1;
       this.currentParams.angle = sign * degs;
-      this.#updateSVG();
+      this.#updateSVG(svgElements);
     };
     let rotateDrag = d3
       .drag()
       .on("start", startRotating)
       .on("drag", onRotating)
       .on("end", onRotating);
-    this.knobs.handle.call(rotateDrag);
+    knobs.handle.call(rotateDrag);
 
     /////////////
     // Scaling //
@@ -182,9 +199,9 @@ export class EditBox {
     Object.entries(scalePointsToDirs).forEach(([key, dirs]) => {
       let onDrag = (e) => {
         scaleInDirections([e.x, e.y], dirs);
-        this.#updateSVG();
+        this.#updateSVG(svgElements);
       };
-      this.knobs[key].call(
+      knobs[key].call(
         d3
           .drag()
           .on("start", (e) => {})
@@ -192,6 +209,30 @@ export class EditBox {
           .on("end", onDrag)
       );
     });
+  }
+
+  #updateSVG({ knobs, box, handleLine, dataG }) {
+    let points = this.#getPoints();
+
+    // Update the knobs
+    Object.entries(points).forEach(([key, [x, y]]) =>
+      knobs[key]
+        .attr("x", x - RECT_WIDTH / 2)
+        .attr("y", y - RECT_WIDTH / 2)
+        .attr("transform", `rotate(${this.currentParams.angle} ${x} ${y})`)
+    );
+
+    // Update the box
+    let { topLeft, topRight, bottomRight, bottomLeft } = points;
+    let corners = [topLeft, topRight, bottomRight, bottomLeft];
+    box.attr("points", corners.map((x) => x.join(",")).join(" "));
+
+    // Update the line that goes from the box to the rotate-knob
+    let { handle, top } = points;
+    handleLine.attr("d", d3.line()([handle, top]));
+
+    // Update the transform for the data.
+    dataG && dataG.attr("transform", this.#getTransform());
   }
 
   // Get a transform that would change the original box into the new one :)
@@ -215,30 +256,6 @@ export class EditBox {
       `scale(${width / w0} ${height / h0})`,
       `translate(${-x0} ${-y0})`,
     ].join(" ");
-  }
-
-  #updateSVG() {
-    let points = this.#getPoints();
-
-    // Update the knobs
-    Object.entries(points).forEach(([key, [x, y]]) =>
-      this.knobs[key]
-        .attr("x", x - RECT_WIDTH / 2)
-        .attr("y", y - RECT_WIDTH / 2)
-        .attr("transform", `rotate(${this.currentParams.angle} ${x} ${y})`)
-    );
-
-    // Update the box
-    let { topLeft, topRight, bottomRight, bottomLeft } = points;
-    let corners = [topLeft, topRight, bottomRight, bottomLeft];
-    this.box.attr("points", corners.map((x) => x.join(",")).join(" "));
-
-    // Update the line that goes from the box to the rotate-knob
-    let { handle, top } = points;
-    this.handle.attr("d", d3.line()([handle, top]));
-
-    // Update the transform for the data.
-    this.dataG && this.dataG.attr("transform", this.#getTransform());
   }
 
   #getPoints() {

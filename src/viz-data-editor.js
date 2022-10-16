@@ -95,6 +95,9 @@ function initializeSVG(svg, data) {
   let editboxG = d3.select(svg.childNodes[0].childNodes[1]);
   let [x1, x2] = d3.extent(data, (d) => d[0]);
   let [y1, y2] = d3.extent(data, (d) => d[1]);
-  let editBox = new EditBox(x1, y1, x2, y2);
+  let center = [(x1 + x2) / 2, (y1 + y2) / 2];
+  let width = x2 - x1;
+  let height = y2 - y1;
+  let editBox = new EditBox(center, width, height);
   editBox.attachToSVG(editboxG, g);
 }
