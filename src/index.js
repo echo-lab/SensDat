@@ -78,6 +78,7 @@ function App() {
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
     userDefinedStates: state.userDefinedStates,
+    uiState: state.uiState,
     dispatch,
   };
 
