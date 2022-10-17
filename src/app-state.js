@@ -2,7 +2,12 @@ import { UIState } from "./ui-state.js";
 import { CreateRegionInteraction } from "./create-region-interaction.js";
 import { DataTable } from "./data-table.js";
 import * as LZString from "lz-string";
-import { objectToState, getDependentStates } from "./utils.js";
+import {
+  objectToState,
+  getDependentStates,
+  getDefaultDataTransform,
+} from "./utils.js";
+import { EditBox } from "./edit-box.js";
 
 /*
  * This file provides a way to organize the app state that is shared across components.
@@ -45,6 +50,10 @@ export const initialState = {
   summaryTables: [], // [{state}, ...]
   uiState: UIState.NotLoaded,
 
+  // Data transformations from Lat/Long -> SVG-space.
+  defaultDataTransform: undefined,
+  currentDataTransform: undefined,
+
   // User-defined states
   userDefinedStates: [], // list of state objects
   tmpUserDefinedState: null,
@@ -80,6 +89,10 @@ export function serialize(state) {
     dataTable: state.dataTable.asObject(),
     userDefinedStates: state.userDefinedStates.map((s) => s.asObject()),
     summaryTables: state.summaryTables.map(({ state }) => state.asObject()),
+    defaultDataTransform:
+      state.defaultDataTransform && state.defaultDataTransform.asObject(),
+    currentDataTransform:
+      state.currentDataTransform && state.currentDataTransform.asObject(),
   };
   return LZString.compress(JSON.stringify(res));
 }
@@ -100,6 +113,13 @@ actionHandlers["loadState"] = (state, serializedState) => {
   let data = JSON.parse(LZString.decompress(serializedState));
   let table = DataTable.fromObject(data.dataTable);
   if (!table.isReady()) return state; // If it ain't good, don't load it!
+
+  let vizData = table.getVizData();
+  // The defaultTransform might not be set, e.g., if saved data is from a previous code version.
+  let defaultTransform = data.defaultDataTransform
+    ? EditBox.fromObject(data.defaultDataTransform)
+    : getDefaultDataTransform(vizData);
+
   return {
     ...initialState,
     dataTable: table,
@@ -108,8 +128,12 @@ actionHandlers["loadState"] = (state, serializedState) => {
     summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
     vizState: {
       ...initialState.vizState,
-      dataPoints: table.getVizData(),
+      dataPoints: vizData,
     },
+    defaultDataTransform: defaultTransform,
+    currentDataTransform: data.currentDataTransform
+      ? EditBox.fromObject(data.currentDataTransform)
+      : defaultTransform,
   };
 };
 
@@ -119,14 +143,18 @@ actionHandlers["loadTable"] = (state, table) => {
   if (!table.isReady()) {
     throw "Table not ready for use!";
   }
+  let vizData = table.getVizData();
+  let transform = getDefaultDataTransform(vizData);
   return {
     ...initialState, // Reset to the original state
     dataTable: table,
     uiState: UIState.Default,
     vizState: {
       ...initialState.vizState,
-      dataPoints: table.getVizData(),
+      dataPoints: vizData,
     },
+    defaultDataTransform: transform,
+    currentDataTransform: transform,
   };
 };
 
@@ -154,10 +182,11 @@ actionHandlers["cancelEditData"] = (state) => {
   };
 };
 
-actionHandlers["finishEditData"] = (state, transforms) => {
+actionHandlers["finishEditData"] = (state, transform) => {
   return {
     ...state,
     uiState: UIState.Default,
+    currentDataTransform: transform,
   };
 };
 

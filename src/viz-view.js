@@ -14,15 +14,14 @@ import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
 
+import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
+
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 // If we want axes, use the commented out versions
 // const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
 // const PADDING_FRACTION = 1.1; // How much to pad the data w.r.t. the graph axes.
 const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 30 };
 const PADDING_FRACTION = 1.0; // How much to pad the data w.r.t. the graph axes.
-
-// This is the svg-pixel-space.
-const [PXL_WIDTH, PXL_HEIGHT] = [800, 500];
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
@@ -37,8 +36,8 @@ const Range = createSliderWithTooltip(Slider.Range);
  *
  * Args:
  * - vizData:
- *      A list of objects like: [{Order, Latitude, Longitude}, ...].
- *      Should come from DataTable.vizData
+ *      A list of objects like: [{Order, Latitude, Longitude, Timestamp}, ...].
+ *      Should come from DataTable.getVizData()
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
@@ -51,6 +50,8 @@ export function VizView({
   shownPoints,
   useShownPoints,
   userDefinedStates,
+  defaultTransform,
+  currentTransform,
   dimensions,
   uiState,
 }) {
@@ -60,6 +61,7 @@ export function VizView({
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
+  // TODO: get rid of this :)
   let svgCoordMapping = useMemo(
     () => (vizData ? getSvgCoordMapping(vizData, PXL_WIDTH, PXL_HEIGHT) : null),
     [vizData]
@@ -75,6 +77,7 @@ export function VizView({
         vizData,
         vizTimespan,
         svgCoordMapping,
+        currentTransform,
         userDefinedStates
       );
       createRegionInteraction &&
@@ -87,6 +90,7 @@ export function VizView({
       vizTimespan,
       createRegionInteraction,
       userDefinedStates,
+      currentTransform,
     ]
   );
 
@@ -156,16 +160,10 @@ export function VizView({
     border: "solid 1px black",
   };
 
-  let dataEditorData = null;
-  if (svgCoordMapping) {
-    let { longToX, latToY } = svgCoordMapping;
-    dataEditorData = vizData.map(({ Latitude, Longitude }) => [
-      longToX(Longitude),
-      latToY(Latitude),
-    ]);
-  }
   const dataEditorProps = {
-    data: dataEditorData,
+    data: vizData,
+    defaultTransform,
+    currentTransform,
     dispatch,
   };
 
@@ -235,14 +233,27 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
 }
 
 // NOTE: svg should actually be the outer <g> tag in the svg :)
-function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
+function drawToSVG(
+  svg,
+  data,
+  timespan,
+  svgCoordMapping,
+  currentTransform,
+  userDefinedStates
+) {
   let { longToX, latToY } = svgCoordMapping; // These are functions
-  // let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
-  
+
   let rootG = d3.select(svg.childNodes[0]);
 
   // Filter to the selected timespan range.
   data = filterByTimespan(data, timespan);
+
+  let transformedData = data.map(
+    ({ Longitude, Latitude, Timestamp, Order }) => {
+      let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+      return { x, y, Timestamp, Order };
+    }
+  );
 
   // Clear the SVG! Maybe there's a nicer way?
   rootG.selectAll("*").remove();
@@ -285,7 +296,7 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
   // Trajectory
   rootG
     .append("path")
-    .datum(data)
+    .datum(transformedData)
     .attr("fill", "none")
     .attr("stroke", PATH_COLOR)
     .attr("stroke-width", 1.5)
@@ -293,19 +304,19 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
       "d",
       d3
         .line()
-        .x((d) => longToX(d.Longitude))
-        .y((d) => latToY(d.Latitude))
+        .x((d) => d.x)
+        .y((d) => d.y)
     );
 
   // Datapoints
   let dots = rootG
     .append("g")
     .selectAll("dot")
-    .data(data)
+    .data(transformedData)
     .enter()
     .append("circle")
-    .attr("cx", (d) => longToX(d.Longitude))
-    .attr("cy", (d) => latToY(d.Latitude))
+    .attr("cx", (d) => d.x)
+    .attr("cy", (d) => d.y)
     .attr("r", 3)
     .attr("fill", INVISIBLE_COLOR);
   // .on("click", selectPoint)
