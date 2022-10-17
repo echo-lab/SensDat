@@ -10,32 +10,37 @@ const MIN_DIM = -1e10; // Can set to something like 20 to limit how much we can 
  * scale, rotate, and translate its contents.
  */
 export class EditBox {
-  constructor(center, width, height, angle) {
-    // These params are easy to update as the user resizes the box :)
-    // initialParams should never change; it's used ONLY to determine the transform.
+  constructor(initialParams, targetParams) {
+    let defaultParams = {
+      center: [0, 0],
+      width: 0,
+      height: 0,
+      angle: 0,
+    };
+
     this.initialParams = {
-      center: center || [0, 0],
-      width: width || 0,
-      height: height || 0,
-      angle: angle || 0,
+      ...defaultParams,
+      ...(initialParams || {}),
     };
-    this.currentParams = {
-      ...this.initialParams,
-    };
+
+    this.currentParams = targetParams
+      ? { ...defaultParams, ...targetParams }
+      : { ...this.initialParams };
   }
 
-  serialize() {
+  copy() {
+    return new EditBox(this.initialParams, this.currentParams);
+  }
+
+  asObject() {
     return {
       initialParams: this.initialParams,
       currentParams: this.currentParams,
     };
   }
 
-  static deserialize({ initialParams, currentParams }) {
-    let res = new EditBox();
-    res.initialParams = { ...initialParams };
-    res.currentParams = { ...currentParams };
-    return res;
+  static fromObject({ initialParams, currentParams }) {
+    return new EditBox(initialParams, currentParams);
   }
 
   // This must be called to actually add the editable box to the SVG.
@@ -123,19 +128,20 @@ export class EditBox {
     //////////////
     // Rotation //
     //////////////
-    let startRotating = (e) => {
-      console.log("starting rotate");
-    };
+    let startRotating = () => {};
     let onRotating = (e) => {
       let {
         center: [cx, cy],
+        height,
       } = this.currentParams;
       let [x, y] = [e.x - cx, e.y - cy];
       let rads = Math.acos(-y / Math.sqrt(x * x + y * y));
-      // console.log(rads);
       let degs = (rads / (Math.PI * 2)) * 360;
       let sign = e.x > cx ? 1 : -1;
-      this.currentParams.angle = sign * degs;
+      let angle = sign * degs;
+      // Correct the angle  ¯\_(ツ)_/¯
+      if (height > 0) angle = (angle + 180) % 360;
+      this.currentParams.angle = angle;
       this.#updateSVG(svgElements);
     };
     let rotateDrag = d3
@@ -228,17 +234,17 @@ export class EditBox {
     box.attr("points", corners.map((x) => x.join(",")).join(" "));
 
     // Update the line that goes from the box to the rotate-knob
-    let { handle, top } = points;
-    handleLine.attr("d", d3.line()([handle, top]));
+    let { handle, bottom } = points;
+    handleLine.attr("d", d3.line()([handle, bottom]));
 
     // Update the transform for the data.
-    dataG && dataG.attr("transform", this.#getTransform());
+    dataG && dataG.attr("transform", this.getTransform());
   }
 
   // Get a transform that would change the original box into the new one :)
   // We don't use transforms for the new box because it's difficult to reason about
   // the coordinates when the transform keeps changing.
-  #getTransform() {
+  getTransform() {
     let {
       center: [x, y],
       width,
@@ -248,14 +254,37 @@ export class EditBox {
     let [x0, y0] = this.initialParams.center;
     let w0 = this.initialParams.width;
     let h0 = this.initialParams.height;
+    let angle0 = this.initialParams.angle;
 
     // NOTE: THESE HAPPEN BACKWARDS!!!
     return [
-      `translate(${x} ${y})`,
-      `rotate(${angle})`,
-      `scale(${width / w0} ${height / h0})`,
-      `translate(${-x0} ${-y0})`,
+      `translate(${x} ${y})`, // Step 5) translate to target position
+      `rotate(${angle})`, // Step 4) rotate to target position
+      `scale(${width / w0} ${height / h0})`, // Step 3) scale in x and y directions
+      `rotate(${-angle0})`, // Step 2) undo any initial rotation
+      `translate(${-x0} ${-y0})`, // Step 1) translate back to center
     ].join(" ");
+  }
+
+  // Actually do the transform on point [x, y]
+  transformPoint([x, y]) {
+    let {
+      center: [cx, cy],
+      width,
+      height,
+      angle,
+    } = this.currentParams;
+    let [x0, y0] = this.initialParams.center;
+    let w0 = this.initialParams.width;
+    let h0 = this.initialParams.height;
+    let a0 = this.initialParams.angle;
+
+    [x, y] = [x - x0, y - y0]; // Step 1) translate back to center
+    [x, y] = rotate([x, y], -a0, [0, 0]); // Step 2) undo any initial rotation
+    [x, y] = [(width / w0) * x, (height / h0) * y]; // Step 3) scale in x and y directions
+    [x, y] = rotate([x, y], angle, [0, 0]); // Step 4) rotate to target position
+    [x, y] = [x + cx, y + cy]; // Step 5) translate to target position
+    return [x, y];
   }
 
   #getPoints() {
@@ -269,6 +298,7 @@ export class EditBox {
     let [x2, y2] = [x + width / 2, y + height / 2];
 
     // Non-rotated points :)
+    let sign = (x) => (x >= 0 ? 1 : -1);
     let res = {
       topLeft: [x1, y1],
       topRight: [x2, y1],
@@ -278,7 +308,7 @@ export class EditBox {
       bottom: [x, y2],
       left: [x1, y],
       right: [x2, y],
-      handle: [x, y1 - HANDLE_LENGTH], // for rotating
+      handle: [x, y2 + sign(height) * HANDLE_LENGTH], // for rotating
     };
 
     // Now, rotate them!

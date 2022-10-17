@@ -38,7 +38,13 @@ function App() {
   useEffect(() => {
     window.localStorage["state"] = AppState.serialize(state);
     console.log("saved state");
-  }, [state.dataTable, state.summaryTables, state.userDefinedStates]);
+  }, [
+    state.dataTable,
+    state.summaryTables,
+    state.userDefinedStates,
+    state.defaultDataTransform,
+    state.currentDataTransform,
+  ]);
 
   // Allow printing the current state for debugging.
   useEffect(
@@ -78,6 +84,8 @@ function App() {
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
     userDefinedStates: state.userDefinedStates,
+    defaultTransform: state.defaultDataTransform,
+    currentTransform: state.currentDataTransform,
     uiState: state.uiState,
     dispatch,
   };

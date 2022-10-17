@@ -8,21 +8,39 @@ import * as d3 from "d3";
 import { actions } from "./app-state.js";
 import { EditBox } from "./edit-box.js";
 
-// TODO: pass these from viz-view.js
-const [PXL_WIDTH, PXL_HEIGHT] = [800, 500];
+import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 const PATH_COLOR = "#69b3a2";
 
-// data: a list of x-y coordinates, e.g., [[x1, y1], [x2, y2], ...]
-export function DataEditor({ data, dispatch }) {
-  let [transform, setTransform] = useState(null);
+// data: a list of [{Latitude, Longitude, Order, Timestamp}, ...]
+export function DataEditor({
+  data,
+  defaultTransform,
+  currentTransform,
+  dispatch,
+}) {
   const svgRef = useRef();
+  let [onSubmit, setOnSubmit] = useState(() => {});
 
   useEffect(() => {
-    initializeSVG(svgRef.current, data);
-  }, [data]);
+    // Put it in x-y coordinates in the SVG space
+    let tdata = data.map(({ Latitude, Longitude }) =>
+      currentTransform.transformPoint([Longitude, Latitude])
+    );
+    let [dataG, editBoxG] = initializeSVG(svgRef.current, tdata);
+    let editBox = new EditBox(currentTransform.currentParams);
+    editBox.attachToSVG(editBoxG, dataG);
+    setOnSubmit(() => () => {
+      let res = new EditBox(
+        currentTransform.initialParams,
+        editBox.currentParams
+      );
+      dispatch(actions.finishEditData(res));
+    });
+  }, [data, defaultTransform, currentTransform]);
 
-  let onCancel = () => dispatch(actions.cancelEditData());
-  let onSubmit = () => dispatch(actions.finishEditData(transform));
+  let onCancel = () => {
+    dispatch(actions.cancelEditData());
+  };
 
   return (
     <Modal show={true} onHide={onCancel} size="xl" backdrop="static">
@@ -77,7 +95,7 @@ function initializeSVG(svg, data) {
   let g = d3.select(svg.childNodes[0].childNodes[0]);
   g.selectAll("*").remove();
 
-  // Draw the path
+  // Draw the path. NOTE: This is in Lat/Long space, so wee need to transform it via the EditBox.
   g.append("path")
     .datum(data)
     .attr("fill", "none")
@@ -91,13 +109,6 @@ function initializeSVG(svg, data) {
         .y((d) => d[1])
     );
 
-  // Make the EditBox!
-  let editboxG = d3.select(svg.childNodes[0].childNodes[1]);
-  let [x1, x2] = d3.extent(data, (d) => d[0]);
-  let [y1, y2] = d3.extent(data, (d) => d[1]);
-  let center = [(x1 + x2) / 2, (y1 + y2) / 2];
-  let width = x2 - x1;
-  let height = y2 - y1;
-  let editBox = new EditBox(center, width, height);
-  editBox.attachToSVG(editboxG, g);
+  let editBoxG = d3.select(svg.childNodes[0].childNodes[1]);
+  return [g, editBoxG];
 }
