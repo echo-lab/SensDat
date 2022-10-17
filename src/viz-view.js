@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+  useState,
+} from "react";
 
 import Container from "react-bootstrap/Container";
 
@@ -31,6 +37,14 @@ const PATH_COLOR = "#69b3a2";
 const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
 
+// See: https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
+// (Not sure if this use case is legit lol)
+function useSvgRef() {
+  const [svg, setSvg] = useState(null);
+  const ref = useCallback((node) => node !== null && setSvg(node), []);
+  return [svg, ref];
+}
+
 /*
  * Creates a visualization of the data.
  *
@@ -55,7 +69,8 @@ export function VizView({
   dimensions,
   uiState,
 }) {
-  const svgRef = useRef();
+  let [svg, svgRef] = useSvgRef();
+  let [resetZoom, setResetZoom] = useState(() => () => {});
   const d3Dots = useRef();
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
@@ -67,25 +82,59 @@ export function VizView({
     [vizData]
   );
 
+  // Move the data to SVG-coordinates.
+  let tData = useMemo(
+    () =>
+      vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
+        let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+        return { x, y, Timestamp, Order };
+      }),
+    [vizData, currentTransform]
+  );
+
+  // Attach zoom listeners
+  useEffect(() => {
+    if (!svg) return;
+    let reset = attachZoomListeners(
+      d3.select(svg),
+      d3.select(svg.childNodes[0])
+    );
+    setResetZoom(() => reset);
+  }, [svg]);
+
+  // Reset the zoom/pan if we get new data.
+  useEffect(() => {
+    resetZoom();
+  }, [svg, vizData]);
+
+  // Draw/redraw the data.
+  // TODO: consider optimizing by not redrawing the points
+  useEffect(() => {
+    if (!svg) return;
+    let g = d3.select(svg.childNodes[0].childNodes[0]);
+    d3Dots.current = drawData(g, tData, vizTimespan);
+  }, [svg, tData, vizTimespan]);
+
+  // Redraw the regions.
+  useEffect(() => {
+    if (!svg) return;
+    // TODO: redraw the regions
+    let g = d3.select(svg.childNodes[0].childNodes[1]);
+    drawRegions(g, userDefinedStates, svgCoordMapping);
+  }, [svg, userDefinedStates, svgCoordMapping]);
+
   // Function to update the SVG.
   useEffect(
     () => {
-      if (!vizData) return;
+      if (!vizData || !svg) return;
 
-      d3Dots.current = drawToSVG(
-        svgRef.current,
-        vizData,
-        vizTimespan,
-        svgCoordMapping,
-        currentTransform,
-        userDefinedStates
-      );
       createRegionInteraction &&
         createRegionInteraction.redraw(svgCoordMapping);
 
       return () => {};
     },
     /*dependencies=*/ [
+      svg,
       vizData,
       vizTimespan,
       createRegionInteraction,
@@ -97,10 +146,11 @@ export function VizView({
   // This initializes the createRegionInteraction with the SVG.
   useEffect(
     () => {
+      if (!svg) return;
       createRegionInteraction &&
         createRegionInteraction.initializeSvg(
-          svgRef.current,
-          svgRef.current.childNodes[0],
+          svg,
+          svg.childNodes[0],
           svgCoordMapping
         );
     },
@@ -189,7 +239,10 @@ export function VizView({
         style={svgStyle}
         viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
       >
-        <g></g>
+        <g class="zoomG">
+          <g class="dataG"></g>
+          <g class="regionG"></g>
+        </g>
       </svg>
       {timeSlider}
       {uiState === UIState.MoveDataPoints && (
@@ -232,34 +285,11 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
   );
 }
 
-// NOTE: svg should actually be the outer <g> tag in the svg :)
-function drawToSVG(
-  svg,
-  data,
-  timespan,
-  svgCoordMapping,
-  currentTransform,
-  userDefinedStates
-) {
-  let { longToX, latToY } = svgCoordMapping; // These are functions
-
-  let rootG = d3.select(svg.childNodes[0]);
-
-  // Filter to the selected timespan range.
-  data = filterByTimespan(data, timespan);
-
-  let transformedData = data.map(
-    ({ Longitude, Latitude, Timestamp, Order }) => {
-      let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
-      return { x, y, Timestamp, Order };
-    }
-  );
-
-  // Clear the SVG! Maybe there's a nicer way?
-  rootG.selectAll("*").remove();
-
+// Attaches listeners for zoom/pan. Returns a function which
+// resets the zoom/pan.
+function attachZoomListeners(svg, g) {
   // Allow Zoom + Pan
-  let handleZoom = (e) => rootG.attr("transform", e.transform);
+  let handleZoom = (e) => g.attr("transform", e.transform);
   let zoom = d3
     .zoom()
     .scaleExtent([0.5, 3.0])
@@ -268,35 +298,17 @@ function drawToSVG(
       [1.5 * PXL_WIDTH, 1.5 * PXL_HEIGHT],
     ])
     .on("zoom", handleZoom);
-  d3.select(svg).call(zoom);
+  svg.call(zoom);
+  return () => svg.call(zoom.transform, d3.zoomIdentity);
+}
 
-  let [selectPoint, deselectPoints] = makeHandlers();
+function drawData(g, data, timespan) {
+  data = filterByTimespan(data, timespan);
 
-  // TODO: can we rely on this getting called after the on-click handler for each
-  // datapoint?
-  rootG.on("click", (e) => {
-    if (!e.defaultPrevented) deselectPoints();
-  });
+  g.selectAll("*").remove();
 
-  // Draw the trajectory. Loosely based on:
-  // https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
-
-  // X-axis
-  // rootG
-  //   .append("g")
-  //   .attr("transform", `translate(0, ${svgY[0]})`)
-  //   .call(d3.axisBottom(longToX).ticks(4));
-
-  // Y-axis
-  // rootG
-  //   .append("g")
-  //   .attr("transform", `translate(${svgX[0]}, 0)`)
-  //   .call(d3.axisLeft(latToY).ticks(4));
-
-  // Trajectory
-  rootG
-    .append("path")
-    .datum(transformedData)
+  g.append("path")
+    .datum(data)
     .attr("fill", "none")
     .attr("stroke", PATH_COLOR)
     .attr("stroke-width", 1.5)
@@ -308,27 +320,22 @@ function drawToSVG(
         .y((d) => d.y)
     );
 
-  // Datapoints
-  let dots = rootG
-    .append("g")
+  let dots = g
+    .append("g") // Do we need this?
     .selectAll("dot")
-    .data(transformedData)
+    .data(data)
     .enter()
     .append("circle")
     .attr("cx", (d) => d.x)
     .attr("cy", (d) => d.y)
     .attr("r", 3)
     .attr("fill", INVISIBLE_COLOR);
-  // .on("click", selectPoint)
-  // .on("mouseenter", (e) => {
-  //   console.log("mouseenter event: ", e);
-  // })
-  // .on("mouseleave", (e) => {
-  //   console.log("mouseleave event: ", e);
-  // });
 
-  // Draw the current regions
-  let regions = rootG
+  return dots;
+}
+
+function drawRegions(g, userDefinedStates, { longToX, latToY }) {
+  let regions = g
     .selectAll("regionStates")
     .data(userDefinedStates.filter((s) => s instanceof EllipseRegion))
     .enter()
@@ -350,30 +357,6 @@ function drawToSVG(
     .attr("text-anchor", "middle")
     .attr("dy", "-.35em")
     .text((d) => d.name);
-
-  return dots;
-}
-
-function makeHandlers() {
-  let onDeselect;
-
-  let deselect = () => {
-    if (!onDeselect) return;
-    onDeselect();
-    onDeselect = null;
-  };
-
-  let select = (e, d) => {
-    e.preventDefault();
-    deselect();
-    let elem = d3.select(e.currentTarget);
-    elem.attr("stroke", "black");
-    onDeselect = () => {
-      elem.attr("stroke", null);
-    };
-  };
-
-  return [select, deselect];
 }
 
 /* ----------------- */
