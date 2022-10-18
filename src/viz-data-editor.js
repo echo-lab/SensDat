@@ -88,7 +88,7 @@ function initializeSVG(svg, data) {
       [-1.5 * PXL_WIDTH, -1.5 * PXL_HEIGHT],
       [2.5 * PXL_WIDTH, 2.5 * PXL_HEIGHT],
     ])
-    .scaleExtent([0.25, 3.0])
+    .scaleExtent([0.5, 3.0])
     .on("zoom", handleZoom);
   d3.select(svg).call(zoom);
 

@@ -261,7 +261,7 @@ function attachZoomListeners(svg, g) {
   let handleZoom = (e) => g.attr("transform", e.transform);
   let zoom = d3
     .zoom()
-    .scaleExtent([0.5, 3.0])
+    .scaleExtent([0.8, 3.0])
     .translateExtent([
       [-PXL_WIDTH / 2, -PXL_HEIGHT / 2],
       [1.5 * PXL_WIDTH, 1.5 * PXL_HEIGHT],
