@@ -69,6 +69,19 @@ export function millisToTimeString(ms) {
   return `${minutes}m ${seconds}s`;
 }
 
+// From: https://stackoverflow.com/questions/17410809/how-to-calculate-rotation-in-2d-in-javascript
+export function rotate(point, angle, center) {
+  let [x, y] = point;
+  let [cx, cy] = center || [0, 0];
+
+  let radians = (Math.PI / 180) * -angle;
+  let cos = Math.cos(radians);
+  let sin = Math.sin(radians);
+  let nx = cos * (x - cx) + sin * (y - cy) + cx;
+  let ny = cos * (y - cy) - sin * (x - cx) + cy;
+  return [nx, ny];
+}
+
 // Transforms the lat/long data in 'data' into SVG-pixel-space, preserving
 // relative distances.
 // Tries to fill the given width/height, but padding w/ some white space.
@@ -101,7 +114,7 @@ export function getDefaultDataTransform(data) {
   let currentBoundingBox = {
     center: [width / 2, height / 2],
     width: width / PADDING_FRACTION,
-    height: -1 * height / PADDING_FRACTION,  // -1 because svg coordinates y is flipped.
+    height: (-1 * height) / PADDING_FRACTION, // -1 because svg coordinates y is flipped.
     angle: 0,
   };
 

@@ -28,7 +28,8 @@ export function DataEditor({
     );
     let [dataG, editBoxG] = initializeSVG(svgRef.current, tdata);
     let editBox = new EditBox(currentTransform.currentParams);
-    editBox.attachToSVG(editBoxG, dataG);
+    let onUpdate = () => dataG.attr("transform", editBox.getTransform());
+    editBox.attachToSVG(editBoxG, onUpdate);
     setOnSubmit(() => () => {
       let res = new EditBox(
         currentTransform.initialParams,
@@ -36,7 +37,7 @@ export function DataEditor({
       );
       dispatch(actions.finishEditData(res));
     });
-  }, [data, defaultTransform, currentTransform]);
+  }, [data, defaultTransform, currentTransform, dispatch]);
 
   let onCancel = () => {
     dispatch(actions.cancelEditData());

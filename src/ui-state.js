@@ -9,7 +9,8 @@ export class UIState {
     this.name = name;
   }
 
-  statePaneDisabled() {
+  // i.e., are we currently doing some action that prevents us from starting another one?
+  busy() {
     return this !== UIState.Default;
   }
 }
