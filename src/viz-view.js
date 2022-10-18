@@ -184,10 +184,10 @@ export function VizView({
     dispatch,
   };
 
-  let timeSliderProps = { vizData, vizTimespan, svgWidth, dispatch };
+  let timeSliderProps = { vizData, svgWidth, dispatch };
   let timeSlider = useMemo(() => {
     return vizData ? <TimeSlider {...timeSliderProps} /> : null;
-  }, [vizData, vizTimespan, svgWidth]);
+  }, [vizData, svgWidth]);
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
@@ -222,7 +222,14 @@ export function VizView({
 }
 
 // TODO: would this be simpler to just... implement without a library??
-function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
+function TimeSlider({ vizData, svgWidth, dispatch }) {
+  // Whenever vizData updates, increment 'key', which is used to
+  // force remounting the slider when the underlying data changes.
+  let key = useRef(0);
+  useEffect(() => {
+    key.current = key.current + 1;
+  }, [vizData]);
+
   // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
   let tipFormatter = useMemo(() => {
     let [tMin, tMax] = d3.extent(vizData, (d) => d.Timestamp.getTime());
@@ -249,7 +256,7 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
   return (
     <div style={sliderDivStyle}>
       <p>Timespan</p>
-      <Range {...rangeProps} />
+      <Range key={key.current} {...rangeProps} />
     </div>
   );
 }
