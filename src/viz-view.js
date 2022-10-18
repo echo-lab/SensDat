@@ -23,11 +23,6 @@ import { DataEditor } from "./viz-data-editor.js";
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
-// If we want axes, use the commented out versions
-// const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
-// const PADDING_FRACTION = 1.1; // How much to pad the data w.r.t. the graph axes.
-const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 30 };
-const PADDING_FRACTION = 1.0; // How much to pad the data w.r.t. the graph axes.
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
@@ -38,7 +33,8 @@ const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
 
 // See: https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
-// (Not sure if this use case is legit lol)
+// (Not sure if this use case is legit - I just didn't want to keep accessing
+// ref.current lol)
 function useSvgRef() {
   const [svg, setSvg] = useState(null);
   const ref = useCallback((node) => node !== null && setSvg(node), []);
@@ -76,12 +72,6 @@ export function VizView({
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
-  // TODO: get rid of this :)
-  let svgCoordMapping = useMemo(
-    () => (vizData ? getSvgCoordMapping(vizData, PXL_WIDTH, PXL_HEIGHT) : null),
-    [vizData]
-  );
-
   // Move the data to SVG-coordinates.
   let tData = useMemo(
     () =>
@@ -108,7 +98,7 @@ export function VizView({
   }, [svg, vizData]);
 
   // Draw/redraw the data.
-  // TODO: consider optimizing by not redrawing the points
+  // TODO: consider optimizing by redrawing the data points and path separately.
   useEffect(() => {
     if (!svg) return;
     let g = d3.select(svg.childNodes[0].childNodes[0]);
@@ -118,43 +108,20 @@ export function VizView({
   // Redraw the regions.
   useEffect(() => {
     if (!svg) return;
-    // TODO: redraw the regions
     let g = d3.select(svg.childNodes[0].childNodes[1]);
-    drawRegions(g, userDefinedStates, svgCoordMapping);
-  }, [svg, userDefinedStates, svgCoordMapping]);
-
-  // Function to update the SVG.
-  useEffect(
-    () => {
-      if (!vizData || !svg) return;
-
-      createRegionInteraction &&
-        createRegionInteraction.redraw(svgCoordMapping);
-
-      return () => {};
-    },
-    /*dependencies=*/ [
-      svg,
-      vizData,
-      vizTimespan,
-      createRegionInteraction,
-      userDefinedStates,
-      currentTransform,
-    ]
-  );
+    drawRegions(g, userDefinedStates);
+  }, [svg, userDefinedStates]);
 
   // This initializes the createRegionInteraction with the SVG.
   useEffect(
     () => {
-      if (!svg) return;
-      createRegionInteraction &&
-        createRegionInteraction.initializeSvg(
-          svg,
-          svg.childNodes[0],
-          svgCoordMapping
-        );
+      if (!svg || !createRegionInteraction) return;
+      createRegionInteraction.initializeSvg(
+        d3.select(svg),
+        d3.select(svg.childNodes[0].childNodes[2])
+      );
     },
-    /*dependencies=*/ [createRegionInteraction]
+    /*dependencies=*/ [svg, createRegionInteraction]
   );
 
   // Function to highlight points.
@@ -227,6 +194,7 @@ export function VizView({
       <button
         type="button"
         class="btn btn-sm btn-link"
+        disabled={uiState.busy()}
         onClick={(e) => {
           e.preventDefault();
           dispatch(actions.startEditData());
@@ -242,6 +210,7 @@ export function VizView({
         <g class="zoomG">
           <g class="dataG"></g>
           <g class="regionG"></g>
+          <g class="newRegionG"></g>
         </g>
       </svg>
       {timeSlider}
@@ -334,117 +303,34 @@ function drawData(g, data, timespan) {
   return dots;
 }
 
-function drawRegions(g, userDefinedStates, { longToX, latToY }) {
-  let regions = g
-    .selectAll("regionStates")
-    .data(userDefinedStates.filter((s) => s instanceof EllipseRegion))
-    .enter()
-    .append("g");
+function drawRegions(g, userDefinedStates) {
+  g.selectAll("*").remove();
+  // TODO: move this stuff into the EllipseRegion class, maybe?
+  userDefinedStates
+    .filter((s) => s instanceof EllipseRegion)
+    .forEach((ellipse) => {
+      g.append("ellipse")
+        .style("stroke", "black")
+        .style("fill-opacity", 0.0)
+        .attr("cx", ellipse.cx)
+        .attr("cy", ellipse.cy)
+        .attr("rx", ellipse.rx)
+        .attr("ry", ellipse.ry)
+        .attr(
+          "transform",
+          `rotate(${ellipse.angle} ${ellipse.cx} ${ellipse.cy})`
+        );
 
-  regions
-    .append("ellipse")
-    .style("stroke", "black")
-    .style("fill-opacity", 0.0)
-    .attr("cx", (d) => longToX(d.cx))
-    .attr("cy", (d) => latToY(d.cy))
-    .attr("rx", (d) => Math.abs(longToX(d.cx + d.rx) - longToX(d.cx)))
-    .attr("ry", (d) => Math.abs(latToY(d.cy + d.ry) - latToY(d.cy)));
-
-  regions
-    .append("text")
-    .attr("x", (d) => longToX(d.cx))
-    .attr("y", (d) => latToY(d.cy + d.ry))
-    .attr("text-anchor", "middle")
-    .attr("dy", "-.35em")
-    .text((d) => d.name);
+      g.append("text")
+        .attr("x", ellipse.cx)
+        .attr("y", ellipse.cy - ellipse.ry - 20)
+        .attr("text-anchor", "middle")
+        .attr("dy", "-.35em")
+        .text(ellipse.name);
+    });
 }
 
-/* ----------------- */
-/* UTILITY FUNCTIONS */
-/* ----------------- */
-
-// Get information about how the SVG's xy-coordinates should correspond to
-// latitude/longitude based on the data table.
-// Returns: {
-//   svgX: [minXPixel, maxXPixel],
-//   xvgY: [bottomYPixel, topYPixel],
-//   xToLong: function(),
-//   yToLat: function(),
-//   longToX: function(),
-//   latToY: function(),
-// }
-//
-// NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
-// in the graph and the XY distance is true-to-life.
-function getSvgCoordMapping(data, width, height) {
-  // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
-  // plot data right on the axes. Of course, we could also constrict the svgX
-  // and svgY range instead.
-  let [latitude, longitude] = getLatLongDomain(
-    d3.extent(data, (d) => d.Longitude),
-    d3.extent(data, (d) => d.Latitude),
-    [width, height]
-  ).map((rng) => scaleRange(rng, PADDING_FRACTION));
-
-  let svgX = [SVG_MARGIN.LEFT, width - SVG_MARGIN.RIGHT];
-  let svgY = [height - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
-
-  return {
-    svgX,
-    svgY,
-    xToLong: d3.scaleLinear().domain(svgX).range(longitude),
-    yToLat: d3.scaleLinear().domain(svgY).range(latitude),
-    longToX: d3.scaleLinear().domain(longitude).range(svgX),
-    latToY: d3.scaleLinear().domain(latitude).range(svgY),
-  };
-}
-
-// Copied from: https://www.movable-type.co.uk/scripts/latlong.html
-function latLongDist(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // metres
-  const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  const d = R * c; // in metres
-  return d;
-}
-
-// Scale a range, preserving the midpoint.
-function scaleRange([lo, hi], factor) {
-  const mid = (hi + lo) / 2;
-  const m = ((hi - lo) / 2) * factor;
-  return [mid - m, mid + m];
-}
-
-// TODO: TEST THIS! YOU MUST!
-function getLatLongDomain([long0, long1], [lat0, lat1], [width, height]) {
-  // dx and dy are the actual (slightly approximate) physical distances spanned
-  // by the longitude and latitude, respectively.
-  const dx = latLongDist(lat0, long0, lat0, long1);
-  const dy = latLongDist(lat0, long0, lat1, long0);
-
-  // The idea here is that we want the scale in the graph to correspond to
-  // the actual, physical distances. This will be true if dx/dy = width/height.
-  // If dx/dy < width/height, we need to pad the longitude scale, and vice versa.
-  let latDomain = [lat0, lat1];
-  let longDomain = [long0, long1];
-  if (dx / dy < width / height) {
-    longDomain = scaleRange(longDomain, ((width / height) * dy) / dx);
-  } else {
-    latDomain = scaleRange(latDomain, ((height / width) * dx) / dy);
-  }
-  return [latDomain, longDomain];
-}
-
-// TODO: this should probably filter by actual time instead of "order"/"index".
-// Plus: we should not be assuming the index column is called 'Order'.
+// TODO: revisit this? I think we can assume we always have the actual time/Timestamp column
 function filterByTimespan(data, timespan) {
   // Note sure if this is good or not :)
   if (data[0].Timestamp) {

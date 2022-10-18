@@ -141,7 +141,7 @@ actionHandlers["loadState"] = (state, serializedState) => {
 // Note: we throw out the old state here :)
 actionHandlers["loadTable"] = (state, table) => {
   if (!table.isReady()) {
-    throw "Table not ready for use!";
+    throw new Error("Table not ready for use!");
   }
   let vizData = table.getVizData();
   let transform = getDefaultDataTransform(vizData);
@@ -228,7 +228,7 @@ actionHandlers["createCompoundState"] = (state, compoundState) => {
     ...state,
     userDefinedStates: state.userDefinedStates.concat(compoundState),
     dataTable: state.dataTable
-      .withTempState(compoundState)
+      .withTempState(compoundState, state.currentDataTransform)
       .withCommittedTempState(),
     uiState: UIState.Default,
   };
@@ -240,7 +240,10 @@ actionHandlers["createTempState"] = (state, { userDefinedState }) => {
   return {
     ...state,
     tmpUserDefinedState: userDefinedState,
-    dataTable: state.dataTable.withTempState(userDefinedState),
+    dataTable: state.dataTable.withTempState(
+      userDefinedState,
+      state.currentDataTransform
+    ),
   };
 };
 

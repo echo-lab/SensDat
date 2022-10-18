@@ -1,5 +1,7 @@
 import * as d3 from "d3";
 
+import { rotate } from "./utils";
+
 const BOX_COLOR = "#a8a3f2";
 const HANDLE_LENGTH = 50;
 const RECT_WIDTH = 10;
@@ -45,9 +47,13 @@ export class EditBox {
 
   // This must be called to actually add the editable box to the SVG.
   //   g:     The group the elements will be added to.
-  //   dataG: If provided, a group which will receive the same transforms the user
-  //          performs on the EditBox. Should be a sibling of g.
-  attachToSVG(g, dataG) {
+  //   onUpdate: Optional callback to be called whenever the edit box is updated.
+  //             will be called on the first render, too.
+  //   onFinish: Optional callback: to be called whenever a drag/scale/rotate operation is finished
+  //             and also called on the first render.
+  attachToSVG(g, onUpdate, onFinish) {
+    onUpdate = onUpdate || (() => {});
+    onFinish = onFinish || (() => {});
     // Add all the SVG elements.
     // They will be positioned in the end with a call to this.updateSVG();
     let box = g
@@ -85,19 +91,21 @@ export class EditBox {
     );
     knobs.handle.attr("cursor", "crosshair");
 
-    let svgElements = {
-      dataG,
+    let args = {
+      onUpdate,
+      onFinish,
       box,
       handleLine,
       knobs,
     };
 
-    this.#updateSVG(svgElements);
-    this.#attachListeners(svgElements);
+    this.#updateSVG(args);
+    this.#attachListeners(args);
+    onFinish();
   }
 
   #attachListeners(svgElements) {
-    let { box, knobs } = svgElements;
+    let { box, knobs, onFinish } = svgElements;
     /////////////////
     // Translation //
     /////////////////
@@ -117,6 +125,7 @@ export class EditBox {
     let onTranslateEnd = (e) => {
       onTranslating(e);
       box.attr("cursor", "grab");
+      onFinish();
     };
     let translateDrag = d3
       .drag()
@@ -144,18 +153,21 @@ export class EditBox {
       this.currentParams.angle = angle;
       this.#updateSVG(svgElements);
     };
+    let endRotating = (e) => {
+      onRotating(e);
+      onFinish();
+    };
     let rotateDrag = d3
       .drag()
       .on("start", startRotating)
       .on("drag", onRotating)
-      .on("end", onRotating);
+      .on("end", endRotating);
     knobs.handle.call(rotateDrag);
 
     /////////////
     // Scaling //
     /////////////
     let scaleInDirections = (cursor, dirs) => {
-      let [x, y] = cursor;
       let { angle, width, height, center } = this.currentParams;
       let { top, bottom, left, right } = this.#getPoints();
 
@@ -207,17 +219,21 @@ export class EditBox {
         scaleInDirections([e.x, e.y], dirs);
         this.#updateSVG(svgElements);
       };
+      let endDrag = (e) => {
+        onDrag(e);
+        onFinish();
+      };
       knobs[key].call(
         d3
           .drag()
           .on("start", (e) => {})
           .on("drag", onDrag)
-          .on("end", onDrag)
+          .on("end", endDrag)
       );
     });
   }
 
-  #updateSVG({ knobs, box, handleLine, dataG }) {
+  #updateSVG({ knobs, box, handleLine, onUpdate }) {
     let points = this.#getPoints();
 
     // Update the knobs
@@ -237,8 +253,7 @@ export class EditBox {
     let { handle, bottom } = points;
     handleLine.attr("d", d3.line()([handle, bottom]));
 
-    // Update the transform for the data.
-    dataG && dataG.attr("transform", this.getTransform());
+    onUpdate();
   }
 
   // Get a transform that would change the original box into the new one :)
@@ -320,19 +335,6 @@ export class EditBox {
       {}
     );
   }
-}
-
-// From: https://stackoverflow.com/questions/17410809/how-to-calculate-rotation-in-2d-in-javascript
-function rotate(point, angle, center) {
-  let [x, y] = point;
-  let [cx, cy] = center || [0, 0];
-
-  let radians = (Math.PI / 180) * -angle;
-  let cos = Math.cos(radians);
-  let sin = Math.sin(radians);
-  let nx = cos * (x - cx) + sin * (y - cy) + cx;
-  let ny = cos * (y - cy) - sin * (x - cx) + cy;
-  return [nx, ny];
 }
 
 function unit(angle) {
