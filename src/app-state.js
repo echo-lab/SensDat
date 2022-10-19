@@ -187,6 +187,12 @@ actionHandlers["finishEditData"] = (state, transform) => {
     ...state,
     uiState: UIState.Default,
     currentDataTransform: transform,
+    // Delete all existing states. In the future, we could consider updating them instead?
+    activeTab: "BASE_TABLE",
+    userDefinedStates: [],
+    summaryTables: [],
+    dataTable: state.dataTable.withDeletedStates(state.userDefinedStates),
+
   };
 };
 
