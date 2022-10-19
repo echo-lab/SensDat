@@ -114,3 +114,8 @@ div .tr:hover:not(.table-header) {
 .summary-mode-dropdown {
   padding: 0px;
 }
+
+.region-shape > .list-group-item-light.list-group-item-action.active {
+  background-color: #c8c9c9;
+  color: #000000;
+}

@@ -7,6 +7,8 @@ import React, {
 } from "react";
 
 import Container from "react-bootstrap/Container";
+import Nav from "react-bootstrap/Nav";
+import ListGroup from "react-bootstrap/ListGroup";
 
 import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
@@ -15,7 +17,7 @@ import * as d3 from "d3";
 import debounce from "lodash.debounce";
 
 import { actions } from "./app-state.js";
-import { EllipseRegion } from "./states/region.js";
+import { EllipseRegion, RectRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
@@ -75,10 +77,12 @@ export function VizView({
   // Move the data to SVG-coordinates.
   let tData = useMemo(
     () =>
-      vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
-        let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
-        return { x, y, Timestamp, Order };
-      }),
+      !vizData
+        ? null
+        : vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
+            let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+            return { x, y, Timestamp, Order };
+          }),
     [vizData, currentTransform]
   );
 
@@ -191,17 +195,24 @@ export function VizView({
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-      <button
-        type="button"
-        class="btn btn-sm btn-link"
-        disabled={uiState.busy()}
-        onClick={(e) => {
-          e.preventDefault();
-          dispatch(actions.startEditData());
-        }}
-      >
-        Edit Datapoints
-      </button>
+      <Nav className="justify-content-end mb-3">
+        {createRegionInteraction && (
+          <RegionShapeSelector
+            createRegionInteraction={createRegionInteraction}
+          />
+        )}
+        <button
+          type="button"
+          class="btn btn-sm btn-link"
+          disabled={uiState.busy()}
+          onClick={(e) => {
+            e.preventDefault();
+            dispatch(actions.startEditData());
+          }}
+        >
+          Edit Datapoints
+        </button>
+      </Nav>
       <svg
         ref={svgRef}
         style={svgStyle}
@@ -279,6 +290,7 @@ function attachZoomListeners(svg, g) {
 }
 
 function drawData(g, data, timespan) {
+  if (!data || data.length === 0) return;
   data = filterByTimespan(data, timespan);
 
   g.selectAll("*").remove();
@@ -335,6 +347,32 @@ function drawRegions(g, userDefinedStates) {
         .attr("dy", "-.35em")
         .text(ellipse.name);
     });
+
+  userDefinedStates
+    .filter((s) => s instanceof RectRegion)
+    .forEach((rect) => {
+      let {
+        center: [cx, cy],
+        width,
+        height,
+        angle,
+      } = rect.params;
+      g.append("rect")
+        .style("stroke", "black")
+        .style("fill-opacity", 0.0)
+        .attr("x", cx - width / 2)
+        .attr("y", cy - height / 2)
+        .attr("width", width)
+        .attr("height", height)
+        .attr("transform", `rotate(${angle} ${cx} ${cy})`);
+
+      g.append("text")
+        .attr("x", cx)
+        .attr("y", cy - Math.abs(height) / 2 - 20)
+        .attr("text-anchor", "middle")
+        .attr("dy", "-.35em")
+        .text(rect.name);
+    });
 }
 
 // TODO: revisit this? I think we can assume we always have the actual time/Timestamp column
@@ -355,4 +393,69 @@ function filterByTimespan(data, timespan) {
   let mno = minOrder + (r1 / data.length) * (maxOrder - minOrder);
   let mxo = minOrder + (r2 / data.length) * (maxOrder - minOrder);
   return data.filter((row) => row.Order >= mno && row.Order <= mxo);
+}
+
+function RegionShapeSelector({ createRegionInteraction }) {
+  // Note: this data is technically duplicated in createRegionInteraction,
+  // but it's not ''Reactive''.
+  let [shape, setShape] = useState(createRegionInteraction.shape);
+
+  return (
+    <ListGroup className="region-shape" horizontal>
+      <ListGroup.Item
+        variant="light"
+        action
+        active={shape === "ELLIPSE"}
+        onClick={(e) => {
+          setShape("ELLIPSE");
+          createRegionInteraction.useEllipse();
+        }}
+      >
+        <CircleIcon />
+      </ListGroup.Item>
+      <ListGroup.Item
+        variant="light"
+        action
+        active={shape === "RECT"}
+        onClick={(e) => {
+          setShape("RECT");
+          createRegionInteraction.useRect();
+        }}
+      >
+        <SquareIcon />
+      </ListGroup.Item>
+    </ListGroup>
+  );
+}
+
+// https://icons.getbootstrap.com/icons/square/
+function SquareIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      fill="currentColor"
+      class="bi bi-square"
+      viewBox="0 0 16 16"
+    >
+      <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
+    </svg>
+  );
+}
+
+// https://icons.getbootstrap.com/icons/circle/
+function CircleIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      fill="currentColor"
+      class="bi bi-circle"
+      viewBox="0 0 16 16"
+    >
+      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+    </svg>
+  );
 }
