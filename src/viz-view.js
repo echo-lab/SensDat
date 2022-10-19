@@ -122,8 +122,10 @@ export function VizView({
       if (!svg || !createRegionInteraction) return;
       createRegionInteraction.initializeSvg(
         d3.select(svg),
-        d3.select(svg.childNodes[0].childNodes[2])
+        d3.select(svg.childNodes[0].childNodes[2]),
+        [PXL_WIDTH / 2, PXL_HEIGHT / 2]
       );
+      resetZoom();
     },
     /*dependencies=*/ [svg, createRegionInteraction]
   );
