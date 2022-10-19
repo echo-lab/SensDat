@@ -2,10 +2,12 @@ import * as d3 from "d3";
 import debounce from "lodash.debounce";
 
 import { actions } from "./app-state.js";
-import { EllipseRegion } from "./states/region.js";
+import { EllipseRegion, RectRegion } from "./states/region.js";
 import { EditBox } from "./edit-box.js";
 
 const DEFAULT_NAME = "[New Region]";
+const COLOR = "#00AAFF";
+const OPACITY = "20%";
 
 // A class for handling the user interactions for creating a new region state.
 // The user creates the new region by clicking on the svgElement.
@@ -17,6 +19,7 @@ export class CreateRegionInteraction {
   constructor(dispatch) {
     this.dispatch = dispatch;
     this.name = "";
+    this.shape = "ELLIPSE";
 
     // References to all the SVG elements we'll be creating.
     this.svg = null;
@@ -24,7 +27,8 @@ export class CreateRegionInteraction {
     this.boxG = null;
     this.elementG = null;
     this.textG = null;
-    this.element = null;
+    this.ellipse = null;
+    this.rect = null;
     this.nameElement = null;
     this.editBox = null;
 
@@ -33,6 +37,20 @@ export class CreateRegionInteraction {
     this.debouncedCreateTempState = debounce((userDefinedState) => {
       this.dispatch(actions.createTempState({ userDefinedState }));
     }, 200);
+  }
+
+  setShape(shape) {
+    this.shape = shape;
+    this.onEditBoxUpdate();
+    this.updateRegionState();
+  }
+
+  useEllipse() {
+    this.setShape("ELLIPSE");
+  }
+
+  useRect() {
+    this.setShape("RECT");
   }
 
   // svg and g are both d3 selections, e.g, `d3.select("svg")`
@@ -54,28 +72,26 @@ export class CreateRegionInteraction {
   }
 
   onClick(e) {
-    if (this.element) return; // We already have a Region.
+    if (this.ellipse) return; // We already have a Region.
     e.preventDefault();
 
     let [x, y] = d3.pointer(e, this.g.node());
     const r = 30;
 
-    this.element = this.elementG
-      .append("ellipse")
-      .attr("cx", x)
-      .attr("cy", y)
-      .attr("rx", r)
-      .attr("ry", r)
-      .attr("fill", "#00AAFF")
-      .attr("fill-opacity", "20%")
-      .attr("stroke", "black")
-      .attr("stroke-width", 1)
-      .attr("pointer-events", "none");
+    // Create the shapes on the SVG. Their positions and sizes
+    // will be set when the editBox renders and calls onEditBoxUpdate()
+    this.ellipse = this.elementG.append("ellipse");
+    this.rect = this.elementG.append("rect");
+    [this.ellipse, this.rect].forEach((el) => {
+      el.attr("fill", COLOR)
+        .attr("fill-opacity", OPACITY)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("pointer-events", "none");
+    });
 
     this.nameElement = this.textG
       .append("text")
-      .attr("x", x)
-      .attr("y", y)
       .attr("text-anchor", "middle")
       .attr("dy", "-.35em")
       .attr("pointer-events", "none")
@@ -95,6 +111,7 @@ export class CreateRegionInteraction {
 
   // Change the region shape when the EditBox updates.
   onEditBoxUpdate() {
+    if (!this.editBox) return;
     // It would be easier to just set the transform using EditBox's getTransform(), but:
     // 1) we don't want to stretch the text in nameElement, and
     // 2) we don't want to alter the stroke thickness in the region element... (eh)
@@ -104,12 +121,21 @@ export class CreateRegionInteraction {
       height,
       angle,
     } = this.editBox.currentParams;
-    this.element
+    [width, height] = [Math.abs(width), Math.abs(height)];
+    this.ellipse
       .attr("cx", cx)
       .attr("cy", cy)
-      .attr("rx", Math.abs(width) / 2)
-      .attr("ry", Math.abs(height) / 2)
-      .attr("transform", `rotate(${angle} ${cx} ${cy})`);
+      .attr("rx", width / 2)
+      .attr("ry", height / 2)
+      .attr("transform", `rotate(${angle} ${cx} ${cy})`)
+      .attr("visibility", this.shape === "ELLIPSE" ? "visible" : "hidden");
+    this.rect
+      .attr("x", cx - width / 2)
+      .attr("y", cy - height / 2)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("transform", `rotate(${angle} ${cx} ${cy})`)
+      .attr("visibility", this.shape === "RECT" ? "visible" : "hidden");
 
     // TODO: come up with a better rule for moving the text...
     this.nameElement.attr("x", cx).attr("y", cy - Math.abs(height) / 2 - 20);
@@ -120,13 +146,12 @@ export class CreateRegionInteraction {
     // Get the current region/name
     let { center, width, height, angle } = this.editBox.currentParams;
     let name = this.name !== "" ? this.name : DEFAULT_NAME;
-    let region = new EllipseRegion(
-      center,
-      Math.abs(width) / 2,
-      Math.abs(height / 2),
-      angle,
-      name
-    );
+    [width, height] = [Math.abs(width), Math.abs(height)];
+    let [rx, ry] = [width / 2, height / 2];
+    let region =
+      this.shape === "ELLIPSE"
+        ? new EllipseRegion(center, rx, ry, angle, name)
+        : new RectRegion({ center, width, height, angle }, name);
     this.debouncedCreateTempState(region);
   }
 

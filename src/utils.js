@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import { EllipseRegion } from "./states/region.js";
+import { EllipseRegion, RectRegion } from "./states/region.js";
 import { CompoundState } from "./states/compound-state.js";
 import styled from "styled-components";
 import { EditBox } from "./edit-box.js";
@@ -11,6 +11,7 @@ import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 const stateFactories = [
   (o) => EllipseRegion.fromObject(o),
   (o) => CompoundState.fromObject(o),
+  (o) => RectRegion.fromObject(o),
 ];
 
 // This assumes that the stateFactories will return null if the object isn't
