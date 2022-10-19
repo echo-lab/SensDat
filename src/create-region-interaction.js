@@ -10,11 +10,8 @@ const COLOR = "#00AAFF";
 const OPACITY = "20%";
 
 // A class for handling the user interactions for creating a new region state.
-// The user creates the new region by clicking on the svgElement.
-// The argument 'svgCoordMapping' is kind of a grab-bag of useful things which help
-// coordinate between SVG coordinates and latitude/longitude, and also help
-// us detect when a click is within in the proper range.
-// For now: this class just lets the user click to add a one-size circular region.
+// Must use 'initializeSvg()' to properly initialize. A shape is placed automatically
+// on the SVG w/ an edit box, which the user can manipulate.
 export class CreateRegionInteraction {
   constructor(dispatch) {
     this.dispatch = dispatch;
@@ -53,8 +50,14 @@ export class CreateRegionInteraction {
     this.setShape("RECT");
   }
 
+  setName(name) {
+    this.name = name;
+    this.nameElement.html(name);
+    this.updateRegionState();
+  }
+
   // svg and g are both d3 selections, e.g, `d3.select("svg")`
-  initializeSvg(svg, g) {
+  initializeSvg(svg, g, [x, y]) {
     this.cleanup(); // Just in case this is called multiple times for whatever reason.
     this.svg = svg;
     this.g = g;
@@ -62,20 +65,6 @@ export class CreateRegionInteraction {
     this.elementG = g.append("g");
     this.textG = g.append("g");
 
-    this.svg.on("click", this.onClick.bind(this));
-  }
-
-  setName(name) {
-    this.name = name;
-    this.nameElement.html(name);
-    this.updateRegionState();
-  }
-
-  onClick(e) {
-    if (this.ellipse) return; // We already have a Region.
-    e.preventDefault();
-
-    let [x, y] = d3.pointer(e, this.g.node());
     const r = 30;
 
     // Create the shapes on the SVG. Their positions and sizes
@@ -156,7 +145,6 @@ export class CreateRegionInteraction {
   }
 
   cleanup() {
-    this.svg && this.svg.on("click", null);
     this.g && this.g.selectAll("*").remove();
   }
 }
