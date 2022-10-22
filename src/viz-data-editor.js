@@ -16,17 +16,30 @@ export function DataEditor({
   data,
   defaultTransform,
   currentTransform,
+  siteLayout,
   dispatch,
 }) {
   const svgRef = useRef();
   let [onSubmit, setOnSubmit] = useState(() => {});
 
   useEffect(() => {
+    if (!svgRef.current) return; // Is this needed?
+
     // Put it in x-y coordinates in the SVG space
     let tdata = data.map(({ Latitude, Longitude }) =>
       currentTransform.transformPoint([Longitude, Latitude])
     );
-    let [dataG, editBoxG] = initializeSVG(svgRef.current, tdata);
+
+    let svg = d3.select(svgRef.current);
+    let zoomG = d3.select(svgRef.current.childNodes[0]);
+    let siteLayoutImageTag = d3.select(
+      svgRef.current.childNodes[0].childNodes[0].childNodes[0]
+    );
+    let dataG = d3.select(svgRef.current.childNodes[0].childNodes[1]);
+    let editBoxG = d3.select(svgRef.current.childNodes[0].childNodes[2]);
+
+    initializeSVG(svg, zoomG, dataG, tdata);
+
     let editBox = new EditBox(currentTransform.currentParams);
     let onUpdate = () => dataG.attr("transform", editBox.getTransform());
     editBox.attachToSVG(editBoxG, onUpdate);
@@ -37,7 +50,10 @@ export function DataEditor({
       );
       dispatch(actions.finishEditData(res));
     });
-  }, [data, defaultTransform, currentTransform, dispatch]);
+
+    // Draw the site map, if it exists.
+    siteLayout && drawSiteLayout(siteLayoutImageTag, siteLayout);
+  }, [data, defaultTransform, currentTransform, dispatch, siteLayout]);
 
   let onCancel = () => {
     dispatch(actions.cancelEditData());
@@ -59,8 +75,11 @@ export function DataEditor({
           viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
         >
           <g id="zoomG">
-            <g id="dataG"></g>
-            <g id="editboxG"></g>
+            <g className="siteLayoutG">
+              <image />
+            </g>
+            <g className="dataG"></g>
+            <g className="editboxG"></g>
           </g>
         </svg>
       </Modal.Body>
@@ -76,9 +95,8 @@ export function DataEditor({
   );
 }
 
-function initializeSVG(svg, data) {
+function initializeSVG(svg, zoomG, dataG, data) {
   // First, set up zooming/panning relative to the outer <g> tag.
-  let zoomG = d3.select(svg.childNodes[0]);
   zoomG.attr("transform", ""); // Reset any existing transforms
 
   let handleZoom = (e) => zoomG.attr("transform", e.transform);
@@ -90,14 +108,14 @@ function initializeSVG(svg, data) {
     ])
     .scaleExtent([0.5, 3.0])
     .on("zoom", handleZoom);
-  d3.select(svg).call(zoom);
+  svg.call(zoom);
 
   // Now, let's draw the data points.
-  let g = d3.select(svg.childNodes[0].childNodes[0]);
-  g.selectAll("*").remove();
+  dataG.selectAll("*").remove();
 
   // Draw the path. NOTE: This is in Lat/Long space, so wee need to transform it via the EditBox.
-  g.append("path")
+  dataG
+    .append("path")
     .datum(data)
     .attr("fill", "none")
     .attr("stroke", PATH_COLOR)
@@ -109,7 +127,18 @@ function initializeSVG(svg, data) {
         .x((d) => d[0])
         .y((d) => d[1])
     );
+}
 
-  let editBoxG = d3.select(svg.childNodes[0].childNodes[1]);
-  return [g, editBoxG];
+// This is duplicated from viz-view.js, which is kind of sad.
+function drawSiteLayout(imageTag, siteLayout) {
+  let { x, y, height, width } = siteLayout.idealSVGParams(
+    PXL_WIDTH,
+    PXL_HEIGHT
+  );
+  imageTag
+    .attr("href", siteLayout.url)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("x", x)
+    .attr("y", y);
 }

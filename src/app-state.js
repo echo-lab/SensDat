@@ -8,6 +8,7 @@ import {
   getDefaultDataTransform,
 } from "./utils.js";
 import { EditBox } from "./edit-box.js";
+import { SiteLayout } from "./upload-layout.js";
 
 /*
  * This file provides a way to organize the app state that is shared across components.
@@ -44,6 +45,7 @@ import { EditBox } from "./edit-box.js";
  * For example, current form values, etc.
  */
 
+// TODO: why are some of these unefined and some null?? Pick one lol
 export const initialState = {
   // Eventually, we'll want a map from tableName: table.
   dataTable: undefined,
@@ -64,6 +66,9 @@ export const initialState = {
   // Which tab is active in the Data Pane. Either "BASE_TABLE" or a state ID.
   activeTab: "BASE_TABLE",
 
+  // The current site layout. Should be a SiteLayout object or null;
+  siteLayout: null,
+
   // Active filters, like: columns which are hidden, states
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
@@ -81,20 +86,51 @@ function cleanupInteractions(state) {
   state.createRegionInteraction && state.createRegionInteraction.cleanup();
 }
 
-export function serialize(state) {
+// All arguments should be pulled directly from the app state, except serializedSiteLayout, which should be
+// memoized.
+export function serialize({
+  dataTable,
+  userDefinedStates,
+  summaryTables,
+  defaultDataTransform,
+  currentDataTransform,
+  siteLayout,
+}) {
   // Only need to save: dataTable, userDefinedStates
-  if (!state.dataTable) return "";
+  if (!dataTable) return "";
 
   let res = {
-    dataTable: state.dataTable.asObject(),
-    userDefinedStates: state.userDefinedStates.map((s) => s.asObject()),
-    summaryTables: state.summaryTables.map(({ state }) => state.asObject()),
+    dataTable: dataTable.asObject(),
+    userDefinedStates: userDefinedStates.map((s) => s.asObject()),
+    summaryTables: summaryTables.map(({ state }) => state.asObject()),
     defaultDataTransform:
-      state.defaultDataTransform && state.defaultDataTransform.asObject(),
+      defaultDataTransform && defaultDataTransform.asObject(),
     currentDataTransform:
-      state.currentDataTransform && state.currentDataTransform.asObject(),
+      currentDataTransform && currentDataTransform.asObject(),
+    siteLayout: siteLayout && siteLayout.serialize(),
   };
   return LZString.compress(JSON.stringify(res));
+}
+
+export async function deserialize(serializedState) {
+  if (!serializedState) {
+    console.log("No state to deserialize");
+    return {};
+  }
+  let data = JSON.parse(LZString.decompress(serializedState));
+  return {
+    dataTable: DataTable.fromObject(data.dataTable),
+    userDefinedStates: data.userDefinedStates.map((o) => objectToState(o)),
+    summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
+    defaultDataTransform:
+      data.defaultDataTransform &&
+      EditBox.fromObject(data.defaultDataTransform),
+    currentDataTransform:
+      data.currentDataTransform &&
+      EditBox.fromObject(data.currentDataTransform),
+    siteLayout:
+      data.siteLayout && (await SiteLayout.Deserialize(data.siteLayout)),
+  };
 }
 
 /*
@@ -103,37 +139,27 @@ export function serialize(state) {
  */
 let actionHandlers = {};
 
-actionHandlers["loadState"] = (state, serializedState) => {
-  if (!serializedState) {
-    console.log("No state to load");
-    return state;
-  }
-
+actionHandlers["loadState"] = (state, deserializedState) => {
   cleanupInteractions(state); // in case we're in the middle of something
-  let data = JSON.parse(LZString.decompress(serializedState));
-  let table = DataTable.fromObject(data.dataTable);
-  if (!table.isReady()) return state; // If it ain't good, don't load it!
 
-  let vizData = table.getVizData();
-  // The defaultTransform might not be set, e.g., if saved data is from a previous code version.
-  let defaultTransform = data.defaultDataTransform
-    ? EditBox.fromObject(data.defaultDataTransform)
-    : getDefaultDataTransform(vizData);
+  let { dataTable, defaultDataTransform, currentDataTransform } =
+    deserializedState;
+  if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
+  let vizData = dataTable.getVizData();
+  defaultDataTransform =
+    defaultDataTransform || getDefaultDataTransform(vizData);
+  currentDataTransform = currentDataTransform || defaultDataTransform;
 
   return {
     ...initialState,
-    dataTable: table,
-    userDefinedStates: data.userDefinedStates.map((o) => objectToState(o)),
-    uiState: UIState.Default,
-    summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
+    ...deserializedState,
     vizState: {
       ...initialState.vizState,
-      dataPoints: vizData,
+      dataPoints: dataTable.getVizData(),
     },
-    defaultDataTransform: defaultTransform,
-    currentDataTransform: data.currentDataTransform
-      ? EditBox.fromObject(data.currentDataTransform)
-      : defaultTransform,
+    defaultDataTransform,
+    currentDataTransform,
+    uiState: UIState.Default,
   };
 };
 
@@ -192,8 +218,19 @@ actionHandlers["finishEditData"] = (state, transform) => {
     userDefinedStates: [],
     summaryTables: [],
     dataTable: state.dataTable.withDeletedStates(state.userDefinedStates),
-
   };
+};
+
+actionHandlers["startUploadLayout"] = (state) => {
+  return { ...state, uiState: UIState.UploadLayout };
+};
+
+actionHandlers["cancelUploadLayout"] = (state) => {
+  return { ...state, uiState: UIState.Default };
+};
+
+actionHandlers["finishUploadLayout"] = (state, siteLayout) => {
+  return { ...state, uiState: UIState.Default, siteLayout };
 };
 
 actionHandlers["startCreateRegion"] = (state, { dispatch }) => {

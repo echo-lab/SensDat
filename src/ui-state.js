@@ -4,6 +4,7 @@ export class UIState {
   static CreateRegion = new UIState("create-region");
   static CreateCompound = new UIState("create-compound");
   static MoveDataPoints = new UIState("move-data-points");
+  static UploadLayout = new UIState("upload-layout");
 
   constructor(name) {
     this.name = name;
