@@ -25,9 +25,13 @@ function App() {
   useEffect(
     () => {
       let serializedState = window.localStorage["state"];
-      serializedState
-        ? dispatch(AppState.actions.loadState(serializedState))
-        : setUploadActive(true);
+      if (!serializedState) {
+        setUploadActive(true);
+        return;
+      }
+      AppState.deserialize(serializedState).then((deserializedState) =>
+        dispatch(AppState.actions.loadState(deserializedState))
+      );
     },
     /*dependencies=*/ []
   );
@@ -44,6 +48,7 @@ function App() {
     state.userDefinedStates,
     state.defaultDataTransform,
     state.currentDataTransform,
+    state.siteLayout,
   ]);
 
   // Allow printing the current state for debugging.
@@ -87,6 +92,7 @@ function App() {
     defaultTransform: state.defaultDataTransform,
     currentTransform: state.currentDataTransform,
     uiState: state.uiState,
+    siteLayout: state.siteLayout,
     dispatch,
   };
 

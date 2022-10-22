@@ -21,6 +21,7 @@ import { EllipseRegion, RectRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
+import { UploadLayoutWidget } from "./upload-layout.js";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 
@@ -65,6 +66,7 @@ export function VizView({
   defaultTransform,
   currentTransform,
   dimensions,
+  siteLayout,
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
@@ -73,6 +75,14 @@ export function VizView({
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
+
+  // Some helper methods in case we change the order later. Note: svg must not be null to use.
+  let zoomG = () => svg.childNodes[0];
+  let siteLayoutG = () => zoomG().childNodes[0];
+  let dataG = () => zoomG().childNodes[1];
+  let regionsG = () => zoomG().childNodes[2];
+  let newRegionG = () => zoomG().childNodes[3];
+  let siteLayoutImageTag = () => siteLayoutG().childNodes[0];
 
   // Move the data to SVG-coordinates.
   let tData = useMemo(
@@ -89,30 +99,27 @@ export function VizView({
   // Attach zoom listeners
   useEffect(() => {
     if (!svg) return;
-    let reset = attachZoomListeners(
-      d3.select(svg),
-      d3.select(svg.childNodes[0])
-    );
+    let reset = attachZoomListeners(d3.select(svg), d3.select(zoomG()));
     setResetZoom(() => reset);
   }, [svg]);
 
   // Reset the zoom/pan if we get new data.
   useEffect(() => {
     resetZoom();
-  }, [svg, vizData]);
+  }, [svg, vizData, siteLayout]);
 
   // Draw/redraw the data.
   // TODO: consider optimizing by redrawing the data points and path separately.
   useEffect(() => {
     if (!svg) return;
-    let g = d3.select(svg.childNodes[0].childNodes[0]);
+    let g = d3.select(dataG());
     d3Dots.current = drawData(g, tData, vizTimespan);
   }, [svg, tData, vizTimespan]);
 
   // Redraw the regions.
   useEffect(() => {
     if (!svg) return;
-    let g = d3.select(svg.childNodes[0].childNodes[1]);
+    let g = d3.select(regionsG());
     drawRegions(g, userDefinedStates);
   }, [svg, userDefinedStates]);
 
@@ -122,7 +129,7 @@ export function VizView({
       if (!svg || !createRegionInteraction) return;
       createRegionInteraction.initializeSvg(
         d3.select(svg),
-        d3.select(svg.childNodes[0].childNodes[2]),
+        d3.select(newRegionG()),
         [PXL_WIDTH / 2, PXL_HEIGHT / 2]
       );
       resetZoom();
@@ -174,6 +181,12 @@ export function VizView({
     ]
   );
 
+  // Draw the site layout, if it exists.
+  useEffect(() => {
+    if (siteLayout === null || svg === null) return;
+    drawSiteLayout(d3.select(siteLayoutImageTag()), siteLayout);
+  }, [svg, siteLayout]);
+
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
     height: svgHeight,
@@ -187,6 +200,7 @@ export function VizView({
     data: vizData,
     defaultTransform,
     currentTransform,
+    siteLayout,
     dispatch,
   };
 
@@ -214,6 +228,17 @@ export function VizView({
         >
           Edit Datapoints
         </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-link"
+          disabled={uiState.busy()}
+          onClick={(e) => {
+            e.preventDefault();
+            dispatch(actions.startUploadLayout());
+          }}
+        >
+          Upload Site Layout
+        </button>
       </Nav>
       <svg
         ref={svgRef}
@@ -221,6 +246,9 @@ export function VizView({
         viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
       >
         <g class="zoomG">
+          <g class="siteLayoutG">
+            <image />
+          </g>
           <g class="dataG"></g>
           <g class="regionG"></g>
           <g class="newRegionG"></g>
@@ -229,6 +257,9 @@ export function VizView({
       {timeSlider}
       {uiState === UIState.MoveDataPoints && (
         <DataEditor {...dataEditorProps} />
+      )}
+      {uiState === UIState.UploadLayout && (
+        <UploadLayoutWidget dispatch={dispatch} />
       )}
     </Container>
   );
@@ -322,6 +353,19 @@ function drawData(g, data, timespan) {
     .attr("fill", INVISIBLE_COLOR);
 
   return dots;
+}
+
+function drawSiteLayout(imageTag, siteLayout) {
+  let { x, y, height, width } = siteLayout.idealSVGParams(
+    PXL_WIDTH,
+    PXL_HEIGHT
+  );
+  imageTag
+    .attr("href", siteLayout.url)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("x", x)
+    .attr("y", y);
 }
 
 function drawRegions(g, userDefinedStates) {
