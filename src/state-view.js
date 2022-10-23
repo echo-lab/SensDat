@@ -174,7 +174,7 @@ function CreateRegionPane({
         <Form className="form-horizontal">
           <Form.Group as={Row}>
             <Col>
-              <h5 className="mt-2">Click on the Map to create a new Region</h5>
+              <h5 className="mt-2">Edit the new region on the map</h5>
             </Col>
             <Col>
               <Button
