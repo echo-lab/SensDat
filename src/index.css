@@ -115,7 +115,27 @@ div .tr:hover:not(.table-header) {
   padding: 0px;
 }
 
-.region-shape > .list-group-item-light.list-group-item-action.active {
+.region-shape > .list-group-item {
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 3px;
+  padding-bottom: 5px;
+}
+
+.region-shape.list-group {
+  width: 38px;
+}
+
+/* .region-shape > .list-group-item-light.list-group-item-action.active {
   background-color: #c8c9c9;
   color: #000000;
+} */
+
+.no-arrow > .dropdown-toggle::after {
+  content: none;
+}
+
+.settings-gear > .dropdown-toggle {
+  background-color: null;
+  border-color: null;
 }
