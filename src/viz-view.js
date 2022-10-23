@@ -183,8 +183,10 @@ export function VizView({
 
   // Draw the site layout, if it exists.
   useEffect(() => {
-    if (siteLayout === null || svg === null) return;
-    drawSiteLayout(d3.select(siteLayoutImageTag()), siteLayout);
+    if (svg === null) return;
+    siteLayout
+      ? drawSiteLayout(d3.select(siteLayoutImageTag()), siteLayout)
+      : d3.select(siteLayoutImageTag()).attr("width", 0).attr("height", 0);
   }, [svg, siteLayout]);
 
   // TODO: Figure out what these should be and probably move them.
@@ -209,6 +211,32 @@ export function VizView({
     return vizData ? <TimeSlider {...timeSliderProps} /> : null;
   }, [vizData, svgWidth]);
 
+  let opacitySlider = useMemo(() => {
+    if (siteLayout === null || svg === null) return null;
+    let sliderProps = {
+      max: 100,
+      defaultValue: 100,
+      onChange: (val) =>
+        d3.select(siteLayoutImageTag()).attr("opacity", val / 100),
+    };
+    let spanStyle = {
+      marginTop: "8px",
+      marginLeft: "10px",
+    };
+    let style = {
+      marginTop: "15px",
+      width: "100px",
+      marginRight: "10px",
+      marginLeft: "10px",
+    };
+    return (
+      <>
+        <span style={spanStyle}>Layout opacity: </span>
+        <Slider.default {...sliderProps} style={style} />
+      </>
+    );
+  }, [svg, siteLayout]);
+
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
       <Nav className="justify-content-end mb-3">
@@ -217,6 +245,7 @@ export function VizView({
             createRegionInteraction={createRegionInteraction}
           />
         )}
+        {opacitySlider}
         <button
           type="button"
           class="btn btn-sm btn-link"
