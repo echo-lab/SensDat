@@ -7,6 +7,8 @@ import Form from "react-bootstrap/Form";
 
 import { actions } from "./app-state.js";
 
+const EXAMPLE_LAYOUT_PATH = `${process.env.PUBLIC_URL}/example-layout.jpg`;
+
 export class SiteLayout {
   #url;
   #width;
@@ -115,6 +117,13 @@ function UploadStep({ onCancel, setSiteLayout }) {
     setSiteLayout(siteLayout);
   };
 
+  let uploadExampleLayout = async () => {
+    let response = await fetch(EXAMPLE_LAYOUT_PATH);
+    let f = await response.blob();
+    let siteLayout = await SiteLayout.FromFile(f);
+    setSiteLayout(siteLayout);
+  };
+
   return (
     <>
       <Modal.Body>
@@ -138,7 +147,7 @@ function UploadStep({ onCancel, setSiteLayout }) {
             class="btn btn-link"
             onClick={(e) => {
               e.preventDefault();
-              alert("not implemented!");
+              uploadExampleLayout();
             }}
           >
             Use Example Layout
