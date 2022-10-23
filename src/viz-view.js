@@ -7,8 +7,8 @@ import React, {
 } from "react";
 
 import Container from "react-bootstrap/Container";
-import Nav from "react-bootstrap/Nav";
 import ListGroup from "react-bootstrap/ListGroup";
+import Dropdown from "react-bootstrap/Dropdown";
 
 import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
@@ -22,6 +22,7 @@ import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
 import { UploadLayoutWidget } from "./upload-layout.js";
+import { SquareIcon, CircleIcon, GearIcon } from "./icons.js";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 
@@ -189,6 +190,11 @@ export function VizView({
       : d3.select(siteLayoutImageTag()).attr("width", 0).attr("height", 0);
   }, [svg, siteLayout]);
 
+  let setLayoutOpacity = useMemo(() => {
+    if (siteLayout === null || svg === null) return null;
+    return (val) => d3.select(siteLayoutImageTag()).attr("opacity", val / 100);
+  }, [svg, siteLayout]);
+
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
     height: svgHeight,
@@ -211,64 +217,8 @@ export function VizView({
     return vizData ? <TimeSlider {...timeSliderProps} /> : null;
   }, [vizData, svgWidth]);
 
-  let opacitySlider = useMemo(() => {
-    if (siteLayout === null || svg === null) return null;
-    let sliderProps = {
-      max: 100,
-      defaultValue: 100,
-      onChange: (val) =>
-        d3.select(siteLayoutImageTag()).attr("opacity", val / 100),
-    };
-    let spanStyle = {
-      marginTop: "8px",
-      marginLeft: "10px",
-    };
-    let style = {
-      marginTop: "15px",
-      width: "100px",
-      marginRight: "10px",
-      marginLeft: "10px",
-    };
-    return (
-      <>
-        <span style={spanStyle}>Layout opacity: </span>
-        <Slider.default {...sliderProps} style={style} />
-      </>
-    );
-  }, [svg, siteLayout]);
-
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-      <Nav className="justify-content-end mb-3">
-        {createRegionInteraction && (
-          <RegionShapeSelector
-            createRegionInteraction={createRegionInteraction}
-          />
-        )}
-        {opacitySlider}
-        <button
-          type="button"
-          class="btn btn-sm btn-link"
-          disabled={uiState.busy()}
-          onClick={(e) => {
-            e.preventDefault();
-            dispatch(actions.startEditData());
-          }}
-        >
-          Edit Datapoints
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-link"
-          disabled={uiState.busy()}
-          onClick={(e) => {
-            e.preventDefault();
-            dispatch(actions.startUploadLayout());
-          }}
-        >
-          Upload Site Layout
-        </button>
-      </Nav>
       <svg
         ref={svgRef}
         style={svgStyle}
@@ -283,6 +233,13 @@ export function VizView({
           <g class="newRegionG"></g>
         </g>
       </svg>
+      <SettingsWidgets
+        svgWidth={svgWidth}
+        setLayoutOpacity={setLayoutOpacity}
+        createRegionInteraction={createRegionInteraction}
+        uiState={uiState}
+        dispatch={dispatch}
+      />
       {timeSlider}
       {uiState === UIState.MoveDataPoints && (
         <DataEditor {...dataEditorProps} />
@@ -291,6 +248,74 @@ export function VizView({
         <UploadLayoutWidget dispatch={dispatch} />
       )}
     </Container>
+  );
+}
+
+// Contains 1-3 widgets:
+//  1) gear+drop-down for uploading site layout or manipulationg data
+//  2) slider for site layout opacity, if there's a site layout
+//  3) The shape-selector, if we're currently creating a new region
+function SettingsWidgets({
+  svgWidth,
+  setLayoutOpacity,
+  createRegionInteraction,
+  uiState,
+  dispatch,
+}) {
+  let clickEditDatapoints = (e) => {
+    e.preventDefault();
+    dispatch(actions.startEditData());
+  };
+
+  let clickUploadLayout = (e) => {
+    e.preventDefault();
+    dispatch(actions.startUploadLayout());
+  };
+
+  return (
+    <>
+      <Dropdown
+        className="position-absolute no-arrow settings-gear"
+        align="start"
+        style={{ top: 5, left: 10 }}
+      >
+        <Dropdown.Toggle
+          variant="light"
+          id="dropdown-basic"
+          disabled={uiState.busy()}
+        >
+          <GearIcon />
+        </Dropdown.Toggle>
+
+        <Dropdown.Menu>
+          <Dropdown.Item onClick={clickEditDatapoints}>
+            Edit Data Points
+          </Dropdown.Item>
+          <Dropdown.Item onClick={clickUploadLayout}>
+            Upload Site Layout
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
+      {setLayoutOpacity && (
+        <Slider.default
+          defaultValue={100}
+          onChange={setLayoutOpacity}
+          vertical={true}
+          style={{
+            position: "absolute",
+            top: 70,
+            left: 25,
+            height: 50,
+          }}
+        />
+      )}
+      {createRegionInteraction && (
+        <RegionShapeSelector
+          createRegionInteraction={createRegionInteraction}
+          svgWidth={svgWidth}
+        />
+      )}
+    </>
   );
 }
 
@@ -470,13 +495,21 @@ function filterByTimespan(data, timespan) {
   return data.filter((row) => row.Order >= mno && row.Order <= mxo);
 }
 
-function RegionShapeSelector({ createRegionInteraction }) {
+function RegionShapeSelector({ svgWidth, createRegionInteraction }) {
   // Note: this data is technically duplicated in createRegionInteraction,
   // but it's not ''Reactive''.
   let [shape, setShape] = useState(createRegionInteraction.shape);
 
   return (
-    <ListGroup className="region-shape" horizontal>
+    <ListGroup
+      className="region-shape"
+      style={{
+        position: "absolute",
+        top: 10,
+        left: svgWidth - 50,
+        opacity: 0.9,
+      }}
+    >
       <ListGroup.Item
         variant="light"
         action
@@ -500,37 +533,5 @@ function RegionShapeSelector({ createRegionInteraction }) {
         <SquareIcon />
       </ListGroup.Item>
     </ListGroup>
-  );
-}
-
-// https://icons.getbootstrap.com/icons/square/
-function SquareIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      fill="currentColor"
-      class="bi bi-square"
-      viewBox="0 0 16 16"
-    >
-      <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z" />
-    </svg>
-  );
-}
-
-// https://icons.getbootstrap.com/icons/circle/
-function CircleIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      fill="currentColor"
-      class="bi bi-circle"
-      viewBox="0 0 16 16"
-    >
-      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
-    </svg>
   );
 }
