@@ -197,7 +197,7 @@ export function VizView({
   }, [svg, siteLayout]);
 
   let setLayoutOpacity = useMemo(() => {
-    if (siteLayout === null || svg === null) return null;
+    if (!siteLayout || !svg) return null;
     return (val) => d3.select(siteLayoutImageTag()).attr("opacity", val / 100);
   }, [svg, siteLayout]);
 
