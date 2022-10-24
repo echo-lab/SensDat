@@ -304,6 +304,17 @@ function StateMachineWidget({
     (s2 === "T" ? 1 : -1) * yOffset,
   ];
 
+  // Figure out the start/end node based on existingEdges.
+  let startEdge = existingEdges.find((x) => x.substring(0, 2) === "AA");
+  let startNode = startEdge && startEdge.substring(2, 4);
+
+  let endEdge = existingEdges.find((x) => x.substring(2, 4) === "ZZ");
+  let endNode = endEdge && endEdge.substring(0, 2);
+
+  existingEdges = existingEdges.filter(
+    (edge) => ![startEdge, endEdge].includes(edge)
+  );
+
   return (
     <g
       transform={`translate(${width / 2} ${height / 2})`}
@@ -355,6 +366,24 @@ function StateMachineWidget({
           key={edge}
         />
       ))}
+      {startNode && (
+        <StartOrEndEdge
+          nodeX={stateToPoint(startNode)[0]}
+          nodeY={stateToPoint(startNode)[1]}
+          isStart={true}
+          isSelected={selectedEdges.includes(startEdge)}
+          onSelect={() => toggleEdge(startEdge)}
+        />
+      )}
+      {endNode && (
+        <StartOrEndEdge
+          nodeX={stateToPoint(endNode)[0]}
+          nodeY={stateToPoint(endNode)[1]}
+          isStart={false}
+          isSelected={selectedEdges.includes(endEdge)}
+          onSelect={() => toggleEdge(endEdge)}
+        />
+      )}
     </g>
   );
 }
@@ -393,6 +422,39 @@ function StateNode({ cx, cy, r, states, stateValues, isSelected, onSelect }) {
           {innerText}
         </tspan>
       </text>
+    </>
+  );
+}
+
+function StartOrEndEdge({ nodeX, nodeY, isStart, isSelected, onSelect }) {
+  let x0 = nodeX + (isStart ? -1 : 1) * 40;
+  let y0 = nodeY + (nodeY < 0 ? -1 : 1) * NODE_HEIGHT * 1;
+
+  let x1 = nodeX + (isStart ? -1 : 1) * 15;
+  let y1 = nodeY + (nodeY < 0 ? -1 : 1) * (NODE_HEIGHT / 2 + 5);
+
+  let textX = x0;
+  let textY = nodeY < 0 ? y0 - 5 : y0 + 15;
+  let label = isStart ? "start" : "end";
+
+  if (!isStart) {
+    [x0, y0, x1, y1] = [x1, y1, x0, y0];
+  }
+
+  return (
+    <>
+      <text x={textX} y={textY} pointerEvents="none" textAnchor="middle">
+        {label}
+      </text>
+      <path
+        fill="none"
+        stroke={isSelected ? "green" : "grey"}
+        strokeWidth={isSelected ? "6px" : "4px"}
+        onClick={onSelect}
+        markerEnd={isSelected ? "url(#selectedtriangle)" : "url(#triangle)"}
+        vectorEffect="non-scaling-stroke"
+        d={`M ${x0} ${y0} L ${x1} ${y1}`}
+      />
     </>
   );
 }

@@ -1,144 +1,150 @@
 import * as d3 from "d3";
-import { actions } from "./app-state.js";
-import { EllipseRegion } from "./states/region.js";
 import debounce from "lodash.debounce";
 
-const RADIUS = 30;
+import { actions } from "./app-state.js";
+import { EllipseRegion, RectRegion } from "./states/region.js";
+import { EditBox } from "./edit-box.js";
+
 const DEFAULT_NAME = "[New Region]";
+const COLOR = "#00AAFF";
+const OPACITY = "20%";
 
 // A class for handling the user interactions for creating a new region state.
-// The user creates the new region by clicking on the svgElement.
-// The argument 'svgCoordMapping' is kind of a grab-bag of useful things which help
-// coordinate between SVG coordinates and latitude/longitude, and also help
-// us detect when a click is within in the proper range.
-// For now: this class just lets the user click to add a one-size circular region.
+// Must use 'initializeSvg()' to properly initialize. A shape is placed automatically
+// on the SVG w/ an edit box, which the user can manipulate.
 export class CreateRegionInteraction {
   constructor(dispatch) {
     this.dispatch = dispatch;
     this.name = "";
-    this.userDefinedState = null;
+    this.shape = "ELLIPSE";
 
+    // References to all the SVG elements we'll be creating.
+    this.svg = null;
+    this.g = null;
+    this.boxG = null;
+    this.elementG = null;
+    this.textG = null;
+    this.ellipse = null;
+    this.rect = null;
+    this.nameElement = null;
+    this.editBox = null;
+
+    // Debounced so we can change the name as text is entered in a form and
+    // not have to recalculate the state value for each row every time.
     this.debouncedCreateTempState = debounce((userDefinedState) => {
       this.dispatch(actions.createTempState({ userDefinedState }));
     }, 200);
   }
 
-  initializeSvg(svgElement, svgCoordMapping) {
-    this.svg = svgElement;
-    this.svgCoordMapping = svgCoordMapping;
+  setShape(shape) {
+    this.shape = shape;
+    this.onEditBoxUpdate();
+    this.updateRegionState();
+  }
 
-    this.callbacks = [["click", this.onClick.bind(this)]];
-    this.callbacks.forEach((args) => this.svg.addEventListener(...args));
+  useEllipse() {
+    this.setShape("ELLIPSE");
+  }
 
-    this.element = null;
-    this.nameElement = null;
+  useRect() {
+    this.setShape("RECT");
   }
 
   setName(name) {
     this.name = name;
-    if (!this.userDefinedState) return;
-
-    let userDefinedState = this.userDefinedState.withName(name);
-    this.userDefinedState = userDefinedState;
-    let uds =
-      this.userDefinedState.name === ""
-        ? this.userDefinedState.withName(DEFAULT_NAME)
-        : this.userDefinedState;
-    this.nameElement.innerHTML = uds.name;
-    this.debouncedCreateTempState(uds);
+    this.nameElement.html(name);
+    this.updateRegionState();
   }
 
-  onClick(e) {
-    e.preventDefault();
-    let { xToLong, yToLat, svgX, svgY } = this.svgCoordMapping;
-    let [x, y] = d3.pointer(e, this.svg);
+  // svg and g are both d3 selections, e.g, `d3.select("svg")`
+  initializeSvg(svg, g, [x, y]) {
+    this.cleanup(); // Just in case this is called multiple times for whatever reason.
+    this.svg = svg;
+    this.g = g;
+    this.boxG = g.append("g");
+    this.elementG = g.append("g");
+    this.textG = g.append("g");
 
-    let [[minX, maxX], [maxY, minY]] = [svgX, svgY];
-    if (x < minX || x > maxX || y < minY || y > maxY) {
-      return;
-    }
+    const r = 30;
 
-    // TODO: do this in viz-view.js
-    if (this.element === null) {
-      // This is sad! Maybe it's better to put this into a React Component :)
-      // If it's possible, anyway! Dunno if we can have the SVG managed by d3 but also having a group
-      // which is a react component ...
-      // An alternative is that we use two SVGs which are overlaid :)
-      // If we do that, we might need to do something fancy to allow events in general, e.g.,
-      // style="pointer-events:none;" on the overlay, maybe.
-      this.element = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "circle"
-      );
-      [
-        ["cx", x],
-        ["cy", y],
-        ["r", RADIUS],
-        ["stroke", "black"],
-        ["stroke-width", 1],
-        ["fill", "transparent"],
-      ].forEach(([attr, val]) => this.element.setAttribute(attr, val));
-      this.svg.appendChild(this.element);
+    // Create the shapes on the SVG. Their positions and sizes
+    // will be set when the editBox renders and calls onEditBoxUpdate()
+    this.ellipse = this.elementG.append("ellipse");
+    this.rect = this.elementG.append("rect");
+    [this.ellipse, this.rect].forEach((el) => {
+      el.attr("fill", COLOR)
+        .attr("fill-opacity", OPACITY)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("pointer-events", "none");
+    });
 
-      this.nameElement = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text"
-      );
-      [
-        ["x", x],
-        ["y", y - RADIUS],
-        ["text-anchor", "middle"],
-        ["dy", "-.35em"],
-      ].forEach(([attr, val]) => this.nameElement.setAttribute(attr, val));
-      this.nameElement.innerHTML = "[New Region]";
-      this.svg.appendChild(this.nameElement);
-    }
+    this.nameElement = this.textG
+      .append("text")
+      .attr("text-anchor", "middle")
+      .attr("dy", "-.35em")
+      .attr("pointer-events", "none")
+      .html("[New Region]");
 
-    // Possibly redundant, but whatevs!
-    this.element.setAttribute("cx", x);
-    this.element.setAttribute("cy", y);
-    this.element.setAttribute("r", RADIUS);
+    this.editBox = new EditBox({
+      center: [x, y],
+      width: 2 * r,
+      height: -2 * r,
+      angle: 0,
+    });
 
-    this.nameElement.setAttribute("x", x);
-    this.nameElement.setAttribute("y", y - RADIUS);
-
-    let [cx, cy] = [xToLong(x), yToLat(y)];
-    let rx = xToLong(x + RADIUS) - cx;
-    let ry = yToLat(y - RADIUS) - cy;
-    this.userDefinedState = new EllipseRegion([cx, cy], rx, ry, this.name);
-    let uds =
-      this.userDefinedState.name === ""
-        ? this.userDefinedState.withName(DEFAULT_NAME)
-        : this.userDefinedState;
-    this.debouncedCreateTempState(uds);
+    let onUpdate = this.onEditBoxUpdate.bind(this);
+    let onFinish = this.updateRegionState.bind(this);
+    this.editBox.attachToSVG(this.boxG, onUpdate, onFinish);
   }
 
-  // Need to pass in the Lat/Long -> pixel mapping again - it may have changed,
-  // e.g., if the svg was resized.
-  redraw(svgCoordMapping) {
-    this.svgCoordMapping = svgCoordMapping;
-    if (!this.element) return;
-    if (!this.userDefinedState) return;
+  // Change the region shape when the EditBox updates.
+  onEditBoxUpdate() {
+    if (!this.editBox) return;
+    // It would be easier to just set the transform using EditBox's getTransform(), but:
+    // 1) we don't want to stretch the text in nameElement, and
+    // 2) we don't want to alter the stroke thickness in the region element... (eh)
+    let {
+      center: [cx, cy],
+      width,
+      height,
+      angle,
+    } = this.editBox.currentParams;
+    [width, height] = [Math.abs(width), Math.abs(height)];
+    this.ellipse
+      .attr("cx", cx)
+      .attr("cy", cy)
+      .attr("rx", width / 2)
+      .attr("ry", height / 2)
+      .attr("transform", `rotate(${angle} ${cx} ${cy})`)
+      .attr("visibility", this.shape === "ELLIPSE" ? "visible" : "hidden");
+    this.rect
+      .attr("x", cx - width / 2)
+      .attr("y", cy - height / 2)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("transform", `rotate(${angle} ${cx} ${cy})`)
+      .attr("visibility", this.shape === "RECT" ? "visible" : "hidden");
 
-    let s = this.userDefinedState; // Has Lat/Long coordinates.
-    let { longToX, latToY } = this.svgCoordMapping;
-    let [x, y, r] = [
-      longToX(s.cx),
-      latToY(s.cy),
-      longToX(s.cx + s.rx) - longToX(s.cx),
-    ];
-    this.element.setAttribute("cx", x);
-    this.element.setAttribute("cy", y);
-    this.element.setAttribute("r", r);
+    // TODO: come up with a better rule for moving the text...
+    this.nameElement.attr("x", cx).attr("y", cy - Math.abs(height) / 2 - 20);
+  }
 
-    this.nameElement.setAttribute("x", x);
-    this.nameElement.setAttribute("y", y - r);
-
-    this.svg.appendChild(this.element);
-    this.svg.appendChild(this.nameElement);
+  updateRegionState() {
+    if (!this.editBox) return;
+    // Get the current region/name
+    let { center, width, height, angle } = this.editBox.currentParams;
+    let name = this.name !== "" ? this.name : DEFAULT_NAME;
+    [width, height] = [Math.abs(width), Math.abs(height)];
+    let [rx, ry] = [width / 2, height / 2];
+    let region =
+      this.shape === "ELLIPSE"
+        ? new EllipseRegion(center, rx, ry, angle, name)
+        : new RectRegion({ center, width, height, angle }, name);
+    this.debouncedCreateTempState(region);
   }
 
   cleanup() {
-    this.callbacks.forEach((args) => this.svg.removeEventListener(...args));
+    this.g && this.g.selectAll("*").remove();
   }
 }

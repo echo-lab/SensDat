@@ -1,4 +1,14 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+  useState,
+} from "react";
+
+import Container from "react-bootstrap/Container";
+import ListGroup from "react-bootstrap/ListGroup";
+import Dropdown from "react-bootstrap/Dropdown";
 
 import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
@@ -7,100 +17,131 @@ import * as d3 from "d3";
 import debounce from "lodash.debounce";
 
 import { actions } from "./app-state.js";
-import { EllipseRegion } from "./states/region.js";
+import { EllipseRegion, RectRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
+import { UIState } from "./ui-state.js";
+import { DataEditor } from "./viz-data-editor.js";
+import { UploadLayoutWidget } from "./upload-layout.js";
+import { SquareIcon, CircleIcon, GearIcon } from "./icons.js";
+
+import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
-const SVG_MARGIN = { TOP: 30, RIGHT: 30, BOTTOM: 30, LEFT: 50 };
-const PADDING_FRACTION = 1.1;  // How much to pad the data w.r.t. the graph axes.
 
 const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
 const INVISIBLE_COLOR = "#00000000";
 const PATH_COLOR = "#69b3a2";
+const DEFAULT_OPACITY_PERCENT = 20;
 
 const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
+
+// See: https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
+// (Not sure if this use case is legit - I just didn't want to keep accessing
+// ref.current lol)
+function useSvgRef() {
+  const [svg, setSvg] = useState(null);
+  const ref = useCallback((node) => node !== null && setSvg(node), []);
+  return [svg, ref];
+}
 
 /*
  * Creates a visualization of the data.
  *
  * Args:
  * - vizData:
- *      A list of objects like: [{Order, Latitude, Longitude}, ...].
- *      Should come from DataTable.vizData
+ *      A list of objects like: [{Order, Latitude, Longitude, Timestamp}, ...].
+ *      Should come from DataTable.getVizData()
  * - vizTimespan:
  *      A range [x, y] where 0 <= x <= y < = 100.
  */
 export function VizView({
   vizData,
   vizTimespan,
-  uistate,
   dispatch,
   createRegionInteraction,
   highlightedPoints,
   shownPoints,
   useShownPoints,
   userDefinedStates,
+  defaultTransform,
+  currentTransform,
   dimensions,
+  siteLayout,
+  setContainerHeight,
+  uiState,
 }) {
-  const svgRef = useRef();
+  let [svg, svgRef] = useSvgRef();
+  let [resetZoom, setResetZoom] = useState(() => () => {});
   const d3Dots = useRef();
-  const svgCoordMapping = useRef(null);
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
-  // Update the coordinate mapping.
-  useEffect(
-    () => {
-      if (!vizData) return;
-      svgCoordMapping.current = getSvgCoordMapping(
-        vizData,
-        svgWidth,
-        svgHeight
-      );
-    },
-    /*dependencies=*/ [vizData, svgWidth, svgHeight]
+  useEffect(() => {
+    setContainerHeight(svgHeight + 200);
+  }, [svgHeight]);
+
+  // Some helper methods in case we change the order later. Note: svg must not be null to use.
+  let zoomG = () => svg.childNodes[0];
+  let siteLayoutG = () => zoomG().childNodes[0];
+  let dataG = () => zoomG().childNodes[1];
+  let regionsG = () => zoomG().childNodes[2];
+  let newRegionG = () => zoomG().childNodes[3];
+  let siteLayoutImageTag = () => siteLayoutG().childNodes[0];
+
+  // Move the data to SVG-coordinates.
+  let tData = useMemo(
+    () =>
+      !vizData
+        ? null
+        : vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
+            let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+            return { x, y, Timestamp, Order };
+          }),
+    [vizData, currentTransform]
   );
 
-  // Function to update the SVG.
-  useEffect(
-    () => {
-      let svg = d3.select(svgRef.current);
-      if (!vizData) return;
+  // Attach zoom listeners
+  useEffect(() => {
+    if (!svg) return;
+    let reset = attachZoomListeners(d3.select(svg), d3.select(zoomG()));
+    setResetZoom(() => reset);
+  }, [svg]);
 
-      d3Dots.current = drawToSVG(
-        svg,
-        vizData,
-        vizTimespan,
-        svgCoordMapping.current,
-        userDefinedStates
-      );
-      createRegionInteraction &&
-        createRegionInteraction.redraw(svgCoordMapping.current);
+  // Reset the zoom/pan if we get new data.
+  useEffect(() => {
+    resetZoom();
+  }, [svg, vizData, siteLayout]);
 
-      return () => {};
-    },
-    /*dependencies=*/ [
-      vizData,
-      vizTimespan,
-      createRegionInteraction,
-      userDefinedStates,
-      dimensions,
-    ]
-  );
+  // Draw/redraw the data.
+  // TODO: consider optimizing by redrawing the data points and path separately.
+  useEffect(() => {
+    if (!svg) return;
+    let g = d3.select(dataG());
+    d3Dots.current = drawData(g, tData, vizTimespan);
+  }, [svg, tData, vizTimespan]);
+
+  // Redraw the regions.
+  useEffect(() => {
+    if (!svg) return;
+    let g = d3.select(regionsG());
+    drawRegions(g, userDefinedStates);
+  }, [svg, userDefinedStates]);
 
   // This initializes the createRegionInteraction with the SVG.
   useEffect(
     () => {
-      createRegionInteraction &&
-        createRegionInteraction.initializeSvg(
-          svgRef.current,
-          svgCoordMapping.current
-        );
+      if (!svg || !createRegionInteraction) return;
+      createRegionInteraction.initializeSvg(
+        d3.select(svg),
+        d3.select(newRegionG()),
+        [PXL_WIDTH / 2, PXL_HEIGHT / 2]
+      );
+      resetZoom();
     },
-    /*dependencies=*/ [createRegionInteraction]
+    /*dependencies=*/ [svg, createRegionInteraction]
   );
 
   // Function to highlight points.
@@ -134,20 +175,31 @@ export function VizView({
           .attr("r", 3);
       };
     },
-    // TODO: These dependencies are kind of sad... It's basically set so that we
-    // redo this whenever d3Dots changes, which is whenever a resize happens, etc.
-    // I think we might be able to do a viewbox thing w/ the SVG to avoid
-    // recalculating everything on resizes?
+    // Note: the dependencies are such that we need to rerun this whenever d3Dots
+    // changes OR when the set of shown/highlighted points changes.
     /*deps=*/ [
       vizData,
       vizTimespan,
       createRegionInteraction,
+      userDefinedStates,
       highlightedPoints,
       shownPoints,
-      dimensions,
       useShownPoints,
     ]
   );
+
+  // Draw the site layout, if it exists.
+  useEffect(() => {
+    if (svg === null) return;
+    siteLayout
+      ? drawSiteLayout(d3.select(siteLayoutImageTag()), siteLayout)
+      : d3.select(siteLayoutImageTag()).attr("width", 0).attr("height", 0);
+  }, [svg, siteLayout]);
+
+  let setLayoutOpacity = useMemo(() => {
+    if (!siteLayout || !svg) return null;
+    return (val) => d3.select(siteLayoutImageTag()).attr("opacity", val / 100);
+  }, [svg, siteLayout]);
 
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
@@ -158,21 +210,130 @@ export function VizView({
     border: "solid 1px black",
   };
 
-  let timeSliderProps = { vizData, vizTimespan, svgWidth, dispatch };
+  const dataEditorProps = {
+    data: vizData,
+    defaultTransform,
+    currentTransform,
+    siteLayout,
+    dispatch,
+  };
+
+  let timeSliderProps = { vizData, svgWidth, dispatch };
   let timeSlider = useMemo(() => {
     return vizData ? <TimeSlider {...timeSliderProps} /> : null;
-  }, [vizData, vizTimespan, svgWidth]);
+  }, [vizData, svgWidth]);
 
   return (
-    <div className="viz-container debug def-visible">
-      <svg ref={svgRef} style={svgStyle}></svg>
+    <Container className="viz-container" style={{ paddingLeft: "5px" }}>
+      <svg
+        ref={svgRef}
+        style={svgStyle}
+        viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
+      >
+        <g className="zoomG">
+          <g className="siteLayoutG">
+            <image />
+          </g>
+          <g className="dataG"></g>
+          <g className="regionG"></g>
+          <g className="newRegionG"></g>
+        </g>
+      </svg>
+      <SettingsWidgets
+        svgWidth={svgWidth}
+        setLayoutOpacity={setLayoutOpacity}
+        createRegionInteraction={createRegionInteraction}
+        uiState={uiState}
+        dispatch={dispatch}
+      />
       {timeSlider}
-    </div>
+      {uiState === UIState.MoveDataPoints && (
+        <DataEditor {...dataEditorProps} />
+      )}
+      {uiState === UIState.UploadLayout && (
+        <UploadLayoutWidget dispatch={dispatch} />
+      )}
+    </Container>
+  );
+}
+
+// Contains 1-3 widgets:
+//  1) gear+drop-down for uploading site layout or manipulationg data
+//  2) slider for site layout opacity, if there's a site layout
+//  3) The shape-selector, if we're currently creating a new region
+function SettingsWidgets({
+  svgWidth,
+  setLayoutOpacity,
+  createRegionInteraction,
+  uiState,
+  dispatch,
+}) {
+  let clickEditDatapoints = (e) => {
+    e.preventDefault();
+    dispatch(actions.startEditData());
+  };
+
+  let clickUploadLayout = (e) => {
+    e.preventDefault();
+    dispatch(actions.startUploadLayout());
+  };
+
+  return (
+    <>
+      <Dropdown
+        className="position-absolute no-arrow settings-gear"
+        align="start"
+        style={{ top: 5, left: 10 }}
+      >
+        <Dropdown.Toggle
+          variant="light"
+          id="dropdown-basic"
+          disabled={uiState.busy()}
+        >
+          <GearIcon />
+        </Dropdown.Toggle>
+
+        <Dropdown.Menu>
+          <Dropdown.Item onClick={clickEditDatapoints}>
+            Edit Data Points
+          </Dropdown.Item>
+          <Dropdown.Item onClick={clickUploadLayout}>
+            Upload Site Layout
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
+      {setLayoutOpacity && (
+        <Slider.default
+          defaultValue={DEFAULT_OPACITY_PERCENT}
+          onChange={setLayoutOpacity}
+          vertical={true}
+          style={{
+            position: "absolute",
+            top: 70,
+            left: 25,
+            height: 50,
+          }}
+        />
+      )}
+      {createRegionInteraction && (
+        <RegionShapeSelector
+          createRegionInteraction={createRegionInteraction}
+          svgWidth={svgWidth}
+        />
+      )}
+    </>
   );
 }
 
 // TODO: would this be simpler to just... implement without a library??
-function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
+function TimeSlider({ vizData, svgWidth, dispatch }) {
+  // Whenever vizData updates, increment 'key', which is used to
+  // force remounting the slider when the underlying data changes.
+  let key = useRef(0);
+  useEffect(() => {
+    key.current = key.current + 1;
+  }, [vizData]);
+
   // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
   let tipFormatter = useMemo(() => {
     let [tMin, tMax] = d3.extent(vizData, (d) => d.Timestamp.getTime());
@@ -199,83 +360,36 @@ function TimeSlider({ vizData, vizTimespan, svgWidth, dispatch }) {
   return (
     <div style={sliderDivStyle}>
       <p>Timespan</p>
-      <Range {...rangeProps} />
+      <Range key={key.current} {...rangeProps} />
     </div>
   );
 }
 
-// Get information about how the SVG's xy-coordinates should correspond to
-// latitude/longitude based on the data table.
-// Returns: {
-//   svgX: [minXPixel, maxXPixel],
-//   xvgY: [bottomYPixel, topYPixel],
-//   xToLong: function(),
-//   yToLat: function(),
-//   longToX: function(),
-//   latToY: function(),
-// }
-//
-// NOTE: the latitude/longitude are scaled appropriately so that the data fits nicely
-// in the graph and the XY distance is true-to-life.
-function getSvgCoordMapping(data, width, height) {
-  // Note: we dilate the range by PADDING_FRACTION at the end so that we don't
-  // plot data right on the axes. Of course, we could also constrict the svgX
-  // and svgY range instead.
-  let [latitude, longitude] = getLatLongDomain(
-    d3.extent(data, (d) => d.Longitude),
-    d3.extent(data, (d) => d.Latitude),
-    [width, height]
-  ).map((rng) => scaleRange(rng, PADDING_FRACTION));
-
-  let svgX = [SVG_MARGIN.LEFT, width - SVG_MARGIN.RIGHT];
-  let svgY = [height - SVG_MARGIN.BOTTOM, SVG_MARGIN.TOP];
-
-  return {
-    svgX,
-    svgY,
-    xToLong: d3.scaleLinear().domain(svgX).range(longitude),
-    yToLat: d3.scaleLinear().domain(svgY).range(latitude),
-    longToX: d3.scaleLinear().domain(longitude).range(svgX),
-    latToY: d3.scaleLinear().domain(latitude).range(svgY),
-  };
+// Attaches listeners for zoom/pan. Returns a function which
+// resets the zoom/pan.
+function attachZoomListeners(svg, g) {
+  // Allow Zoom + Pan
+  let handleZoom = (e) => g.attr("transform", e.transform);
+  let zoom = d3
+    .zoom()
+    .scaleExtent([0.8, 3.0])
+    .translateExtent([
+      [-PXL_WIDTH / 2, -PXL_HEIGHT / 2],
+      [1.5 * PXL_WIDTH, 1.5 * PXL_HEIGHT],
+    ])
+    .on("zoom", handleZoom);
+  svg.call(zoom);
+  return () => svg.call(zoom.transform, d3.zoomIdentity);
 }
 
-function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
-  let { longToX, latToY } = svgCoordMapping; // These are functions
-  let { svgX, svgY } = svgCoordMapping; // These are range values, i.e., [low, high]
-
-  // Filter to the selected timespan range.
+function drawData(g, data, timespan) {
+  if (!data || data.length === 0) return;
   data = filterByTimespan(data, timespan);
 
-  // Clear the SVG! Maybe there's a nicer way?
-  svg.selectAll("*").remove();
+  g.selectAll("*").remove();
 
-  let [selectPoint, deselectPoints] = makeHandlers();
-
-  // TODO: can we rely on this getting called after the on-click handler for each
-  // datapoint?
-  svg.on("click", (e) => {
-    if (!e.defaultPrevented) deselectPoints();
-  });
-
-  // Draw the trajectory. Loosely based on:
-  // https://www.d3-graph-gallery.com/graph/connectedscatter_basic.html
-
-  // X-axis
-  svg
-    .append("g")
-    .attr("transform", `translate(0, ${svgY[0]})`)
-    .call(d3.axisBottom(longToX).ticks(4));
-
-  // Y-axis
-  svg
-    .append("g")
-    .attr("transform", `translate(${svgX[0]}, 0)`)
-    .call(d3.axisLeft(latToY).ticks(4));
-
-  // Trajectory
-  svg
-    .append("path")
+  g.append("path")
+    .attr("vector-effect", "non-scaling-stroke")
     .datum(data)
     .attr("fill", "none")
     .attr("stroke", PATH_COLOR)
@@ -284,128 +398,92 @@ function drawToSVG(svg, data, timespan, svgCoordMapping, userDefinedStates) {
       "d",
       d3
         .line()
-        .x((d) => longToX(d.Longitude))
-        .y((d) => latToY(d.Latitude))
+        .x((d) => d.x)
+        .y((d) => d.y)
     );
 
-  // Datapoints
-  let dots = svg
-    .append("g")
+  let dots = g
+    .append("g") // Do we need this?
     .selectAll("dot")
     .data(data)
     .enter()
     .append("circle")
-    .attr("cx", (d) => longToX(d.Longitude))
-    .attr("cy", (d) => latToY(d.Latitude))
+    .attr("cx", (d) => d.x)
+    .attr("cy", (d) => d.y)
     .attr("r", 3)
     .attr("fill", INVISIBLE_COLOR);
-  // .on("click", selectPoint)
-  // .on("mouseenter", (e) => {
-  //   console.log("mouseenter event: ", e);
-  // })
-  // .on("mouseleave", (e) => {
-  //   console.log("mouseleave event: ", e);
-  // });
-
-  // Draw the current regions
-  let regions = svg
-    .selectAll("regionStates")
-    .data(userDefinedStates.filter((s) => s instanceof EllipseRegion))
-    .enter()
-    .append("g");
-
-  regions
-    .append("ellipse")
-    .style("stroke", "black")
-    .style("fill-opacity", 0.0)
-    .attr("cx", (d) => longToX(d.cx))
-    .attr("cy", (d) => latToY(d.cy))
-    .attr("rx", (d) => Math.abs(longToX(d.cx + d.rx) - longToX(d.cx)))
-    .attr("ry", (d) => Math.abs(latToY(d.cy + d.ry) - latToY(d.cy)));
-
-  regions
-    .append("text")
-    .attr("x", (d) => longToX(d.cx))
-    .attr("y", (d) => latToY(d.cy + d.ry))
-    .attr("text-anchor", "middle")
-    .attr("dy", "-.35em")
-    .text((d) => d.name);
 
   return dots;
 }
 
-function makeHandlers() {
-  let onDeselect;
-
-  let deselect = () => {
-    if (!onDeselect) return;
-    onDeselect();
-    onDeselect = null;
-  };
-
-  let select = (e, d) => {
-    e.preventDefault();
-    deselect();
-    let elem = d3.select(e.currentTarget);
-    elem.attr("stroke", "black");
-    onDeselect = () => {
-      elem.attr("stroke", null);
-    };
-  };
-
-  return [select, deselect];
+function drawSiteLayout(imageTag, siteLayout) {
+  let { x, y, height, width } = siteLayout.idealSVGParams(
+    PXL_WIDTH,
+    PXL_HEIGHT
+  );
+  imageTag
+    .attr("href", siteLayout.url)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("opacity", DEFAULT_OPACITY_PERCENT / 100)
+    .attr("x", x)
+    .attr("y", y);
 }
 
-/* ----------------- */
-/* UTILITY FUNCTIONS */
-/* ----------------- */
+function drawRegions(g, userDefinedStates) {
+  g.selectAll("*").remove();
+  // TODO: move this stuff into the EllipseRegion class, maybe?
+  userDefinedStates
+    .filter((s) => s instanceof EllipseRegion)
+    .forEach((ellipse) => {
+      g.append("ellipse")
+        .style("stroke", "black")
+        .style("fill-opacity", 0.0)
+        .attr("cx", ellipse.cx)
+        .attr("cy", ellipse.cy)
+        .attr("rx", ellipse.rx)
+        .attr("ry", ellipse.ry)
+        .attr(
+          "transform",
+          `rotate(${ellipse.angle} ${ellipse.cx} ${ellipse.cy})`
+        );
 
-// Copied from: https://www.movable-type.co.uk/scripts/latlong.html
-function latLongDist(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // metres
-  const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+      g.append("text")
+        .attr("x", ellipse.cx)
+        .attr("y", ellipse.cy - ellipse.ry - 20)
+        .attr("text-anchor", "middle")
+        .attr("dy", "-.35em")
+        .text(ellipse.name);
+    });
 
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  userDefinedStates
+    .filter((s) => s instanceof RectRegion)
+    .forEach((rect) => {
+      let {
+        center: [cx, cy],
+        width,
+        height,
+        angle,
+      } = rect.params;
+      g.append("rect")
+        .style("stroke", "black")
+        .style("fill-opacity", 0.0)
+        .attr("x", cx - width / 2)
+        .attr("y", cy - height / 2)
+        .attr("width", width)
+        .attr("height", height)
+        .attr("transform", `rotate(${angle} ${cx} ${cy})`);
 
-  const d = R * c; // in metres
-  return d;
+      g.append("text")
+        .attr("x", cx)
+        .attr("y", cy - Math.abs(height) / 2 - 20)
+        .attr("text-anchor", "middle")
+        .attr("dy", "-.35em")
+        .text(rect.name);
+    });
 }
 
-// Scale a range, preserving the midpoint.
-function scaleRange([lo, hi], factor) {
-  const mid = (hi + lo) / 2;
-  const m = ((hi - lo) / 2) * factor;
-  return [mid - m, mid + m];
-}
-
-// TODO: TEST THIS! YOU MUST!
-function getLatLongDomain([long0, long1], [lat0, lat1], [width, height]) {
-  // dx and dy are the actual (slightly approximate) physical distances spanned
-  // by the longitude and latitude, respectively.
-  const dx = latLongDist(lat0, long0, lat0, long1);
-  const dy = latLongDist(lat0, long0, lat1, long0);
-
-  // The idea here is that we want the scale in the graph to correspond to
-  // the actual, physical distances. This will be true if dx/dy = width/height.
-  // If dx/dy < width/height, we need to pad the longitude scale, and vice versa.
-  let latDomain = [lat0, lat1];
-  let longDomain = [long0, long1];
-  if (dx / dy < width / height) {
-    longDomain = scaleRange(longDomain, ((width / height) * dy) / dx);
-  } else {
-    latDomain = scaleRange(latDomain, ((height / width) * dx) / dy);
-  }
-  return [latDomain, longDomain];
-}
-
-// TODO: this should probably filter by actual time instead of "order"/"index".
-// Plus: we should not be assuming the index column is called 'Order'.
+// TODO: revisit this? I think we can assume we always have the actual time/Timestamp column
 function filterByTimespan(data, timespan) {
   // Note sure if this is good or not :)
   if (data[0].Timestamp) {
@@ -423,4 +501,45 @@ function filterByTimespan(data, timespan) {
   let mno = minOrder + (r1 / data.length) * (maxOrder - minOrder);
   let mxo = minOrder + (r2 / data.length) * (maxOrder - minOrder);
   return data.filter((row) => row.Order >= mno && row.Order <= mxo);
+}
+
+function RegionShapeSelector({ svgWidth, createRegionInteraction }) {
+  // Note: this data is technically duplicated in createRegionInteraction,
+  // but it's not ''Reactive''.
+  let [shape, setShape] = useState(createRegionInteraction.shape);
+
+  return (
+    <ListGroup
+      className="region-shape"
+      style={{
+        position: "absolute",
+        top: 10,
+        left: svgWidth - 50,
+        opacity: 0.9,
+      }}
+    >
+      <ListGroup.Item
+        variant="light"
+        action
+        active={shape === "ELLIPSE"}
+        onClick={(e) => {
+          setShape("ELLIPSE");
+          createRegionInteraction.useEllipse();
+        }}
+      >
+        <CircleIcon />
+      </ListGroup.Item>
+      <ListGroup.Item
+        variant="light"
+        action
+        active={shape === "RECT"}
+        onClick={(e) => {
+          setShape("RECT");
+          createRegionInteraction.useRect();
+        }}
+      >
+        <SquareIcon />
+      </ListGroup.Item>
+    </ListGroup>
+  );
 }

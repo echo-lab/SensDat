@@ -42,7 +42,7 @@ export function StateView({
             id="dropdown-basic-button"
             title="+ New State"
             className="mx-2"
-            disabled={uiState.statePaneDisabled()}
+            disabled={uiState.busy()}
           >
             <Dropdown.Item onClick={handleCreateRegion}>Region</Dropdown.Item>
             <Dropdown.Item onClick={handleCreateTimespan}>
@@ -65,7 +65,7 @@ export function StateView({
               onMouseEnter={() => dispatch(actions.highlightPointsForState(s))}
               onMouseLeave={() => dispatch(actions.highlightPoints([]))}
               className="mx-2"
-              disabled={uiState.statePaneDisabled()}
+              disabled={uiState.busy()}
             >
               <Dropdown.Item
                 onClick={() => dispatch(actions.createSummary(s.id))}
@@ -174,7 +174,7 @@ function CreateRegionPane({
         <Form className="form-horizontal">
           <Form.Group as={Row}>
             <Col>
-              <h5 className="mt-2">Click on the Map to create a new Region</h5>
+              <h5 className="mt-2">Edit the new region on the map</h5>
             </Col>
             <Col>
               <Button

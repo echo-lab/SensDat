@@ -5,6 +5,7 @@ const INDEX = "Order";
 /*
 NOTE:
   - nodes are represented by strings like 'TF', or 'FF'.
+  - Beginning/end nodes are strings 'AA' and 'ZZ' (LOL)
   - edges are represented by strings like 'TTTF' to mean 'TT' -> 'TF'
 */
 
@@ -101,6 +102,9 @@ export class CompoundState {
       let edge = `${state}${summary[i + 1].state}`;
       if (!possibleEdges.includes(edge)) possibleEdges.push(edge);
     });
+    let [start, end] = [summary[0].state, summary.at(-1).state];
+    possibleEdges.push(`AA${start}`);
+    possibleEdges.push(`${end}ZZ`);
     return [possibleNodes, possibleEdges];
   }
 
@@ -156,8 +160,8 @@ function summarizeByStates(rows, [s1, s2]) {
 }
 
 function getChosenPoints(rows, states, selectedNodes, selectedEdges) {
-  let forward = { TT: [], TF: [], FF: [], FT: [] };
-  let backward = { TT: [], TF: [], FF: [], FT: [] };
+  let forward = { TT: [], TF: [], FF: [], FT: [], AA: [] };
+  let backward = { TT: [], TF: [], FF: [], FT: [], ZZ: [] };
   selectedEdges.forEach((edge) => {
     let [u, v] = [edge.slice(0, 2), edge.slice(2, 4)];
     forward[u].push(v);
@@ -172,11 +176,11 @@ function getChosenPoints(rows, states, selectedNodes, selectedEdges) {
 
     if (!selectedNodes.includes(node)) return;
 
-    let prevNode = i > 0 ? sumTable[i - 1].state : null;
-    let nextNode = i + 1 < sumTable.length ? sumTable[i + 1].state : null;
+    let prevNode = i > 0 ? sumTable[i - 1].state : "AA";
+    let nextNode = i + 1 < sumTable.length ? sumTable[i + 1].state : "ZZ";
 
-    if (forward[node].length > 0 && !forward[node].includes(nextNode)) return;
-    if (backward[node].length > 0 && !backward[node].includes(prevNode)) return;
+    if (!forward[node].includes(nextNode)) return;
+    if (!backward[node].includes(prevNode)) return;
 
     res.push(range);
   });

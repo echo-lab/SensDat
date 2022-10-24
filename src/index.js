@@ -17,17 +17,24 @@ import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
 
+const MIN_HEIGHT = 700;
+
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
   const [uploadActive, setUploadActive] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(MIN_HEIGHT);
 
   // Load the previous data if it exists. Else, prompt the user for an upload.
   useEffect(
     () => {
       let serializedState = window.localStorage["state"];
-      serializedState
-        ? dispatch(AppState.actions.loadState(serializedState))
-        : setUploadActive(true);
+      if (!serializedState) {
+        setUploadActive(true);
+        return;
+      }
+      AppState.deserialize(serializedState).then((deserializedState) =>
+        dispatch(AppState.actions.loadState(deserializedState))
+      );
     },
     /*dependencies=*/ []
   );
@@ -38,7 +45,14 @@ function App() {
   useEffect(() => {
     window.localStorage["state"] = AppState.serialize(state);
     console.log("saved state");
-  }, [state.dataTable, state.summaryTables, state.userDefinedStates]);
+  }, [
+    state.dataTable,
+    state.summaryTables,
+    state.userDefinedStates,
+    state.defaultDataTransform,
+    state.currentDataTransform,
+    state.siteLayout,
+  ]);
 
   // Allow printing the current state for debugging.
   useEffect(
@@ -68,14 +82,21 @@ function App() {
   };
 
   let vizViewProps = {
-    vizData: state.dataTable ? state.dataTable.vizData : null,
+    vizData: state.vizState.dataPoints,
     vizTimespan: state.vizState.timespan,
     shownPoints: state.vizState.shownPoints,
-    useShownPoints: state.activeTab === "BASE_TABLE" && state.uiState !== UIState.CreateCompound,
+    useShownPoints:
+      state.activeTab === "BASE_TABLE" &&
+      state.uiState !== UIState.CreateCompound,
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
     userDefinedStates: state.userDefinedStates,
+    defaultTransform: state.defaultDataTransform,
+    currentTransform: state.currentDataTransform,
+    uiState: state.uiState,
+    siteLayout: state.siteLayout,
+    setContainerHeight: (x) => setContainerHeight(Math.max(x, MIN_HEIGHT)),
     dispatch,
   };
 
@@ -121,7 +142,7 @@ function App() {
         </Container>
       </Container>
       <Container fluid className="bg-light">
-        <div className="main-container">
+        <div className="main-container" style={{ height: containerHeight }}>
           <ReflexContainer orientation="vertical">
             <ReflexElement
               className="left-pane"

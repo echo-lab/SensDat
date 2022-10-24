@@ -2,7 +2,13 @@ import { UIState } from "./ui-state.js";
 import { CreateRegionInteraction } from "./create-region-interaction.js";
 import { DataTable } from "./data-table.js";
 import * as LZString from "lz-string";
-import { objectToState, getDependentStates } from "./utils.js";
+import {
+  objectToState,
+  getDependentStates,
+  getDefaultDataTransform,
+} from "./utils.js";
+import { EditBox } from "./edit-box.js";
+import { SiteLayout } from "./upload-layout.js";
 
 /*
  * This file provides a way to organize the app state that is shared across components.
@@ -39,11 +45,16 @@ import { objectToState, getDependentStates } from "./utils.js";
  * For example, current form values, etc.
  */
 
+// TODO: why are some of these unefined and some null?? Pick one lol
 export const initialState = {
   // Eventually, we'll want a map from tableName: table.
   dataTable: undefined,
   summaryTables: [], // [{state}, ...]
   uiState: UIState.NotLoaded,
+
+  // Data transformations from Lat/Long -> SVG-space.
+  defaultDataTransform: undefined,
+  currentDataTransform: undefined,
 
   // User-defined states
   userDefinedStates: [], // list of state objects
@@ -55,10 +66,14 @@ export const initialState = {
   // Which tab is active in the Data Pane. Either "BASE_TABLE" or a state ID.
   activeTab: "BASE_TABLE",
 
+  // The current site layout. Should be a SiteLayout object or null;
+  siteLayout: null,
+
   // Active filters, like: columns which are hidden, states
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
   vizState: {
+    dataPoints: null, // This should be updated only when new data is loaded!
     timespan: [0, 1e15],
     shownPoints: [-1, -1],
     highlightedPoints: null,
@@ -71,16 +86,51 @@ function cleanupInteractions(state) {
   state.createRegionInteraction && state.createRegionInteraction.cleanup();
 }
 
-export function serialize(state) {
+// All arguments should be pulled directly from the app state, except serializedSiteLayout, which should be
+// memoized.
+export function serialize({
+  dataTable,
+  userDefinedStates,
+  summaryTables,
+  defaultDataTransform,
+  currentDataTransform,
+  siteLayout,
+}) {
   // Only need to save: dataTable, userDefinedStates
-  if (!state.dataTable) return "";
+  if (!dataTable) return "";
 
   let res = {
-    dataTable: state.dataTable.asObject(),
-    userDefinedStates: state.userDefinedStates.map((s) => s.asObject()),
-    summaryTables: state.summaryTables.map(({ state }) => state.asObject()),
+    dataTable: dataTable.asObject(),
+    userDefinedStates: userDefinedStates.map((s) => s.asObject()),
+    summaryTables: summaryTables.map(({ state }) => state.asObject()),
+    defaultDataTransform:
+      defaultDataTransform && defaultDataTransform.asObject(),
+    currentDataTransform:
+      currentDataTransform && currentDataTransform.asObject(),
+    siteLayout: siteLayout && siteLayout.serialize(),
   };
   return LZString.compress(JSON.stringify(res));
+}
+
+export async function deserialize(serializedState) {
+  if (!serializedState) {
+    console.log("No state to deserialize");
+    return {};
+  }
+  let data = JSON.parse(LZString.decompress(serializedState));
+  return {
+    dataTable: DataTable.fromObject(data.dataTable),
+    userDefinedStates: data.userDefinedStates.map((o) => objectToState(o)),
+    summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
+    defaultDataTransform:
+      data.defaultDataTransform &&
+      EditBox.fromObject(data.defaultDataTransform),
+    currentDataTransform:
+      data.currentDataTransform &&
+      EditBox.fromObject(data.currentDataTransform),
+    siteLayout:
+      data.siteLayout && (await SiteLayout.Deserialize(data.siteLayout)),
+  };
 }
 
 /*
@@ -89,29 +139,48 @@ export function serialize(state) {
  */
 let actionHandlers = {};
 
-actionHandlers["loadState"] = (state, serializedState) => {
-  if (!serializedState) {
-    console.log("No state to load");
-    return state;
-  }
-
+actionHandlers["loadState"] = (state, deserializedState) => {
   cleanupInteractions(state); // in case we're in the middle of something
-  let data = JSON.parse(LZString.decompress(serializedState));
+
+  let { dataTable, defaultDataTransform, currentDataTransform } =
+    deserializedState;
+  if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
+  let vizData = dataTable.getVizData();
+  defaultDataTransform =
+    defaultDataTransform || getDefaultDataTransform(vizData);
+  currentDataTransform = currentDataTransform || defaultDataTransform;
+
   return {
     ...initialState,
-    dataTable: DataTable.fromObject(data.dataTable),
-    userDefinedStates: data.userDefinedStates.map((o) => objectToState(o)),
+    ...deserializedState,
+    vizState: {
+      ...initialState.vizState,
+      dataPoints: dataTable.getVizData(),
+    },
+    defaultDataTransform,
+    currentDataTransform,
     uiState: UIState.Default,
-    summaryTables: data.summaryTables.map((s) => ({ state: objectToState(s) })),
   };
 };
 
-// payload: a valid DataTable object.
-actionHandlers["loadTable"] = (state, payload) => {
+// table: a valid DataTable object.
+// Note: we throw out the old state here :)
+actionHandlers["loadTable"] = (state, table) => {
+  if (!table.isReady()) {
+    throw new Error("Table not ready for use!");
+  }
+  let vizData = table.getVizData();
+  let transform = getDefaultDataTransform(vizData);
   return {
     ...initialState, // Reset to the original state
-    dataTable: payload,
+    dataTable: table,
     uiState: UIState.Default,
+    vizState: {
+      ...initialState.vizState,
+      dataPoints: vizData,
+    },
+    defaultDataTransform: transform,
+    currentDataTransform: transform,
   };
 };
 
@@ -123,6 +192,45 @@ actionHandlers["changeTimespan"] = (state, payload) => {
       timespan: payload,
     },
   };
+};
+
+actionHandlers["startEditData"] = (state) => {
+  return {
+    ...state,
+    uiState: UIState.MoveDataPoints,
+  };
+};
+
+actionHandlers["cancelEditData"] = (state) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+  };
+};
+
+actionHandlers["finishEditData"] = (state, transform) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+    currentDataTransform: transform,
+    // Delete all existing states. In the future, we could consider updating them instead?
+    activeTab: "BASE_TABLE",
+    userDefinedStates: [],
+    summaryTables: [],
+    dataTable: state.dataTable.withDeletedStates(state.userDefinedStates),
+  };
+};
+
+actionHandlers["startUploadLayout"] = (state) => {
+  return { ...state, uiState: UIState.UploadLayout };
+};
+
+actionHandlers["cancelUploadLayout"] = (state) => {
+  return { ...state, uiState: UIState.Default };
+};
+
+actionHandlers["finishUploadLayout"] = (state, siteLayout) => {
+  return { ...state, uiState: UIState.Default, siteLayout };
 };
 
 actionHandlers["startCreateRegion"] = (state, { dispatch }) => {
@@ -163,7 +271,7 @@ actionHandlers["createCompoundState"] = (state, compoundState) => {
     ...state,
     userDefinedStates: state.userDefinedStates.concat(compoundState),
     dataTable: state.dataTable
-      .withTempState(compoundState)
+      .withTempState(compoundState, state.currentDataTransform)
       .withCommittedTempState(),
     uiState: UIState.Default,
   };
@@ -175,7 +283,10 @@ actionHandlers["createTempState"] = (state, { userDefinedState }) => {
   return {
     ...state,
     tmpUserDefinedState: userDefinedState,
-    dataTable: state.dataTable.withTempState(userDefinedState),
+    dataTable: state.dataTable.withTempState(
+      userDefinedState,
+      state.currentDataTransform
+    ),
   };
 };
 
