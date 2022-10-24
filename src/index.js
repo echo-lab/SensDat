@@ -17,9 +17,12 @@ import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
 
+const MIN_HEIGHT = 700;
+
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
   const [uploadActive, setUploadActive] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(MIN_HEIGHT);
 
   // Load the previous data if it exists. Else, prompt the user for an upload.
   useEffect(
@@ -93,6 +96,7 @@ function App() {
     currentTransform: state.currentDataTransform,
     uiState: state.uiState,
     siteLayout: state.siteLayout,
+    setContainerHeight: (x) => setContainerHeight(Math.max(x, MIN_HEIGHT)),
     dispatch,
   };
 
@@ -138,7 +142,7 @@ function App() {
         </Container>
       </Container>
       <Container fluid className="bg-light">
-        <div className="main-container">
+        <div className="main-container" style={{ height: containerHeight }}>
           <ReflexContainer orientation="vertical">
             <ReflexElement
               className="left-pane"

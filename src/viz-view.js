@@ -68,6 +68,7 @@ export function VizView({
   currentTransform,
   dimensions,
   siteLayout,
+  setContainerHeight,
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
@@ -76,6 +77,10 @@ export function VizView({
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
+
+  useEffect(() => {
+    setContainerHeight(svgHeight + 200);
+  }, [svgHeight]);
 
   // Some helper methods in case we change the order later. Note: svg must not be null to use.
   let zoomG = () => svg.childNodes[0];
@@ -224,13 +229,13 @@ export function VizView({
         style={svgStyle}
         viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
       >
-        <g class="zoomG">
-          <g class="siteLayoutG">
+        <g className="zoomG">
+          <g className="siteLayoutG">
             <image />
           </g>
-          <g class="dataG"></g>
-          <g class="regionG"></g>
-          <g class="newRegionG"></g>
+          <g className="dataG"></g>
+          <g className="regionG"></g>
+          <g className="newRegionG"></g>
         </g>
       </svg>
       <SettingsWidgets
