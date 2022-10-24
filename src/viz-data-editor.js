@@ -116,6 +116,7 @@ function initializeSVG(svg, zoomG, dataG, data) {
   // Draw the path. NOTE: This is in Lat/Long space, so wee need to transform it via the EditBox.
   dataG
     .append("path")
+    .attr("vector-effect", "non-scaling-stroke")
     .datum(data)
     .attr("fill", "none")
     .attr("stroke", PATH_COLOR)
