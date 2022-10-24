@@ -32,6 +32,7 @@ const DOT_COLOR = "#69b3a2";
 const DOT_HIGHLIGHT_COLOR = "#91fd76";
 const INVISIBLE_COLOR = "#00000000";
 const PATH_COLOR = "#69b3a2";
+const DEFAULT_OPACITY_PERCENT = 40;
 
 const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
@@ -303,7 +304,7 @@ function SettingsWidgets({
       </Dropdown>
       {setLayoutOpacity && (
         <Slider.default
-          defaultValue={100}
+          defaultValue={DEFAULT_OPACITY_PERCENT}
           onChange={setLayoutOpacity}
           vertical={true}
           style={{
@@ -423,6 +424,7 @@ function drawSiteLayout(imageTag, siteLayout) {
     .attr("href", siteLayout.url)
     .attr("width", width)
     .attr("height", height)
+    .attr("opacity", DEFAULT_OPACITY_PERCENT / 100)
     .attr("x", x)
     .attr("y", y);
 }
