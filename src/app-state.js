@@ -145,6 +145,7 @@ actionHandlers["loadState"] = (state, deserializedState) => {
   let { dataTable, defaultDataTransform, currentDataTransform } =
     deserializedState;
   if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
+  dataTable.sortColumns();
   let vizData = dataTable.getVizData();
   defaultDataTransform =
     defaultDataTransform || getDefaultDataTransform(vizData);

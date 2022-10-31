@@ -23,8 +23,8 @@ export const COL_TYPES = Object.freeze({
 
 const COL_ORDER = [
   COL_TYPES.INDEX,
-  COL_TYPES.X,
   COL_TYPES.Y,
+  COL_TYPES.X,
   COL_TYPES.T_CLEAN,
   COL_TYPES.DIST,
   COL_TYPES.T,
