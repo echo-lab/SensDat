@@ -129,7 +129,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
               className="tr table-header"
             >
               {headerGroup.headers.map((column) => (
-                <div {...column.getHeaderProps()} className="th">
+                <div {...column.getHeaderProps()} className={"th " + column.render('Header').replace(/\s/g, '')}>
                   {column.render("Header")}
                 </div>
               ))}

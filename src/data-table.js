@@ -273,7 +273,20 @@ export class DataTable {
         Header: c.displayName,
         accessor: c.accessor,
       };
-      if (c.type === COL_TYPES.INDEX) col.width = 60;
+      if (c.type === COL_TYPES.INDEX || c.displayName === "Speed") 
+      {
+        col.width = 60;
+      }
+      else if (c.displayName === "Bearing"){
+        col.width = 70;
+      }
+      else if (c.displayName === "Elevation"){
+        col.width = 80;
+      }
+      else if (c.type === COL_TYPES.Y || c.type === COL_TYPES.X 
+        || c.type === COL_TYPES.DIST || c.displayName === "Distance from Start"){
+        col.width = 100;
+      }
 
       // Need to tell React Table how to render the timestamp column
       if (c.type === COL_TYPES.T_CLEAN) {
