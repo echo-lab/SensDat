@@ -13,6 +13,8 @@ import {
   millisToTimeString,
 } from "./utils.js";
 
+import "./summary-table.css";
+
 const SUMMARY_COLS = Object.freeze({
   CYCLE: "CYCLE",
   STATE: "STATE",
@@ -183,7 +185,7 @@ function AggregateSummary({ aggSummaryData }) {
       <thead>
         <tr role="row">
           {cols.map(([_, name], idx) => (
-            <th key={idx} role="columnheader">
+            <th key={idx} role="columnheader" className={_}>
               {name}
             </th>
           ))}
