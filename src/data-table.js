@@ -55,6 +55,13 @@ export class DataTable {
     this.stateToTrueRanges = {};
 
     this.sortColumns();
+
+
+
+
+
+
+    
   }
 
   // Is the table ready to be used in the UI? i.e., does it have a cleaned time column?
