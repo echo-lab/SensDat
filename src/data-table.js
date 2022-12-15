@@ -8,7 +8,12 @@ const TEST_DATA = [
   "demo_data_student",
   "demo_data_classroom_clean",
   "demo_data_classroom",
+  "task1-data",
+  "task2-data",
 ].map((s) => `${process.env.PUBLIC_URL}/${s}.csv`);
+
+const TASK1_DATA_IDX = 4;
+const TASK2_DATA_IDX = 5;
 
 export const COL_TYPES = Object.freeze({
   INDEX: "index",
@@ -379,4 +384,13 @@ export class DataTable {
       });
     });
   }
+
+  static Task1Data() {
+    return DataTable.FromTestData(TASK1_DATA_IDX);
+  }
+
+  static Task2Data() {
+    return DataTable.FromTestData(TASK2_DATA_IDX);
+  }
 }
+
