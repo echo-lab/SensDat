@@ -144,7 +144,7 @@ function UploadStep({ onCancel, setSiteLayout }) {
           Or use already-existing layout:
           <button
             type="button"
-            class="btn btn-link"
+            className="btn btn-link"
             onClick={(e) => {
               e.preventDefault();
               uploadExampleLayout();
