@@ -265,7 +265,7 @@ function getCycleRanges(table, state) {
 //     cycle: <number> | null  // null if previous row's cell has rowspan 2
 //     cycleRowspan: 2 | 1 | null
 //   }]
-function getBreakdownByTF(table, state) {
+export function getBreakdownByTF(table, state) {
   let hasDistCol = table.getColByType(COL_TYPES.DIST);
   let cols = [
     { Header: "Period", accessor: SUMMARY_COLS.CYCLE },

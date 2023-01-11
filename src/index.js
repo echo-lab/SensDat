@@ -16,7 +16,7 @@ import { UploadDataWidget } from "./upload-data.js";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
-
+import { ExportButton } from "./json_to_csv";
 const MIN_HEIGHT = 700;
 
 function App() {
@@ -119,7 +119,7 @@ function App() {
     onDone: () => setUploadActive(false),
     dispatch,
   };
-
+  
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
@@ -127,7 +127,7 @@ function App() {
         <Nav className="justify-content-end">
           <Nav.Link onClick={() => setUploadActive(true)}>Upload Data</Nav.Link>
           <Navbar.Text>|</Navbar.Text>
-          <Nav.Link> Export Data </Nav.Link>
+          <ExportButton data={state}></ExportButton>
         </Nav>
       </Container>
     </Navbar>
