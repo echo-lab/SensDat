@@ -124,7 +124,7 @@ function App() {
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
-        <Navbar.Brand>Octave</Navbar.Brand>
+        <Navbar.Brand>SensDat</Navbar.Brand>
         <Nav className="justify-content-end">
           <Nav.Link onClick={() => setUploadActive(true)}>Upload Data</Nav.Link>
           {window.location.href.endsWith("/study") ? (
