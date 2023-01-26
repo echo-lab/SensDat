@@ -127,7 +127,7 @@ function App() {
         <Nav className="justify-content-end">
           <Nav.Link onClick={() => setUploadActive(true)}>Upload Data</Nav.Link>
           <Navbar.Text>|</Navbar.Text>
-          <ExportButton data={state}></ExportButton>
+          <ExportButton {...state}></ExportButton>
         </Nav>
       </Container>
     </Navbar>

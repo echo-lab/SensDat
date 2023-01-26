@@ -338,7 +338,7 @@ function getDistance(table, idx0, idx1) {
   );
 }
 
-function getAggregateSummaryData(summaryBreakdown) {
+export function getAggregateSummaryData(summaryBreakdown) {
   let [_, breakdownRows] = summaryBreakdown;
   // Change the format
   let rows = breakdownRows.map((r) => ({
