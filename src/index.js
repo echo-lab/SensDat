@@ -13,6 +13,7 @@ import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { UploadDataWidget } from "./upload-data.js";
+import { UserStudyLoader } from "./user-study";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
@@ -123,11 +124,20 @@ function App() {
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
-        <Navbar.Brand>Octave</Navbar.Brand>
+        <Navbar.Brand>SensDat</Navbar.Brand>
         <Nav className="justify-content-end">
           <Nav.Link onClick={() => setUploadActive(true)}>Upload Data</Nav.Link>
-          <Navbar.Text>|</Navbar.Text>
-          <ExportButton {...state}></ExportButton>
+          {window.location.href.endsWith("/study") ? (
+            <>
+              <Navbar.Text>|</Navbar.Text>
+              <UserStudyLoader dispatch={dispatch} />
+            </>
+          ) : (
+            <>
+              <Navbar.Text>|</Navbar.Text>
+              <ExportButton {...state}></ExportButton>
+            </>
+          )}
         </Nav>
       </Container>
     </Navbar>
