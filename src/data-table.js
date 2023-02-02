@@ -1,5 +1,5 @@
 import * as Papa from "papaparse";
-import "any-date-parser";
+import * as DateParser from "any-date-parser";
 
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
@@ -200,7 +200,7 @@ export class DataTable {
     if (!tCol || this.getColByType(COL_TYPES.T_CLEAN)) return this;
 
     let times = this.rows.map((r) => {
-      let t = Date.fromString(r[tCol.accessor]);
+      let t = DateParser.fromString(r[tCol.accessor]);
       // Interpret it in the current timezone instead of GMT...
       t.setTime(t.getTime() + t.getTimezoneOffset() * 60 * 1000);
       return t;
@@ -350,7 +350,7 @@ export class DataTable {
     if (tsCol) {
       res.rows = res.rows.map((r) => ({
         ...r,
-        [tsCol.accessor]: Date.fromString(r[tsCol.accessor]),
+        [tsCol.accessor]: DateParser.fromString(r[tsCol.accessor]),
       }));
     }
 
