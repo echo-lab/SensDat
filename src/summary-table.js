@@ -142,19 +142,20 @@ export function SummaryTable({
                     role="cell"
                     key={idx}
                     rowSpan={trueOnly ? 1 : row["cycleRowspan"] || 1}
+                    className={idx}
                   >
                     {row[accessor]}
                   </td>
                 );
               } else if (TIME_COLS.includes(accessor)) {
                 return (
-                  <td role="cell" key={idx}>
+                  <td role="cell" key={idx} className={idx}>
                     {hhmmss(row[accessor])}
                   </td>
                 );
               } else {
                 return (
-                  <td role="cell" key={idx}>
+                  <td role="cell" key={idx} className={idx}>
                     {row[accessor]}
                   </td>
                 );

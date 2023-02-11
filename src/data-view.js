@@ -107,6 +107,18 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           className="tr"
         >
           {row.cells.map((cell) => {
+
+            const currentValue = cell.value;
+
+            if(currentValue == "false"){
+              cell.value = currentValue.charAt(0).toUpperCase()
+              + currentValue.slice(1);
+            }
+            else if(currentValue == "true"){
+              cell.value = currentValue.charAt(0).toUpperCase()
+              + currentValue.slice(1);
+            }
+            // This is where each cell gets rendered.
             return (
               <div {...cell.getCellProps()} className="td">
                 {cell.render("Cell")}
