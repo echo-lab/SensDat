@@ -13,7 +13,7 @@ import {
   millisToTimeString,
 } from "./utils.js";
 
-import "./summary-table.css";
+import "./styles/summary-table.css";
 
 const SUMMARY_COLS = Object.freeze({
   CYCLE: "CYCLE",
