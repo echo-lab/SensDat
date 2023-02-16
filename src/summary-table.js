@@ -142,8 +142,7 @@ export function SummaryTable({
                     role="cell"
                     key={idx}
                     rowSpan={trueOnly ? 1 : row["cycleRowspan"] || 1}
-                    className={idx}
-                  >
+                    >
                     {row[accessor]}
                   </td>
                 );
