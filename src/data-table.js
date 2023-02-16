@@ -131,7 +131,6 @@ export class DataTable {
     let result = this.copy();
     let tmpCol = this.getTempCol();
 
-    console.log("TmpCol: " + tmpCol);
 
     // Filter out any current temp-state columns and add the new one.
     result.cols = result.cols.filter((col) => col.type !== COL_TYPES.STATE_TMP);
@@ -144,8 +143,6 @@ export class DataTable {
     // Get the values for our new state. Note: this can't necessarily be done
     // row-by-row (e.g., for compound states).
     let values = state.getValues(result.rows, transform);
-
-    console.log("Values: " + values);
 
     // Filter out values for the old temp state (if they exist), and populate w/
     // the new one.
@@ -308,6 +305,10 @@ export class DataTable {
           col.width = 90;
         } else if (c.type === COL_TYPES.STATE || c.type === COL_TYPES.STATE_TMP) {
           col.width = 100;
+
+          // Takes out the value from the cell if the cell
+          // is in a region (Currently solves the uppercase issue).
+          col.Cell = ({ cell: { value } }) => value;
         }
 
         // Need to tell React Table how to render the timestamp column
@@ -315,13 +316,7 @@ export class DataTable {
           col.Cell = ({ cell: { value } }) => <TimeWithTooltip timestamp={value} />;
         }
   
-      // Takes out the value from the cell if the cell
-      // is in a region (Currently solves the uppercase issue).
-      if(c.type === COL_TYPES.STATE){
-        col.Cell = ({ cell: { value } }) => value;
-      }
-
-      return col;
+        return col;
       });
   }
 
