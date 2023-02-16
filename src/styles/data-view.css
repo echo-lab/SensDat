@@ -3,5 +3,7 @@
 }
 
 .False {
-  background-color: salmon;
+
+  /* Should be salmon */
+  background-color: white;
 }
