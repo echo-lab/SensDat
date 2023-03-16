@@ -1,9 +1,6 @@
 import * as Papa from "papaparse";
 import "any-date-parser";
 
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
-
 import { hhmmss } from "./utils.js";
 
 const TEST_DATA = [
@@ -11,12 +8,7 @@ const TEST_DATA = [
   "demo_data_student",
   "demo_data_classroom_clean",
   "demo_data_classroom",
-  "task1-data",
-  "task2-data",
 ].map((s) => `${process.env.PUBLIC_URL}/${s}.csv`);
-
-const TASK1_DATA_IDX = 4;
-const TASK2_DATA_IDX = 5;
 
 export const COL_TYPES = Object.freeze({
   INDEX: "index",
@@ -276,42 +268,32 @@ export class DataTable {
   }
 
   getReactTableCols() {
-    return this.cols
-      .filter((c) => c.type !== COL_TYPES.T) // Don't display the original time column
-      .map((c) => {
-        let col = {
-          Header: c.displayName,
-          accessor: c.accessor,
-        };
-        if (c.type === COL_TYPES.INDEX) {
-          col.width = 55;
-        } else if (c.displayName === "Speed") {
-          col.width = 60;
-        } else if (c.displayName === "Bearing") {
-          col.width = 70;
-        } else if (c.displayName === "Elevation") {
-          col.width = 80;
-        } else if (c.type === COL_TYPES.DIST) {
-          col.width = 80;
-        } else if (c.displayName === "Distance from Start") {
-          col.width = 90;
-        } else if (
-          c.type === COL_TYPES.Y ||
-          c.type === COL_TYPES.X
-        ) {
-          col.width = 100;
-        } else if (c.type === COL_TYPES.T_CLEAN) {
-          col.width = 90;
-        } else if (c.type === COL_TYPES.STATE || c.type === COL_TYPES.STATE_TMP) {
-          col.width = 100;
-        }
+    return this.cols.map((c) => {
+      let col = {
+        Header: c.displayName,
+        accessor: c.accessor,
+      };
+      if (c.type === COL_TYPES.INDEX || c.displayName === "Speed") 
+      {
+        col.width = 60;
+      }
+      else if (c.displayName === "Bearing"){
+        col.width = 70;
+      }
+      else if (c.displayName === "Elevation"){
+        col.width = 80;
+      }
+      else if (c.type === COL_TYPES.Y || c.type === COL_TYPES.X 
+        || c.type === COL_TYPES.DIST || c.displayName === "Distance from Start"){
+        col.width = 100;
+      }
 
-        // Need to tell React Table how to render the timestamp column
-        if (c.type === COL_TYPES.T_CLEAN) {
-          col.Cell = ({ cell: { value } }) => <TimeWithTooltip timestamp={value} />;
-        }
-        return col;
-      });
+      // Need to tell React Table how to render the timestamp column
+      if (c.type === COL_TYPES.T_CLEAN) {
+        col.Cell = ({ cell: { value } }) => hhmmss(value);
+      }
+      return col;
+    });
   }
 
   getReactTableData() {
@@ -397,28 +379,4 @@ export class DataTable {
       });
     });
   }
-
-  static Task1Data() {
-    return DataTable.FromTestData(TASK1_DATA_IDX);
-  }
-
-  static Task2Data() {
-    return DataTable.FromTestData(TASK2_DATA_IDX);
-  }
-}
-
-function TimeWithTooltip({timestamp}) {
-  const renderTooltip = (props) => (
-    <Tooltip id="button-tooltip" {...props}>
-      {timestamp.toLocaleString()}
-    </Tooltip>
-  );
-  return (
-    <OverlayTrigger
-      placement="bottom"
-      overlay={renderTooltip}
-    >
-      <span>{hhmmss(timestamp)}</span>
-    </OverlayTrigger>
-  );
 }
