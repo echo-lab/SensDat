@@ -36,6 +36,27 @@ const AGG_SUMMARY = Object.freeze({
 
 const TIME_COLS = [SUMMARY_COLS.START_TIME, SUMMARY_COLS.END_TIME];
 
+export function TotalSummaryTab({ table, states, highlightFn }) {
+  let summaryBreakdown = useMemo(
+    () => getBreakdownByAllStates(table, states),
+    [table, states]
+  );
+
+  if (states.length === 0) {
+    return <p>Create states to see a summary table.</p>;
+  }
+
+  let props = { summaryBreakdown, highlightFn };
+  return (
+    <Container>
+      <h4 className="mx-3"> Summary </h4>
+      <TableStyles>
+        <AllStatesSummaryTable {...props} />
+      </TableStyles>
+    </Container>
+  );
+}
+
 export function SummaryTab({ table, state, highlightFn }) {
   let [trueOnly, setTrueOnly] = useState(true);
   let summaryBreakdown = useMemo(
@@ -91,6 +112,50 @@ function SummaryModeDropdown({ trueOnly, setTrueOnly }) {
   );
 }
 
+export function AllStatesSummaryTable({ summaryBreakdown, highlightFn }) {
+  let [cols, rows] = summaryBreakdown;
+
+  return (
+    <Table hover>
+      <thead>
+        <tr role="row">
+          {cols.map((col, idx) => (
+            <th key={idx} role="columnheader">{col.Header === "State" ? "State(s)" : col.Header }</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, idx) => (
+          <tr
+            role="row"
+            key={idx}
+            onClick={() => highlightFn([row.pointsRange])}
+            onMouseEnter={() => highlightFn([row.pointsRange])}
+            onMouseLeave={() => highlightFn([])}
+          >
+            {cols.map(({ accessor }, idx) => {
+              if (row[accessor] === undefined) return null;
+              if (TIME_COLS.includes(accessor)) {
+                return (
+                  <td role="cell" key={idx} className={idx}>
+                    {hhmmss(row[accessor])}
+                  </td>
+                );
+              } else {
+                return (
+                  <td role="cell" key={idx} className={idx}>
+                    {row[accessor]}
+                  </td>
+                );
+              }
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
 export function SummaryTable({
   summaryBreakdown,
   highlightFn,
@@ -142,7 +207,7 @@ export function SummaryTable({
                     role="cell"
                     key={idx}
                     rowSpan={trueOnly ? 1 : row["cycleRowspan"] || 1}
-                    >
+                  >
                     {row[accessor]}
                   </td>
                 );
@@ -219,6 +284,46 @@ function getTime(dataTable, idx) {
   return row && timeAccessor ? row[timeAccessor] : null;
 }
 
+// Returns, for example:
+//   [
+//      {state: "LOAD", range: [0, 10]},
+//      {state: "<NONE>", range: [11, 50]},
+//      {state: "DUMP", range: [51, 60]},
+//      {state: "DUMP, ANOTHER_STATE", range: [61, 65]},
+//       ...
+//   ]
+function groupByStates(table, states) {
+  if (!table.rows || table.rows.length === 0) return [];
+
+  const indexAccessor = table.getAccessor(COL_TYPES.INDEX);
+  const index = (row) => row[indexAccessor];
+
+  const getMetaState = (row) => {
+    let trueStates = states.filter((s) => row[s.id] === "true").map((s) => s.name);
+    return trueStates.length > 0 ? trueStates.join(", ") : "<None>";
+  };
+
+  let r0 = table.rows[0];
+  let res = [
+    {
+      state: getMetaState(r0),
+      range: [index(r0), index(r0)],
+    },
+  ];
+
+  for (let row of table.rows) {
+    let currState = getMetaState(row);
+    if (res.at(-1).state === currState) {
+      // Our state is the same, so we just update the end of the range.
+      res.at(-1).range[1] = index(row);
+    } else {
+      // Our state changed, so we need to add a new item to the result.
+      res.push({ state: currState, range: [index(row), index(row)] });
+    }
+  }
+  return res;
+}
+
 // Returns cycle ranges broken down by T/F.
 // For example: [{cycle: 1, state: false, range: [1, 23]}, ...]
 function getCycleRanges(table, state) {
@@ -250,6 +355,65 @@ function getCycleRanges(table, state) {
     }
   }
   return res;
+}
+
+export function getBreakdownByAllStates(table, states) {
+  if (states.length === 0) {
+    return undefined;
+  }
+
+  let hasDistCol = table.getColByType(COL_TYPES.DIST);
+  let cols = [
+    { Header: "State", accessor: SUMMARY_COLS.STATE },
+    { Header: "Start Time", accessor: SUMMARY_COLS.START_TIME },
+    { Header: "Total Time", accessor: SUMMARY_COLS.ELAPSED_TIME },
+  ];
+
+  if (hasDistCol)
+    cols.push({ Header: "Total Distance", accessor: SUMMARY_COLS.DISTANCE });
+
+  // MAKE IT DIFFERENT!
+  let grouped = groupByStates(table, states);
+  // [{state, range}, ...]
+
+  let rows = grouped.map(({ state, range }, idx) => {
+    let [startIdx, endIdx] = range;
+    let tStart = getTime(table, startIdx);
+    let tEnd = getTime(table, endIdx);
+    let tNext; // The time the next stretch starts...
+    if (idx !== grouped.length - 1) {
+      tNext = getTime(table, endIdx + 1);
+    } else {
+      // Guess the time of the next point based on the current sampling rate.
+      let dt = tEnd.getTime() - getTime(table, endIdx - 1).getTime();
+      tNext = new Date(tEnd.getTime() + dt);
+    }
+    let res = {
+      [SUMMARY_COLS.STATE]: state,
+      [SUMMARY_COLS.START_TIME]: tStart,
+      [SUMMARY_COLS.END_TIME]: tEnd,
+      [SUMMARY_COLS.NEXT_TIME]: tNext,
+      [SUMMARY_COLS.ELAPSED_TIME]: timeDiffString(tStart, tNext),
+      pointsRange: range,
+    };
+    if (hasDistCol) {
+      res[SUMMARY_COLS.DISTANCE] = getDistance(table, ...range);
+    }
+
+    // // Populate 'cycle' and 'cycleRowspan' conditionally.
+    // let prev = idx > 0 ? cycleRanges[idx - 1] : null;
+    // let next = cycleRanges.length > idx + 1 ? cycleRanges[idx + 1] : null;
+    // if (!prev || prev.cycle !== cycleRange.cycle) {
+    //   // This is the first row of the cycle.
+    //   res[SUMMARY_COLS.CYCLE] = cycleRange.cycle;
+    //   // If the next entry has the same cycle, make the rowspan 2.
+    //   res.cycleRowspan = next && next.cycle === cycleRange.cycle ? 2 : 1;
+    // }
+
+    return res;
+  });
+
+  return [cols, rows];
 }
 
 // Returns [cols, rows] for rendering.
