@@ -1,0 +1,9 @@
+.True {
+  background-color: lightgreen;
+}
+
+.False {
+
+  /* Should be salmon */
+  background-color: white;
+}

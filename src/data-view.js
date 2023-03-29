@@ -10,6 +10,8 @@ import { actions } from "./app-state.js";
 import { SummaryTab } from "./summary-table.js";
 import { TableStyles } from "./utils.js";
 
+import "./styles/data-view.css";
+
 export function DataView({
   dataTable,
   summaryTables,
@@ -107,11 +109,29 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           className="tr"
         >
           {row.cells.map((cell) => {
-            return (
-              <div {...cell.getCellProps()} className="td">
-                {cell.render("Cell")}
-              </div>
-            );
+
+            const currentValue = cell.value;
+
+            if(currentValue == "true" || currentValue == "false"){
+
+              cell.value = currentValue.charAt(0).toUpperCase()
+              + currentValue.slice(1);
+
+              // This is where each cell gets rendered.
+              return (
+                <div {...cell.getCellProps()} className={"td " + cell.value}>
+                  {cell.render("Cell")}
+                </div>
+              );
+            }
+            else {
+              // This is where each cell gets rendered.
+              return (
+                <div {...cell.getCellProps()} className="td">
+                  {cell.render("Cell")}
+                </div>
+              );
+            }
           })}
         </div>
       );

@@ -131,6 +131,7 @@ export class DataTable {
     let result = this.copy();
     let tmpCol = this.getTempCol();
 
+
     // Filter out any current temp-state columns and add the new one.
     result.cols = result.cols.filter((col) => col.type !== COL_TYPES.STATE_TMP);
     result.cols.push({
@@ -304,12 +305,17 @@ export class DataTable {
           col.width = 90;
         } else if (c.type === COL_TYPES.STATE || c.type === COL_TYPES.STATE_TMP) {
           col.width = 100;
+
+          // Takes out the value from the cell if the cell
+          // is in a region (Currently solves the uppercase issue).
+          col.Cell = ({ cell: { value } }) => value;
         }
 
         // Need to tell React Table how to render the timestamp column
         if (c.type === COL_TYPES.T_CLEAN) {
           col.Cell = ({ cell: { value } }) => <TimeWithTooltip timestamp={value} />;
         }
+  
         return col;
       });
   }
