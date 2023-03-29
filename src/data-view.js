@@ -7,7 +7,7 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 
 import { actions } from "./app-state.js";
-import { SummaryTab } from "./summary-table.js";
+import { SummaryTab, TotalSummaryTab } from "./summary-table.js";
 import { TableStyles } from "./utils.js";
 
 import "./styles/data-view.css";
@@ -17,6 +17,7 @@ export function DataView({
   summaryTables,
   uistate,
   activeTab,
+  userDefinedStates,
   dispatch,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
@@ -39,6 +40,13 @@ export function DataView({
               showPointsFn={showPointsFn}
             />
           </Tab>
+          <Tab eventKey="ALL_SUMMARY" title="Summary">
+            <TotalSummaryTab
+              table={dataTable}
+              states={userDefinedStates}
+              highlightFn={highlightFn}
+            />
+          </Tab>
           {summaryTables.map((st) => (
             <Tab
               eventKey={st.state.id}
@@ -55,7 +63,7 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [dataTable, summaryTables, uistate, activeTab, dispatch]);
+  }, [dataTable, summaryTables, uistate, activeTab, userDefinedStates, dispatch]);
 }
 
 // This is pretty much copied from this example:

@@ -106,6 +106,7 @@ function App() {
     uistate: state.uiState,
     summaryTables: state.summaryTables,
     activeTab: state.activeTab,
+    userDefinedStates: state.userDefinedStates,
     dispatch,
   };
 
