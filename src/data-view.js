@@ -18,6 +18,7 @@ export function DataView({
   uistate,
   activeTab,
   userDefinedStates,
+  stateSequence,
   dispatch,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
@@ -45,6 +46,8 @@ export function DataView({
               table={dataTable}
               states={userDefinedStates}
               highlightFn={highlightFn}
+              dispatch={dispatch}
+              stateSequence={stateSequence}
             />
           </Tab>
           {summaryTables.map((st) => (
@@ -63,7 +66,7 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [dataTable, summaryTables, uistate, activeTab, userDefinedStates, dispatch]);
+  }, [dataTable, summaryTables, uistate, activeTab, userDefinedStates, stateSequence, dispatch]);
 }
 
 // This is pretty much copied from this example:

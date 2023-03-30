@@ -53,6 +53,7 @@ function App() {
     state.defaultDataTransform,
     state.currentDataTransform,
     state.siteLayout,
+    state.stateSequence,
   ]);
 
   // Allow printing the current state for debugging.
@@ -105,6 +106,7 @@ function App() {
     dataTable: state.dataTable,
     uistate: state.uiState,
     summaryTables: state.summaryTables,
+    stateSequence: state.stateSequence,
     activeTab: state.activeTab,
     userDefinedStates: state.userDefinedStates,
     dispatch,
@@ -121,7 +123,7 @@ function App() {
     onDone: () => setUploadActive(false),
     dispatch,
   };
-  
+
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>

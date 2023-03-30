@@ -4,6 +4,7 @@ import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 import Container from "react-bootstrap/Container";
+import { DropdownButton } from "react-bootstrap";
 
 import { COL_TYPES } from "./data-table.js";
 import {
@@ -11,9 +12,12 @@ import {
   hhmmss,
   timeDiffString,
   millisToTimeString,
+  getSequenceInfo,
 } from "./utils.js";
 
 import "./styles/summary-table.css";
+import { SequenceEditor } from "./sequence-editor.js";
+import { actions } from "./app-state.js";
 
 const SUMMARY_COLS = Object.freeze({
   CYCLE: "CYCLE",
@@ -36,7 +40,13 @@ const AGG_SUMMARY = Object.freeze({
 
 const TIME_COLS = [SUMMARY_COLS.START_TIME, SUMMARY_COLS.END_TIME];
 
-export function TotalSummaryTab({ table, states, highlightFn }) {
+export function TotalSummaryTab({
+  table,
+  states,
+  stateSequence,
+  highlightFn,
+  dispatch,
+}) {
   let summaryBreakdown = useMemo(
     () => getBreakdownByAllStates(table, states),
     [table, states]
@@ -46,7 +56,7 @@ export function TotalSummaryTab({ table, states, highlightFn }) {
     return <p>Create states to see a summary table.</p>;
   }
 
-  let props = { summaryBreakdown, highlightFn };
+  let props = { summaryBreakdown, highlightFn, stateSequence, dispatch };
   return (
     <Container>
       <h4 className="mx-3"> Summary </h4>
@@ -76,6 +86,33 @@ export function SummaryTab({ table, state, highlightFn }) {
         <SummaryTable {...props}></SummaryTable>
       </TableStyles>
     </Container>
+  );
+}
+
+function SequenceDropdown({ name, onDelete }) {
+  const CustomToggle = forwardRef(({ children, onClick }, ref) => (
+    <span
+      ref={ref}
+      className="mx-1 dropdown-toggle"
+      style={{ cursor: "pointer" }}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(e);
+      }}
+    >
+      {children}
+    </span>
+  ));
+
+  return (
+    <Dropdown>
+      <Dropdown.Toggle as={CustomToggle} id="dropdown-summary-mode">
+        {name}
+      </Dropdown.Toggle>
+      <Dropdown.Menu>
+        <Dropdown.Item onClick={onDelete}>Delete sequence</Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 
@@ -112,47 +149,106 @@ function SummaryModeDropdown({ trueOnly, setTrueOnly }) {
   );
 }
 
-export function AllStatesSummaryTable({ summaryBreakdown, highlightFn }) {
+export function AllStatesSummaryTable({
+  summaryBreakdown,
+  highlightFn,
+  stateSequence,
+  dispatch,
+}) {
+  let [editingSequence, setEditingSequence] = useState(false);
   let [cols, rows] = summaryBreakdown;
 
+  let handleDefineSequence = () => setEditingSequence(true);
+  let cancelDefineSequence = () => setEditingSequence(false);
+  let sequenceEditorProps = {
+    rows,
+    cols,
+    setSequence: (seq) => dispatch(actions.setSequence(seq)),
+    onClose: cancelDefineSequence,
+  };
+
+  let seqNums = stateSequence
+    ? getSequenceInfo(
+        rows.map((r) => r.STATE),
+        stateSequence.seq
+      )
+    : null;
+
   return (
-    <Table hover>
-      <thead>
-        <tr role="row">
-          {cols.map((col, idx) => (
-            <th key={idx} role="columnheader">{col.Header === "State" ? "State(s)" : col.Header }</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, idx) => (
-          <tr
-            role="row"
-            key={idx}
-            onClick={() => highlightFn([row.pointsRange])}
-            onMouseEnter={() => highlightFn([row.pointsRange])}
-            onMouseLeave={() => highlightFn([])}
-          >
-            {cols.map(({ accessor }, idx) => {
-              if (row[accessor] === undefined) return null;
-              if (TIME_COLS.includes(accessor)) {
-                return (
-                  <td role="cell" key={idx} className={idx}>
-                    {hhmmss(row[accessor])}
-                  </td>
-                );
-              } else {
-                return (
-                  <td role="cell" key={idx} className={idx}>
-                    {row[accessor]}
-                  </td>
-                );
-              }
-            })}
+    <>
+      <Table hover>
+        <thead>
+          <tr role="row">
+            {stateSequence ? (
+              <th role="columnheader">
+                <SequenceDropdown
+                  name={stateSequence.name}
+                  onDelete={() => dispatch(actions.setSequence(null))}
+                />
+              </th>
+            ) : (
+              <th role="columnheader" className="add-col">
+                <DropdownButton
+                  variant="outline-primary"
+                  size="sm"
+                  id="new-sequence"
+                  title="+"
+                  className="mx-2 no-arrow"
+                >
+                  <Dropdown.Item onClick={handleDefineSequence}>
+                    Define a Sequence
+                  </Dropdown.Item>
+                </DropdownButton>
+              </th>
+            )}
+            {cols.map((col, idx) => (
+              <th key={idx} role="columnheader">
+                {col.Header === "State" ? "State(s)" : col.Header}
+              </th>
+            ))}
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {rows.map((row, idx) => (
+            <tr
+              role="row"
+              key={idx}
+              onClick={() => highlightFn([row.pointsRange])}
+              onMouseEnter={() => highlightFn([row.pointsRange])}
+              onMouseLeave={() => highlightFn([])}
+            >
+              {stateSequence ? (
+                (idx === 0 ||
+                  seqNums[idx].seqNum !== seqNums[idx - 1].seqNum) && (
+                  <td role="cell" rowSpan={seqNums[idx].nextSeq}>
+                    {seqNums[idx].seqNum > 0 ? seqNums[idx].seqNum : "--"}
+                  </td>
+                )
+              ) : (
+                <td role="cell" className="add-col"></td>
+              )}
+              {cols.map(({ accessor }, idx) => {
+                if (row[accessor] === undefined) return null;
+                if (TIME_COLS.includes(accessor)) {
+                  return (
+                    <td role="cell" key={idx} className={idx}>
+                      {hhmmss(row[accessor])}
+                    </td>
+                  );
+                } else {
+                  return (
+                    <td role="cell" key={idx} className={idx}>
+                      {row[accessor]}
+                    </td>
+                  );
+                }
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      {editingSequence && <SequenceEditor {...sequenceEditorProps} />}
+    </>
   );
 }
 
@@ -299,7 +395,9 @@ function groupByStates(table, states) {
   const index = (row) => row[indexAccessor];
 
   const getMetaState = (row) => {
-    let trueStates = states.filter((s) => row[s.id] === "true").map((s) => s.name);
+    let trueStates = states
+      .filter((s) => row[s.id] === "true")
+      .map((s) => s.name);
     return trueStates.length > 0 ? trueStates.join(", ") : "<None>";
   };
 
