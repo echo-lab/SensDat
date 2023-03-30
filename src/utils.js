@@ -70,6 +70,39 @@ export function millisToTimeString(ms) {
   return `${minutes}m ${seconds}s`;
 }
 
+// Look for target sequence (targetSeq) in sequence (seq).
+// Returns a list corresponding to each element in seq, labelling it with
+// `seqNum', i.e., which sequence its part of, and
+// `nextSeq', i.e., how many entries ahead do we need to skip to get to a different seqNum.
+export function getSequenceInfo(seq, targetSeq) {
+  let res = seq.map((r) => ({ seqNum: -1, nextSeq: 1 }));
+  let cur = 1;
+
+  for (let i = 0; i < seq.length; i++) {
+    if (targetSeq.length === 0) break; // Shouldn't happen!
+    if (i + targetSeq.length > seq.length) break; // Not enough elements left.
+
+    if (targetSeq.some((t, idx) => t !== seq[i + idx])) {
+      // We didn't find our target sequence.
+      continue;
+    }
+    for (let j = 0; j < targetSeq.length; j++) {
+      res[i + j].seqNum = cur;
+    }
+    cur += 1;
+    i += targetSeq.length - 1;
+  }
+
+  // Now... go back through res and calculate the "nextSeq" thing.
+  for (let i = res.length - 2; i >= 0; i--) {
+    if (res[i].seqNum === res[i + 1].seqNum) {
+      res[i].nextSeq = res[i + 1].nextSeq + 1;
+    }
+  }
+
+  return res;
+}
+
 // From: https://stackoverflow.com/questions/17410809/how-to-calculate-rotation-in-2d-in-javascript
 export function rotate(point, angle, center) {
   let [x, y] = point;

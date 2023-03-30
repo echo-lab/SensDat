@@ -69,6 +69,11 @@ export const initialState = {
   // The current site layout. Should be a SiteLayout object or null;
   siteLayout: null,
 
+  // User-defined sequence.
+  // TODO: Ideally, this should be associated w/ a particular summary table :)
+  // It should look like: {name: "Cycle", seq: ["LOAD", "HAUL", "DUMP", "RETURN"]}, for example.
+  stateSequence: null,
+
   // Active filters, like: columns which are hidden, states
   // which are visible, datapoints which are highlighted, etc.
   // TODO: add more as they're implemented.
@@ -95,6 +100,7 @@ export function serialize({
   defaultDataTransform,
   currentDataTransform,
   siteLayout,
+  stateSequence,
 }) {
   // Only need to save: dataTable, userDefinedStates
   if (!dataTable) return "";
@@ -108,6 +114,7 @@ export function serialize({
     currentDataTransform:
       currentDataTransform && currentDataTransform.asObject(),
     siteLayout: siteLayout && siteLayout.serialize(),
+    stateSequence,
   };
   return LZString.compress(JSON.stringify(res));
 }
@@ -130,6 +137,7 @@ export async function deserialize(serializedState) {
       EditBox.fromObject(data.currentDataTransform),
     siteLayout:
       data.siteLayout && (await SiteLayout.Deserialize(data.siteLayout)),
+    stateSequence: data.stateSequence,
   };
 }
 
@@ -365,6 +373,11 @@ actionHandlers["createSummary"] = (state, stateID) => {
 actionHandlers["selectTab"] = (state, tabID) => ({
   ...state,
   activeTab: tabID,
+});
+
+actionHandlers["setSequence"] = (state, seq) => ({
+  ...state,
+  stateSequence: seq,
 });
 
 actionHandlers["setShownPoints"] = (state, shownRange) => ({

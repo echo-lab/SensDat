@@ -138,3 +138,18 @@ div .tr:hover:not(.table-header) {
   background-color: null;
   border-color: null;
 }
+
+.selected-row {
+  background-color: #0062ff2e;
+}
+
+.prevent-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+.y-scroll-modal {
+  max-height: 600px;
+  overflow-y: scroll;
+}
