@@ -52,11 +52,9 @@ export function TotalSummaryTab({
     [table, states]
   );
 
-  if (states.length === 0) {
-    return <p>Create states to see a summary table.</p>;
-  }
+  if (!table) return null;
 
-  let props = { summaryBreakdown, highlightFn, stateSequence, dispatch };
+  let props = { states, summaryBreakdown, highlightFn, stateSequence, dispatch };
   return (
     <Container>
       <h4 className="mx-3"> Summary </h4>
@@ -153,6 +151,7 @@ export function AllStatesSummaryTable({
   summaryBreakdown,
   highlightFn,
   stateSequence,
+  states,
   dispatch,
 }) {
   let [editingSequence, setEditingSequence] = useState(false);
@@ -195,7 +194,7 @@ export function AllStatesSummaryTable({
                   title="+"
                   className="mx-2 no-arrow"
                 >
-                  <Dropdown.Item onClick={handleDefineSequence}>
+                  <Dropdown.Item disabled={states.length === 0} onClick={handleDefineSequence}>
                     Define a Sequence
                   </Dropdown.Item>
                 </DropdownButton>
@@ -456,9 +455,7 @@ function getCycleRanges(table, state) {
 }
 
 export function getBreakdownByAllStates(table, states) {
-  if (states.length === 0) {
-    return undefined;
-  }
+  if (!table) return null;
 
   let hasDistCol = table.getColByType(COL_TYPES.DIST);
   let cols = [
@@ -470,7 +467,6 @@ export function getBreakdownByAllStates(table, states) {
   if (hasDistCol)
     cols.push({ Header: "Total Distance", accessor: SUMMARY_COLS.DISTANCE });
 
-  // MAKE IT DIFFERENT!
   let grouped = groupByStates(table, states);
   // [{state, range}, ...]
 
