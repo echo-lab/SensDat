@@ -143,6 +143,10 @@ div .tr:hover:not(.table-header) {
   background-color: #0062ff2e;
 }
 
+.highlighted-row {
+  background-color: #30cf3033 !important;
+}
+
 .prevent-select {
   -webkit-user-select: none; /* Safari */
   -ms-user-select: none; /* IE 10 and IE 11 */

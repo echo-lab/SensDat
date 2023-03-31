@@ -54,7 +54,13 @@ export function TotalSummaryTab({
 
   if (!table) return null;
 
-  let props = { states, summaryBreakdown, highlightFn, stateSequence, dispatch };
+  let props = {
+    states,
+    summaryBreakdown,
+    highlightFn,
+    stateSequence,
+    dispatch,
+  };
   return (
     <Container>
       <h4 className="mx-3"> Summary </h4>
@@ -156,6 +162,47 @@ export function AllStatesSummaryTable({
 }) {
   let [editingSequence, setEditingSequence] = useState(false);
   let [cols, rows] = summaryBreakdown;
+  let [hoverPeriod, setHoverPeriod] = useState(false);
+  let [hoverRows, setHoverRows] = useState([-1, -1]);
+
+  let seqNums = useMemo(
+    () =>
+      stateSequence
+        ? getSequenceInfo(
+            rows.map((r) => r.STATE),
+            stateSequence.seq
+          )
+        : null,
+    [rows, stateSequence]
+  );
+
+  let onMouseEnterRow = (row, idx) => {
+    setHoverPeriod(false);
+    setHoverRows([idx, idx]);
+    highlightFn([row.pointsRange]);
+  };
+  let onMouseLeave = () => {
+    setHoverPeriod(false);
+    setHoverRows([-1, -1]);
+    highlightFn([]);
+  };
+  let onMouseEnterPeriod = (row, idx) => {
+    setHoverPeriod(true);
+    let lo = idx - seqNums[idx].prevSeq + 1;
+    let hi = idx + seqNums[idx].nextSeq - 1;
+    setHoverRows([lo, hi]);
+    let highlightLo = rows[lo].pointsRange[0];
+    let highlightHi = rows[hi].pointsRange[1];
+    highlightFn([[highlightLo, highlightHi]]);
+  };
+
+  let getClassForPeriodCell = (idx) => {
+    return hoverPeriod && idx === hoverRows[0] ? "highlighted-row" : "";
+  };
+  let getClassForNormalCell = (idx) => {
+    let [lo, hi] = hoverRows;
+    return lo <= idx && idx <= hi ? "highlighted-row" : "";
+  };
 
   let handleDefineSequence = () => setEditingSequence(true);
   let cancelDefineSequence = () => setEditingSequence(false);
@@ -166,16 +213,9 @@ export function AllStatesSummaryTable({
     onClose: cancelDefineSequence,
   };
 
-  let seqNums = stateSequence
-    ? getSequenceInfo(
-        rows.map((r) => r.STATE),
-        stateSequence.seq
-      )
-    : null;
-
   return (
     <>
-      <Table hover>
+      <Table>
         <thead>
           <tr role="row">
             {stateSequence ? (
@@ -194,7 +234,10 @@ export function AllStatesSummaryTable({
                   title="+"
                   className="mx-2 no-arrow"
                 >
-                  <Dropdown.Item disabled={states.length === 0} onClick={handleDefineSequence}>
+                  <Dropdown.Item
+                    disabled={states.length === 0}
+                    onClick={handleDefineSequence}
+                  >
                     Define a Sequence
                   </Dropdown.Item>
                 </DropdownButton>
@@ -212,35 +255,43 @@ export function AllStatesSummaryTable({
             <tr
               role="row"
               key={idx}
-              onClick={() => highlightFn([row.pointsRange])}
-              onMouseEnter={() => highlightFn([row.pointsRange])}
-              onMouseLeave={() => highlightFn([])}
             >
               {stateSequence ? (
                 (idx === 0 ||
                   seqNums[idx].seqNum !== seqNums[idx - 1].seqNum) && (
-                  <td role="cell" rowSpan={seqNums[idx].nextSeq}>
+                  <td
+                    role="cell"
+                    rowSpan={seqNums[idx].nextSeq}
+                    className={getClassForPeriodCell(idx)}
+                    onMouseEnter={() => onMouseEnterPeriod(row, idx)}
+                    onMouseLeave={onMouseLeave}
+                  >
                     {seqNums[idx].seqNum > 0 ? seqNums[idx].seqNum : "--"}
                   </td>
                 )
               ) : (
-                <td role="cell" className="add-col"></td>
+                <td
+                  role="cell"
+                  className={"add-col " + getClassForNormalCell(idx)}
+                  onMouseEnter={() => onMouseEnterRow(row, idx)}
+                  onMouseLeave={onMouseLeave}
+                ></td>
               )}
-              {cols.map(({ accessor }, idx) => {
+              {cols.map(({ accessor }, colIdx) => {
                 if (row[accessor] === undefined) return null;
-                if (TIME_COLS.includes(accessor)) {
-                  return (
-                    <td role="cell" key={idx} className={idx}>
-                      {hhmmss(row[accessor])}
-                    </td>
-                  );
-                } else {
-                  return (
-                    <td role="cell" key={idx} className={idx}>
-                      {row[accessor]}
-                    </td>
-                  );
-                }
+                return (
+                  <td
+                    role="cell"
+                    key={colIdx}
+                    className={getClassForNormalCell(idx)}
+                    onMouseEnter={() => onMouseEnterRow(row, idx)}
+                    onMouseLeave={onMouseLeave}
+                  >
+                    {TIME_COLS.includes(accessor)
+                      ? hhmmss(row[accessor])
+                      : row[accessor]}
+                  </td>
+                );
               })}
             </tr>
           ))}
