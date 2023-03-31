@@ -74,8 +74,9 @@ export function millisToTimeString(ms) {
 // Returns a list corresponding to each element in seq, labelling it with
 // `seqNum', i.e., which sequence its part of, and
 // `nextSeq', i.e., how many entries ahead do we need to skip to get to a different seqNum.
+// `prevSeqNum', i.e., how many before do we need to skip to get a different seqNum.
 export function getSequenceInfo(seq, targetSeq) {
-  let res = seq.map((r) => ({ seqNum: -1, nextSeq: 1 }));
+  let res = seq.map((r) => ({ seqNum: -1, nextSeq: 1, prevSeq: 1 }));
   let cur = 1;
 
   for (let i = 0; i < seq.length; i++) {
@@ -97,6 +98,11 @@ export function getSequenceInfo(seq, targetSeq) {
   for (let i = res.length - 2; i >= 0; i--) {
     if (res[i].seqNum === res[i + 1].seqNum) {
       res[i].nextSeq = res[i + 1].nextSeq + 1;
+    }
+  }
+  for (let i = 1; i < res.length; i++) {
+    if (res[i-1].seqNum === res[i].seqNum) {
+      res[i].prevSeq = res[i-1].prevSeq + 1;
     }
   }
 

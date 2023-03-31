@@ -294,6 +294,7 @@ actionHandlers["createCompoundState"] = (state, compoundState) => {
       .withTempState(compoundState, state.currentDataTransform)
       .withCommittedTempState(),
     uiState: UIState.Default,
+    stateSequence: null,
   };
 };
 
@@ -322,6 +323,7 @@ actionHandlers["commitTempState"] = (state, payload) => {
     createRegionInteraction: null,
     dataTable: state.dataTable.withCommittedTempState(),
     uiState: UIState.Default,
+    stateSequence: null,
   };
 };
 
