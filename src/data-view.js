@@ -54,7 +54,7 @@ export function DataView({
             <Tab
               eventKey={st.state.id}
               key={st.state.id}
-              title={`Summary: ${st.state.name}`}
+              title={st.state.name}
             >
               <SummaryTab
                 table={dataTable}
