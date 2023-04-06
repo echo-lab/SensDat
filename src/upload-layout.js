@@ -13,11 +13,17 @@ export class SiteLayout {
   #url;
   #width;
   #height;
+  #scale;
 
-  constructor(url, width, height) {
+  constructor(url, width, height, scale) {
     this.#url = url;
     this.#width = width;
     this.#height = height;
+    this.#scale = scale || 1.0;
+  }
+
+  withScale(scale) {
+    return new SiteLayout(this.#url, this.#width, this.#height, scale);
   }
 
   get url() {
@@ -25,7 +31,10 @@ export class SiteLayout {
   }
 
   serialize() {
-    return this.#url;
+    return {
+      dataUrl: this.#url,
+      scale: this.#scale,
+    };
   }
 
   idealSVGParams(maxWidth, maxHeight) {
@@ -41,16 +50,28 @@ export class SiteLayout {
       x = 0;
       y = (maxHeight - height) / 2;
     }
+    let pad = (1.0 - this.#scale) / 2;
+    x = x + width * pad;
+    y = y + height * pad;
+    width = width - 2 * width * pad;
+    height = height - 2 * height * pad;
     return { x, y, width, height };
   }
 
-  static async Deserialize(dataUrl) {
+  static async Deserialize(serializedObject) {
+    let dataUrl, scale;
+    if (typeof serializedObject === "object") {
+      ({ dataUrl, scale = 1.0 } = serializedObject);
+    } else {
+      dataUrl = serializedObject;
+    }
+
     const [width, height] = await new Promise((resolve) => {
       let img = new Image();
       img.onload = () => resolve([img.width, img.height]);
       img.src = dataUrl;
     });
-    return new SiteLayout(dataUrl, width, height);
+    return new SiteLayout(dataUrl, width, height, scale);
   }
 
   static async FromFile(f) {
