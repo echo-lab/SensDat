@@ -13,11 +13,13 @@ import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { UploadDataWidget } from "./upload-data.js";
-import { UserStudyLoader } from "./user-study";
+import { UserStudyLoader } from "./preload/user-study";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
 import { ExportButton } from "./json_to_csv";
+import { ClassExerciseLoader } from "./preload/class-exercise";
+import { NavDropdown } from "react-bootstrap";
 const MIN_HEIGHT = 700;
 
 function App() {
@@ -129,7 +131,12 @@ function App() {
       <Container>
         <Navbar.Brand>SensDat</Navbar.Brand>
         <Nav className="justify-content-end">
-          <Nav.Link onClick={() => setUploadActive(true)}>Upload Data</Nav.Link>
+          <NavDropdown className="no-arrow" title="Import Data">
+            <NavDropdown.Item onClick={() => setUploadActive(true)}>
+              Upload CSV
+            </NavDropdown.Item>
+            <ClassExerciseLoader dispatch={dispatch} />
+          </NavDropdown>
           {window.location.href.endsWith("/study") ? (
             <>
               <Navbar.Text>|</Navbar.Text>

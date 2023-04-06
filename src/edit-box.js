@@ -34,6 +34,13 @@ export class EditBox {
     return new EditBox(this.initialParams, this.currentParams);
   }
 
+  // Hacky hack hack.
+  withTargetParams(targetParams) {
+    let res = this.copy();
+    res.currentParams = targetParams;
+    return res;
+  }
+
   asObject() {
     return {
       initialParams: this.initialParams,
