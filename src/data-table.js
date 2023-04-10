@@ -379,6 +379,28 @@ export class DataTable {
     });
   }
 
+  static FromHostedData(fName) {
+    const colMapping = {
+      Order: COL_TYPES.INDEX,
+      Longitude: COL_TYPES.X,
+      Latitude: COL_TYPES.Y,
+      "Date Created": COL_TYPES.T,
+      "Distance from Last": COL_TYPES.DIST,
+    };
+    return new Promise((resolve, reject) => {
+      Papa.parse(fName, {
+        download: true,
+        dynamicTyping: true,
+        header: true,
+        skipEmptyLines: true,
+        error: (e) => reject(e),
+        complete: (res) => {
+          resolve(new DataTable(res.data, colMapping).withCleanedTime());
+        },
+      });
+    });
+  }
+
   static FromTestData(i) {
     i = Number.isInteger(i) ? i % TEST_DATA.length : TEST_DATA.length - 1;
     const fName = TEST_DATA[i];

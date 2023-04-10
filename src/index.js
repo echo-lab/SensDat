@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useEffect, useReducer, useState, useMemo } from "react";
 import ReactDOM from "react-dom";
 
 import "react-reflex/styles.css"; // Resizable container
@@ -20,12 +20,24 @@ import * as AppState from "./app-state.js";
 import { ExportButton } from "./json_to_csv";
 import { ClassExerciseLoader } from "./preload/class-exercise";
 import { NavDropdown } from "react-bootstrap";
+import { DataRecorder } from "./data-recorder";
+
 const MIN_HEIGHT = 700;
+
+// If RECORD_DATA_MODE is set to true, then you can click around the map and then enter
+// option+O (on a mac) to export CSV of the points you clicked.
+const RECORD_DATA_MODE = false;
+const RECORD_DATA_START_TIME = new Date(
+  new Date().getTime() - 365 * 24 * 60 * 60 * 1000
+); // a year ago lol
+const RECORD_DATA_DT = 5; // number of seconds between data points
 
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
   const [uploadActive, setUploadActive] = useState(false);
   const [containerHeight, setContainerHeight] = useState(MIN_HEIGHT);
+
+  const dataRecorder = useMemo(() => new DataRecorder(RECORD_DATA_DT), []); // no deps!
 
   // Load the previous data if it exists. Else, prompt the user for an upload.
   useEffect(
@@ -68,6 +80,9 @@ function App() {
           window.localStorage.removeItem("state");
         } else if (e.code === "KeyP") {
           console.log("Current state: ", state);
+        } else if (e.code === "KeyO") {
+          RECORD_DATA_MODE &&
+            dataRecorder.exportPoints(RECORD_DATA_START_TIME, RECORD_DATA_DT);
         }
       };
 
@@ -101,6 +116,7 @@ function App() {
     uiState: state.uiState,
     siteLayout: state.siteLayout,
     setContainerHeight: (x) => setContainerHeight(Math.max(x, MIN_HEIGHT)),
+    dataRecorder: RECORD_DATA_MODE && dataRecorder,
     dispatch,
   };
 

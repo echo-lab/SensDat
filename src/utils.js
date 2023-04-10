@@ -46,6 +46,11 @@ export function getDependentStates(state, states) {
   return res;
 }
 
+// Puts the Date object into a format like "11/11/2021 03:22:21 PM"
+export function stringTime(t) {
+  return [t.toLocaleDateString(), t.toLocaleTimeString()].join(" ");
+}
+
 export function hhmmss(d) {
   if (!d.getHours || !d.getMinutes || !d.getSeconds) return "00:00:00";
 
@@ -101,8 +106,8 @@ export function getSequenceInfo(seq, targetSeq) {
     }
   }
   for (let i = 1; i < res.length; i++) {
-    if (res[i-1].seqNum === res[i].seqNum) {
-      res[i].prevSeq = res[i-1].prevSeq + 1;
+    if (res[i - 1].seqNum === res[i].seqNum) {
+      res[i].prevSeq = res[i - 1].prevSeq + 1;
     }
   }
 
@@ -162,7 +167,7 @@ export function getDefaultDataTransform(data) {
 }
 
 // Copied from: https://www.movable-type.co.uk/scripts/latlong.html
-function latLongDist(lat1, lon1, lat2, lon2) {
+export function latLongDist(lat1, lon1, lat2, lon2) {
   const R = 6371e3; // metres
   const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
   const φ2 = (lat2 * Math.PI) / 180;

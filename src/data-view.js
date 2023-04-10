@@ -51,11 +51,7 @@ export function DataView({
             />
           </Tab>
           {summaryTables.map((st) => (
-            <Tab
-              eventKey={st.state.id}
-              key={st.state.id}
-              title={st.state.name}
-            >
+            <Tab eventKey={st.state.id} key={st.state.id} title={st.state.name}>
               <SummaryTab
                 table={dataTable}
                 state={st.state}
@@ -66,7 +62,15 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [dataTable, summaryTables, uistate, activeTab, userDefinedStates, stateSequence, dispatch]);
+  }, [
+    dataTable,
+    summaryTables,
+    uistate,
+    activeTab,
+    userDefinedStates,
+    stateSequence,
+    dispatch,
+  ]);
 }
 
 // This is pretty much copied from this example:
@@ -120,13 +124,11 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           className="tr"
         >
           {row.cells.map((cell) => {
-
             const currentValue = cell.value;
 
-            if(currentValue == "true" || currentValue == "false"){
-
-              cell.value = currentValue.charAt(0).toUpperCase()
-              + currentValue.slice(1);
+            if (currentValue === "true" || currentValue === "false") {
+              cell.value =
+                currentValue.charAt(0).toUpperCase() + currentValue.slice(1);
 
               // This is where each cell gets rendered.
               return (
@@ -134,8 +136,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
                   {cell.render("Cell")}
                 </div>
               );
-            }
-            else {
+            } else {
               // This is where each cell gets rendered.
               return (
                 <div {...cell.getCellProps()} className="td">
@@ -160,7 +161,10 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
               className="tr table-header"
             >
               {headerGroup.headers.map((column) => (
-                <div {...column.getHeaderProps()} className={"th " + column.render('Header').replace(/\s/g, '')}>
+                <div
+                  {...column.getHeaderProps()}
+                  className={"th " + column.render("Header").replace(/\s/g, "")}
+                >
                   {column.render("Header")}
                 </div>
               ))}

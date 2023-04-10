@@ -25,6 +25,7 @@ import { UploadLayoutWidget } from "./upload-layout.js";
 import { SquareIcon, CircleIcon, GearIcon } from "./icons.js";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
+import { EditBox } from "./edit-box.js";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 
@@ -70,6 +71,7 @@ export function VizView({
   dimensions,
   siteLayout,
   setContainerHeight,
+  dataRecorder,
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
@@ -103,17 +105,34 @@ export function VizView({
     [vizData, currentTransform]
   );
 
+  let reverseTransform = useMemo(() => {
+    if (!currentTransform) {
+      return null;
+    }
+    let revTransform = new EditBox(
+      currentTransform.currentParams,
+      currentTransform.initialParams
+    );
+    return (xy) => revTransform.transformPoint(xy);
+  }, [currentTransform]);
+
   // Attach zoom listeners
   useEffect(() => {
     if (!svg) return;
-    let reset = attachZoomListeners(d3.select(svg), d3.select(zoomG()));
+    let reset = !dataRecorder
+      ? attachZoomListeners(d3.select(svg), d3.select(zoomG()))
+      : () => {};
     setResetZoom(() => reset);
   }, [svg]);
 
   // Reset the zoom/pan if we get new data.
   useEffect(() => {
+    if (!svg) return;
     resetZoom();
-  }, [svg, vizData, siteLayout]);
+    d3.select(zoomG()).on("click", (e) => {
+      dataRecorder && dataRecorder.addPoint(reverseTransform(d3.pointer(e)));
+    });
+  }, [svg, vizData, siteLayout, currentTransform, dataRecorder]);
 
   // Draw/redraw the data.
   // TODO: consider optimizing by redrawing the data points and path separately.
