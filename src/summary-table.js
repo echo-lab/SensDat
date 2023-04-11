@@ -40,6 +40,8 @@ const AGG_SUMMARY = Object.freeze({
 
 const TIME_COLS = [SUMMARY_COLS.START_TIME, SUMMARY_COLS.END_TIME];
 
+const NO_STATES_STRING = "<None>";
+
 export function TotalSummaryTab({
   table,
   states,
@@ -199,9 +201,13 @@ export function AllStatesSummaryTable({
   let getClassForPeriodCell = (idx) => {
     return hoverPeriod && idx === hoverRows[0] ? "highlighted-row" : "";
   };
-  let getClassForNormalCell = (idx) => {
+
+  let getClassForNormalCell = (idx, contents) => {
+    let res = [];
     let [lo, hi] = hoverRows;
-    return lo <= idx && idx <= hi ? "highlighted-row" : "";
+    if (lo <= idx && idx <= hi) res.push("highlighted-row");
+    if (contents === NO_STATES_STRING) res.push("faded");
+    return res.join(" ");
   };
 
   let handleDefineSequence = () => setEditingSequence(true);
@@ -252,10 +258,7 @@ export function AllStatesSummaryTable({
         </thead>
         <tbody>
           {rows.map((row, idx) => (
-            <tr
-              role="row"
-              key={idx}
-            >
+            <tr role="row" key={idx}>
               {stateSequence ? (
                 (idx === 0 ||
                   seqNums[idx].seqNum !== seqNums[idx - 1].seqNum) && (
@@ -283,7 +286,7 @@ export function AllStatesSummaryTable({
                   <td
                     role="cell"
                     key={colIdx}
-                    className={getClassForNormalCell(idx)}
+                    className={getClassForNormalCell(idx, row[accessor])}
                     onMouseEnter={() => onMouseEnterRow(row, idx)}
                     onMouseLeave={onMouseLeave}
                   >
@@ -329,11 +332,11 @@ export function SummaryTable({
               )}
             </th>
           ))}
-          <th role="columnheader" className="add-col">
+          {/* <th role="columnheader" className="add-col">
             <Button variant="outline-primary" size="sm" id="new-agg-col">
               +
             </Button>
-          </th>
+          </th> */}
         </tr>
       </thead>
       <tbody>
@@ -371,7 +374,7 @@ export function SummaryTable({
                 );
               }
             })}
-            <td role="cell" className="add-col"></td>
+            {/* <td role="cell" className="add-col"></td> */}
           </tr>
         ))}
       </tbody>
@@ -400,11 +403,11 @@ function AggregateSummary({ aggSummaryData }) {
               {name}
             </th>
           ))}
-          <th role="columnheader" className="add-col">
+          {/* <th role="columnheader" className="add-col">
             <Button variant="outline-primary" size="sm" id="new-total-agg-col">
               +
             </Button>
-          </th>
+          </th> */}
         </tr>
       </thead>
       <tbody>
@@ -414,7 +417,7 @@ function AggregateSummary({ aggSummaryData }) {
               {aggSummaryData[key]}
             </td>
           ))}
-          <td role="cell" className="add-col"></td>
+          {/* <td role="cell" className="add-col"></td> */}
         </tr>
       </tbody>
     </Table>
@@ -448,7 +451,7 @@ function groupByStates(table, states) {
     let trueStates = states
       .filter((s) => row[s.id] === "true")
       .map((s) => s.name);
-    return trueStates.length > 0 ? trueStates.join(", ") : "<None>";
+    return trueStates.length > 0 ? trueStates.join(", ") : NO_STATES_STRING;
   };
 
   let r0 = table.rows[0];
