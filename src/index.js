@@ -21,6 +21,7 @@ import { ExportButton } from "./json_to_csv";
 import { ClassExerciseLoader } from "./preload/class-exercise";
 import { NavDropdown } from "react-bootstrap";
 import { DataRecorder } from "./data-recorder";
+import { SequenceStatePane } from "./sequence-state-pane";
 
 const MIN_HEIGHT = 700;
 
@@ -67,7 +68,6 @@ function App() {
     state.defaultDataTransform,
     state.currentDataTransform,
     state.siteLayout,
-    state.stateSequence,
   ]);
 
   // Allow printing the current state for debugging.
@@ -105,8 +105,7 @@ function App() {
     vizTimespan: state.vizState.timespan,
     shownPoints: state.vizState.shownPoints,
     useShownPoints:
-      state.activeTab === "BASE_TABLE" &&
-      state.uiState !== UIState.CreateCompound,
+      state.activeTab === "BASE_TABLE" && state.uiState.shouldShowPoints(),
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
@@ -124,13 +123,18 @@ function App() {
     dataTable: state.dataTable,
     uistate: state.uiState,
     summaryTables: state.summaryTables,
-    stateSequence: state.stateSequence,
     activeTab: state.activeTab,
     userDefinedStates: state.userDefinedStates,
     dispatch,
   };
 
   let compoundStatePaneProps = {
+    userDefinedStates: state.userDefinedStates,
+    dataTable: state.dataTable,
+    dispatch,
+  };
+
+  let createSequenceProps = {
     userDefinedStates: state.userDefinedStates,
     dataTable: state.dataTable,
     dispatch,
@@ -169,6 +173,16 @@ function App() {
     </Navbar>
   );
 
+  let renderRightPane = (uistate) => {
+    if (uistate === UIState.CreateCompound) {
+      return <CompoundStatePane {...compoundStatePaneProps} />;
+    } else if (uistate === UIState.CreateSequence) {
+      return <SequenceStatePane {...createSequenceProps} />;
+    } else {
+      return <DataView {...dataViewProps} />;
+    }
+  };
+
   return (
     <>
       <PageHeader />
@@ -196,11 +210,7 @@ function App() {
               propagateDimensions={true}
               propagateDimensionsRate={200}
             >
-              {state.uiState !== UIState.CreateCompound ? (
-                <DataView {...dataViewProps} />
-              ) : (
-                <CompoundStatePane {...compoundStatePaneProps} />
-              )}
+              {renderRightPane(state.uiState)}
             </ReflexElement>
           </ReflexContainer>
         </div>

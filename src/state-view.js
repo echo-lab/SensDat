@@ -21,9 +21,9 @@ export function StateView({
 }) {
   let handleCreateRegion = () =>
     dispatch(actions.startCreateRegion({ dispatch }));
-  let handleCreateTimespan = () => {};
   let handleCreateCompoundState = () =>
     dispatch(actions.startCreateCompoundState());
+  let handleCreateSequence = () => dispatch(actions.startCreateSequence());
   // maybeDeleteState contains the state which is being deleted (the user has to confirm).
   let [maybeDeleteState, setMaybeDeleteState] = useState(null);
 
@@ -45,14 +45,17 @@ export function StateView({
             disabled={uiState.busy()}
           >
             <Dropdown.Item onClick={handleCreateRegion}>Region</Dropdown.Item>
-            <Dropdown.Item onClick={handleCreateTimespan}>
-              Timespan
-            </Dropdown.Item>
             <Dropdown.Item
               onClick={handleCreateCompoundState}
               disabled={userDefinedStates.length < 2}
             >
               Combination
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={handleCreateSequence}
+              disabled={userDefinedStates.length === 0}
+            >
+              Sequence
             </Dropdown.Item>
           </DropdownButton>
           {userDefinedStates.map((s) => (

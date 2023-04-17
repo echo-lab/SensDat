@@ -14,5 +14,9 @@
 }
 
 .faded {
-  color: grey;
+  color: rgb(213, 213, 213);
+}
+
+.bolded {
+  font-weight: bold;
 }

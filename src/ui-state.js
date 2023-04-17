@@ -3,11 +3,17 @@ export class UIState {
   static Default = new UIState("default");
   static CreateRegion = new UIState("create-region");
   static CreateCompound = new UIState("create-compound");
+  static CreateSequence = new UIState("create-sequence");
   static MoveDataPoints = new UIState("move-data-points");
   static UploadLayout = new UIState("upload-layout");
 
   constructor(name) {
     this.name = name;
+  }
+
+  // Should we show the data points on the viz view? Answer should be no if the table isn't showing.
+  shouldShowPoints() {
+    return ![UIState.CreateCompound, UIState.CreateSequence].includes(this);
   }
 
   // i.e., are we currently doing some action that prevents us from starting another one?

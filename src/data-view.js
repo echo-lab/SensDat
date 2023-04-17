@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from "react";
-import styled from "styled-components";
+import React, { useCallback, useMemo } from "react";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
@@ -7,7 +6,7 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 
 import { actions } from "./app-state.js";
-import { SummaryTab, TotalSummaryTab } from "./summary-table.js";
+import { SummaryTab } from "./summary-table.js";
 import { TableStyles } from "./utils.js";
 
 import "./styles/data-view.css";
@@ -15,10 +14,8 @@ import "./styles/data-view.css";
 export function DataView({
   dataTable,
   summaryTables,
-  uistate,
   activeTab,
   userDefinedStates,
-  stateSequence,
   dispatch,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
@@ -41,20 +38,12 @@ export function DataView({
               showPointsFn={showPointsFn}
             />
           </Tab>
-          <Tab eventKey="ALL_SUMMARY" title="Summary">
-            <TotalSummaryTab
-              table={dataTable}
-              states={userDefinedStates}
-              highlightFn={highlightFn}
-              dispatch={dispatch}
-              stateSequence={stateSequence}
-            />
-          </Tab>
           {summaryTables.map((st) => (
             <Tab eventKey={st.state.id} key={st.state.id} title={st.state.name}>
               <SummaryTab
                 table={dataTable}
                 state={st.state}
+                userDefinedStates={userDefinedStates}
                 highlightFn={highlightFn}
               />
             </Tab>
@@ -65,10 +54,8 @@ export function DataView({
   }, [
     dataTable,
     summaryTables,
-    uistate,
     activeTab,
     userDefinedStates,
-    stateSequence,
     dispatch,
   ]);
 }

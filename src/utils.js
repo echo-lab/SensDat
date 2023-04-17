@@ -6,12 +6,14 @@ import styled from "styled-components";
 import { EditBox } from "./edit-box.js";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
+import { SequenceState } from "./states/sequence-state.js";
 
 // This is slightly sad.
 const stateFactories = [
   (o) => EllipseRegion.fromObject(o),
   (o) => CompoundState.fromObject(o),
   (o) => RectRegion.fromObject(o),
+  (o) => SequenceState.fromObject(o),
 ];
 
 // This assumes that the stateFactories will return null if the object isn't
@@ -39,7 +41,9 @@ export function uid() {
 export function getDependentStates(state, states) {
   let deps = states.filter(
     (s) =>
-      s instanceof CompoundState && s.states.some((dep) => dep.id === state.id)
+      (s instanceof CompoundState &&
+        s.states.some((dep) => dep.id === state.id)) ||
+      (s instanceof SequenceState && s.states.includes(state.id))
   );
   let res = [...deps];
   deps.forEach((dep) => res.push(...getDependentStates(dep, states)));
@@ -79,7 +83,7 @@ export function millisToTimeString(ms) {
 // Returns a list corresponding to each element in seq, labelling it with
 // `seqNum', i.e., which sequence its part of, and
 // `nextSeq', i.e., how many entries ahead do we need to skip to get to a different seqNum.
-// `prevSeqNum', i.e., how many before do we need to skip to get a different seqNum.
+// `prevSeq', i.e., how many before do we need to skip to get a different seqNum.
 export function getSequenceInfo(seq, targetSeq) {
   let res = seq.map((r) => ({ seqNum: -1, nextSeq: 1, prevSeq: 1 }));
   let cur = 1;
