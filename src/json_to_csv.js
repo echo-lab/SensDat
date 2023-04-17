@@ -3,9 +3,7 @@ import { NavDropdown } from "react-bootstrap";
 import {
   getBreakdownByTF,
   getAggregateSummaryData,
-  getBreakdownByAllStates,
 } from "./summary-table.js";
-import { getSequenceInfo } from "./utils.js";
 // The export button located on page header
 // TODOs:
 // 1. Implement save/load function
@@ -13,17 +11,11 @@ export function ExportButton({
   activeTab,
   dataTable,
   summaryTables,
-  stateSequence,
   userDefinedStates,
 }) {
   // Use export-from-json package, create a download of csv file
   const ExportCSV = (e) => {
     const accessor = activeTab;
-
-    if (activeTab === "ALL_SUMMARY") {
-      exportTotalSummaryTable({ dataTable, userDefinedStates, stateSequence });
-      return;
-    }
 
     const exportType = "csv";
     const states = dataTable.cols.filter((item) => item.type === "state");
@@ -115,38 +107,4 @@ export function ExportButton({
   );
 }
 
-function exportTotalSummaryTable({
-  dataTable,
-  userDefinedStates,
-  stateSequence,
-}) {
-  if (userDefinedStates.length === 0) return;
-
-  let [cols, rows] = getBreakdownByAllStates(dataTable, userDefinedStates);
-
-  let seqNums;
-  if (stateSequence) {
-    seqNums = getSequenceInfo(
-      rows.map((r) => r.STATE),
-      stateSequence.seq
-    );
-  }
-
-  let data = rows.map((row, idx) => {
-    let res = {};
-    if (stateSequence) {
-      res[stateSequence.name] =
-        seqNums[idx].seqNum >= 0 ? seqNums[idx].seqNum : "";
-    }
-    for (let { Header, accessor } of cols) {
-      res[Header] = row[accessor];
-    }
-    return res;
-  });
-
-  exportFromJSON({
-    data,
-    fileName: "SUMMARY_TABLE",
-    exportType: "csv",
-  });
-}
+// TODO: Add a separate function for sequence states -.-

@@ -37,8 +37,8 @@ export class RectRegion {
     );
   }
 
-  getValues(rows, transform) {
-    return rows.map((row) =>
+  getValues(table, transform) {
+    return table.rows.map((row) =>
       String(
         this.#containsPoint(
           ...transform.transformPoint([row.Longitude, row.Latitude])
@@ -102,8 +102,8 @@ export class EllipseRegion {
     );
   }
 
-  getValues(rows, transform) {
-    return rows.map((row) =>
+  getValues(table, transform) {
+    return table.rows.map((row) =>
       String(
         this.#containsPoint(
           ...transform.transformPoint([row.Longitude, row.Latitude])

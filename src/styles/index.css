@@ -143,7 +143,7 @@ div .tr:hover:not(.table-header) {
   background-color: #0062ff2e;
 }
 
-.highlighted-row {
+.highlighted {
   background-color: #30cf3033 !important;
 }
 
@@ -156,4 +156,13 @@ div .tr:hover:not(.table-header) {
 .y-scroll-modal {
   max-height: 600px;
   overflow-y: scroll;
+}
+
+.toggle-butt:hover {
+  background-color: #d4d4d4;
+}
+
+.toggle-butt.btn-success {
+  background-color: #a0ed8d !important;
+  color: black !important;
 }

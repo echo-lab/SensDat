@@ -142,7 +142,7 @@ export class DataTable {
 
     // Get the values for our new state. Note: this can't necessarily be done
     // row-by-row (e.g., for compound states).
-    let values = state.getValues(result.rows, transform);
+    let values = state.getValues(result, transform);
 
     // Filter out values for the old temp state (if they exist), and populate w/
     // the new one.
