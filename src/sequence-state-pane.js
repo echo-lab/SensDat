@@ -15,6 +15,7 @@ import {
 } from "./summary-table.js";
 import { TableStyles, hhmmss } from "./utils.js";
 import { SequenceState } from "./states/sequence-state.js";
+import { Next } from "react-bootstrap/esm/PageItem.js";
 
 const TIME_COLS = ["START_TIME", "END_TIME"];
 
@@ -200,10 +201,10 @@ function ChooseSequenceStep({
       <Row className="text-center mt-3 mb-3">
         <hr />
         <Col />
-        <Col sm={7}>
+        <Col sm={6}>
           <h5 className="mt-3">Drag your mouse to select a sequence</h5>
         </Col>
-        <Col sm={1}>
+        <Col>
           <Button
             className="mt-3 mx-3"
             variant="primary"
@@ -214,7 +215,6 @@ function ChooseSequenceStep({
             Next
           </Button>
         </Col>
-        <Col />
       </Row>
       <Row
         className="text-center"
