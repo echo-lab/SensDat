@@ -1,7 +1,6 @@
 import { useState, useMemo, forwardRef } from "react";
 
 import Table from "react-bootstrap/Table";
-import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 import Container from "react-bootstrap/Container";
 
@@ -230,7 +229,7 @@ function AggregateSummary({ aggSummaryData }) {
 }
 
 export function getAggregateSummaryData(summaryBreakdown) {
-  let [_, breakdownRows] = summaryBreakdown;
+  let breakdownRows = summaryBreakdown[1];
   // Change the format
   let rows = breakdownRows.map((r) => ({
     state: r[SUMMARY_COLS.STATE_VALUE] === true,
