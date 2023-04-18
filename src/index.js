@@ -59,7 +59,14 @@ function App() {
   // TODO: Change dependency on state.dataTable to something more specific so
   // we don't save temporary states, e.g., in the middle of creating a region.
   useEffect(() => {
-    window.localStorage["state"] = AppState.serialize(state);
+    window.localStorage["state"] = AppState.serialize({
+      dataTable: state.dataTable,
+      summaryTables: state.summaryTables,
+      userDefinedStates: state.userDefinedStates,
+      defaultDataTransform: state.defaultDataTransform,
+      currentDataTransform: state.currentDataTransform,
+      siteLayout: state.siteLayout,
+    });
     console.log("saved state");
   }, [
     state.dataTable,
@@ -89,7 +96,7 @@ function App() {
       document.addEventListener("keydown", onKeypress);
       return () => document.removeEventListener("keydown", onKeypress);
     },
-    /*dependencies=*/ [state]
+    /*dependencies=*/ [state, dataRecorder]
   );
 
   let stateViewProps = {

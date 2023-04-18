@@ -4,7 +4,7 @@ import { DataTable } from "../data-table";
 import { actions } from "../app-state";
 import { SiteLayout } from "../upload-layout";
 
-const MAP1 = `${process.env.PUBLIC_URL}/class-layout-v1.png`;
+// const MAP1 = `${process.env.PUBLIC_URL}/class-layout-v1.png`;
 const MAP2 = `${process.env.PUBLIC_URL}/class-layout-v2.png`;
 
 const DATA1 = `${process.env.PUBLIC_URL}/class_simulated_data.csv`;

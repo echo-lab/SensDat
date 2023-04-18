@@ -15,7 +15,6 @@ import {
 } from "./summary-table.js";
 import { TableStyles, hhmmss } from "./utils.js";
 import { SequenceState } from "./states/sequence-state.js";
-import { Next } from "react-bootstrap/esm/PageItem.js";
 
 const TIME_COLS = ["START_TIME", "END_TIME"];
 
