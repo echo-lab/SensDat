@@ -20,19 +20,31 @@ import * as AppState from "./app-state.js";
 import { ExportButton } from "./json_to_csv";
 const MIN_HEIGHT = 700;
 
+// This is the main place where everything starts. If you are doing any 
+// development on this project, this is a good place to start to see how 
+// everything is being rendered.
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
   const [uploadActive, setUploadActive] = useState(false);
   const [containerHeight, setContainerHeight] = useState(MIN_HEIGHT);
 
   // Load the previous data if it exists. Else, prompt the user for an upload.
+  // Currently takes advantage of using localstorage to store the most recent
+  // instance of the site.
   useEffect(
     () => {
+
+      // Stores the last instance of the site from local storage.
       let serializedState = window.localStorage["state"];
+
+      // If there is not a last instance, it prompts the user to upload data.
       if (!serializedState) {
         setUploadActive(true);
         return;
       }
+
+      // If there is a last instance, than it deserializes it and displays it 
+      // on the site.
       AppState.deserialize(serializedState).then((deserializedState) =>
         dispatch(AppState.actions.loadState(deserializedState))
       );
