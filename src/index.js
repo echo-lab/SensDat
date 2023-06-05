@@ -14,6 +14,7 @@ import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { UploadDataWidget } from "./upload-data.js";
 import { UserStudyLoader } from "./user-study";
+import { ConditionStatePane } from "./condition-state-pane.js"
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
 import * as AppState from "./app-state.js";
@@ -88,7 +89,8 @@ function App() {
     shownPoints: state.vizState.shownPoints,
     useShownPoints:
       state.activeTab === "BASE_TABLE" &&
-      state.uiState !== UIState.CreateCompound,
+      state.uiState !== UIState.CreateCompound &&
+      state.uiState !== UIState.CreateCondition,
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
@@ -114,6 +116,12 @@ function App() {
     dataTable: state.dataTable,
     dispatch,
   };
+
+  let conditionStatePaneProps = {
+    userDefinedStates: state.userDefinedStates,
+    dataTable: state.dataTable,
+    dispatch,
+  }
 
   let uploadDataProps = {
     onCancel: state.dataTable ? () => setUploadActive(false) : () => {},
@@ -171,10 +179,14 @@ function App() {
               propagateDimensionsRate={200}
             >
               {state.uiState !== UIState.CreateCompound ? (
-                <DataView {...dataViewProps} />
+                state.uiState !== UIState.CreateCondition ? (
+                  <DataView {...dataViewProps}/>) : (
+                  <ConditionStatePane {...conditionStatePaneProps} />
+                ) 
               ) : (
                 <CompoundStatePane {...compoundStatePaneProps} />
               )}
+
             </ReflexElement>
           </ReflexContainer>
         </div>

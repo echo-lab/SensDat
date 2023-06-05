@@ -4,7 +4,7 @@ import { EllipseRegion, RectRegion } from "./states/region.js";
 import { CompoundState } from "./states/compound-state.js";
 import styled from "styled-components";
 import { EditBox } from "./edit-box.js";
-
+import { ConditionState } from "./states/condition-state.js";
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 
 // This is slightly sad.
@@ -12,6 +12,7 @@ const stateFactories = [
   (o) => EllipseRegion.fromObject(o),
   (o) => CompoundState.fromObject(o),
   (o) => RectRegion.fromObject(o),
+  (o) => ConditionState.fromObject(o),
 ];
 
 // This assumes that the stateFactories will return null if the object isn't

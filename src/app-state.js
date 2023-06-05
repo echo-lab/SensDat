@@ -391,6 +391,30 @@ actionHandlers["highlightPointsForState"] = (state, userState) => ({
   },
 });
 
+actionHandlers["startCreateConditionState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.CreateCondition,
+  }
+}
+
+actionHandlers["cancelCreateConditionState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+  }
+}
+
+actionHandlers["CreateConditionState"] = (state, conditionState) => {
+  return {
+    ...state,
+    userDefinedStates: state.userDefinedStates.concat(conditionState),
+    dataTable: state.dataTable
+      .withTempState(conditionState, state.currentDataTransform)
+      .withCommittedTempState(),
+    uiState: UIState.Default,
+  }
+}
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
 // which takes a payload and returns an action object which can be used w/ React's `dispatch`
 // function. So: you can do something like: dispatch(actions.loadTable(myTable));

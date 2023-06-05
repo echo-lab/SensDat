@@ -60,7 +60,7 @@ export function DataView({
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
+export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -112,7 +112,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
             const currentValue = cell.value;
 
-            if(currentValue == "true" || currentValue == "false"){
+            if(currentValue === "true" || currentValue === "false"){
 
               cell.value = currentValue.charAt(0).toUpperCase()
               + currentValue.slice(1);

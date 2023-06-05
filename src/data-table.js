@@ -65,6 +65,16 @@ export class DataTable {
     this.sortColumns();
   }
 
+  static fromRowsCols(rows,cols) {
+    let res = new DataTable();
+    res.rows = rows;
+    res.cols = cols;
+
+    res.stateToTrueRanges = {};
+    res.cacheStateData();
+    return res;
+  }
+
   // Is the table ready to be used in the UI? i.e., does it have a cleaned time column?
   isReady() {
     return !!this.getColByType(COL_TYPES.T_CLEAN);

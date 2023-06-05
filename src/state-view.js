@@ -22,6 +22,9 @@ export function StateView({
   let handleCreateRegion = () =>
     dispatch(actions.startCreateRegion({ dispatch }));
   let handleCreateTimespan = () => {};
+  let handleCreateCondition = () => {
+    dispatch(actions.startCreateConditionState({ dispatch }));
+  };
   let handleCreateCompoundState = () =>
     dispatch(actions.startCreateCompoundState());
   // maybeDeleteState contains the state which is being deleted (the user has to confirm).
@@ -48,6 +51,7 @@ export function StateView({
             <Dropdown.Item onClick={handleCreateTimespan}>
               Timespan
             </Dropdown.Item>
+            <Dropdown.Item onClick={handleCreateCondition}>Condition</Dropdown.Item>
             <Dropdown.Item
               onClick={handleCreateCompoundState}
               disabled={userDefinedStates.length < 2}
