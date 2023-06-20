@@ -22,7 +22,7 @@ import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
 import { UploadLayoutWidget } from "./upload-layout.js";
-import { SquareIcon, CircleIcon, GearIcon } from "./icons.js";
+import { BsSquare,BsCircle,BsGearFill  } from "react-icons/bs";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 import { EditBox } from "./edit-box.js";
@@ -324,7 +324,7 @@ function SettingsWidgets({
           id="dropdown-basic"
           disabled={uiState.busy()}
         >
-          <GearIcon />
+          <BsGearFill />
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
@@ -561,7 +561,7 @@ function RegionShapeSelector({ svgWidth, createRegionInteraction }) {
           createRegionInteraction.useEllipse();
         }}
       >
-        <CircleIcon />
+        <BsCircle />
       </ListGroup.Item>
       <ListGroup.Item
         variant="light"
@@ -572,7 +572,7 @@ function RegionShapeSelector({ svgWidth, createRegionInteraction }) {
           createRegionInteraction.useRect();
         }}
       >
-        <SquareIcon />
+        <BsSquare />
       </ListGroup.Item>
     </ListGroup>
   );
