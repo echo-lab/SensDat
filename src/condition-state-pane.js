@@ -32,6 +32,9 @@ export function ConditionStatePane({
         dispatch(actions.CreateConditionState(new ConditionState(expressionValue, filteredData.rows, dataTable.rows)));
     }
 
+    const onSelect = (buttonText) => {
+        setExpressionValue(pre => pre + buttonText);
+    }
     // Dependencies of AutoCompleteBox
     const AutoCompleteBoxProps = {
         dataTable,
@@ -47,6 +50,7 @@ export function ConditionStatePane({
     let highlightFn = (points) => dispatch(actions.highlightPoints(points));
     let showPointsFn = (pointsRange) => dispatch(actions.setShownPoints(pointsRange));
 
+    const options = dataTable.cols.map((x) => x.displayName);
     return(
         <Container>
             <h2 className="text-center"> Create Condition State </h2>
@@ -54,7 +58,7 @@ export function ConditionStatePane({
                 <Row>
                     <hr />
                     <Form>
-                        A selection Bar should be here
+                        {options.map((i)=>(<><Button variant="primary" key={i} size='sm' onClick={() => onSelect(i)}>{i}</Button>{' '}</>))}
                         <AutoCompleteBox {...AutoCompleteBoxProps}/>
                         <hr/>
                         <Form.Text className="text-muted">
@@ -120,7 +124,7 @@ function AutoCompleteBox({
     // Define the suggestions to be current columns and states, and operators
     let suggestions = dataTable.cols.map((x) => {
         return x.displayName;
-    }).concat(["===",">","<",">=","<=","+","-","*","/","&&","||","!","!=="]);
+    });
 
     // this handles the performance of Response Text and suggestions
     const handleChange = (event) => {
@@ -171,12 +175,20 @@ function AutoCompleteBox({
         setShowSuggestion(false);
     };
 
-    
+    const handleKeyDown = (e) =>{
+        if (e.key === "Tab"){
+            e.preventDefault();
+            if (showSuggestion){
+                handleSelectSuggestion();
+            }
+        }
+    }
 
     return(
         <div>
         <Form.Control
             type="text"
+            onKeyDown={handleKeyDown}
             value={expressionValue}
             onChange={handleChange}
             placeholder="Type JS boolean expression here..."
@@ -238,7 +250,13 @@ export const filterList= (list, expression, allowedIdentifiers) => {
                 }
             case 'Identifier':
                 if (!allowedIdentifiers.includes(node.name)) {
-                throw new Error(`Unknown identifier: ${node.name}`);
+                    const match = allowedIdentifiers.find(i => i.toLowerCase() === node.name.toLowerCase());
+                    if (match){
+                        node.name = match;
+                    }
+                    else {
+                        throw new Error(`Unknown identifier: ${node.name}`);
+                    }
                 }
                 return context[node.name];
             case 'Literal':
