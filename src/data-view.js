@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from "react";
-import styled from "styled-components";
+import React, { useCallback, useEffect, useMemo, useRef, forwardRef } from "react";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
@@ -55,8 +54,26 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [dataTable, summaryTables, uistate, activeTab, dispatch]);
+  }, [dataTable, summaryTables, activeTab, dispatch]);
 }
+
+const IndeterminateCheckbox = forwardRef(({ indeterminate, ...rest }, ref) => {
+  const defaultRef = useRef();
+  const resolvedRef = ref || defaultRef;
+
+  useEffect(() => {
+    resolvedRef.current.indeterminate = indeterminate;
+  }, [resolvedRef, indeterminate]);
+
+  return (
+    <div class="cb action">
+      <label>
+        <input type="checkbox" ref={resolvedRef} {...rest} />
+        <span>All</span>
+      </label>
+    </div>
+  );
+});
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
@@ -79,6 +96,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
     totalColumnsWidth,
     prepareRow,
     allColumns,
+    getToggleHideAllColumnsProps
   } = useTable(
     {
       columns,
@@ -113,7 +131,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
             const currentValue = cell.value;
 
-            if(currentValue == "true" || currentValue == "false"){
+            if(currentValue === "true" || currentValue === "false"){
 
               cell.value = currentValue.charAt(0).toUpperCase()
               + currentValue.slice(1);
@@ -142,6 +160,9 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
   return (
     <TableStyles>
+      <div>
+          <IndeterminateCheckbox {...getToggleHideAllColumnsProps()} />
+        </div>
               {allColumns.map((column) => (
           <div class="cb action" key={column.id}>
             <label>
