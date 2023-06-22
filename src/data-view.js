@@ -78,6 +78,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
     rows,
     totalColumnsWidth,
     prepareRow,
+    allColumns,
   } = useTable(
     {
       columns,
@@ -141,6 +142,14 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
   return (
     <TableStyles>
+              {allColumns.map((column) => (
+          <div class="cb action" key={column.id}>
+            <label>
+              <input type="checkbox" {...column.getToggleHiddenProps()} />{" "}
+              <span>{column.Header}</span>
+            </label>
+          </div>
+        ))}
       <div {...getTableProps()} className="table">
         <div>
           {headerGroups.map((headerGroup) => (
@@ -156,7 +165,6 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
             </div>
           ))}
         </div>
-
         <div {...getTableBodyProps()}>
           <FixedSizeList
             height={500}
