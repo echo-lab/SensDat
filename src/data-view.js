@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  forwardRef,
+} from "react";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
@@ -58,6 +64,29 @@ export function DataView({
   }, [dataTable, summaryTables, activeTab, userDefinedStates, dispatch, uiState]);
 }
 
+const IndeterminateCheckbox = forwardRef(({ indeterminate, ...rest }, ref) => {
+  const defaultRef = useRef();
+  const resolvedRef = ref || defaultRef;
+
+  useEffect(() => {
+    resolvedRef.current.indeterminate = indeterminate;
+  }, [resolvedRef, indeterminate]);
+
+  return (
+    <div className="columnButton">
+      <label className="columnButtonLabel">
+        <input
+          className="columnButtonInput"
+          type="checkbox"
+          ref={resolvedRef}
+          {...rest}
+        />
+        <div className="columnButtonText">All</div>
+      </label>
+    </div>
+  );
+});
+
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
 export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
@@ -78,6 +107,8 @@ export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
     rows,
     totalColumnsWidth,
     prepareRow,
+    allColumns,
+    getToggleHideAllColumnsProps,
   } = useTable(
     {
       columns,
@@ -138,6 +169,21 @@ export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
   return (
     <TableStyles>
+      <div className="columnButtonContainer">
+        <IndeterminateCheckbox {...getToggleHideAllColumnsProps()} />
+        {allColumns.map((column) => (
+          <div className="columnButton" key={column.id}>
+            <label className="columnButtonLabel">
+              <input
+                className="columnButtonInput"
+                type="checkbox"
+                {...column.getToggleHiddenProps()}
+              />
+              <div className="columnButtonText">{column.Header}</div>
+            </label>
+          </div>
+        ))}
+      </div>
       <div {...getTableProps()} className="table">
         <div>
           {headerGroups.map((headerGroup) => (
