@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, forwardRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  forwardRef,
+} from "react";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
@@ -66,10 +72,15 @@ const IndeterminateCheckbox = forwardRef(({ indeterminate, ...rest }, ref) => {
   }, [resolvedRef, indeterminate]);
 
   return (
-    <div class="cb action">
-      <label>
-        <input type="checkbox" ref={resolvedRef} {...rest} />
-        <span>All</span>
+    <div className="columnButton">
+      <label className="columnButtonLabel">
+        <input
+          className="columnButtonInput"
+          type="checkbox"
+          ref={resolvedRef}
+          {...rest}
+        />
+        <div className="columnButtonText">All</div>
       </label>
     </div>
   );
@@ -96,7 +107,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
     totalColumnsWidth,
     prepareRow,
     allColumns,
-    getToggleHideAllColumnsProps
+    getToggleHideAllColumnsProps,
   } = useTable(
     {
       columns,
@@ -128,13 +139,11 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           className="tr"
         >
           {row.cells.map((cell) => {
-
             const currentValue = cell.value;
 
-            if(currentValue === "true" || currentValue === "false"){
-
-              cell.value = currentValue.charAt(0).toUpperCase()
-              + currentValue.slice(1);
+            if (currentValue === "true" || currentValue === "false") {
+              cell.value =
+                currentValue.charAt(0).toUpperCase() + currentValue.slice(1);
 
               // This is where each cell gets rendered.
               return (
@@ -142,8 +151,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
                   {cell.render("Cell")}
                 </div>
               );
-            }
-            else {
+            } else {
               // This is where each cell gets rendered.
               return (
                 <div {...cell.getCellProps()} className="td">
@@ -160,17 +168,21 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
   return (
     <TableStyles>
-      <div>
-          <IndeterminateCheckbox {...getToggleHideAllColumnsProps()} />
-        </div>
-              {allColumns.map((column) => (
-          <div class="cb action" key={column.id}>
-            <label>
-              <input type="checkbox" {...column.getToggleHiddenProps()} />{" "}
-              <span>{column.Header}</span>
+      <div className="columnButtonContainer">
+        <IndeterminateCheckbox {...getToggleHideAllColumnsProps()} />
+        {allColumns.map((column) => (
+          <div className="columnButton" key={column.id}>
+            <label className="columnButtonLabel">
+              <input
+                className="columnButtonInput"
+                type="checkbox"
+                {...column.getToggleHiddenProps()}
+              />
+              <div className="columnButtonText">{column.Header}</div>
             </label>
           </div>
         ))}
+      </div>
       <div {...getTableProps()} className="table">
         <div>
           {headerGroups.map((headerGroup) => (
@@ -179,7 +191,10 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
               className="tr table-header"
             >
               {headerGroup.headers.map((column) => (
-                <div {...column.getHeaderProps()} className={"th " + column.render('Header').replace(/\s/g, '')}>
+                <div
+                  {...column.getHeaderProps()}
+                  className={"th " + column.render("Header").replace(/\s/g, "")}
+                >
                   {column.render("Header")}
                 </div>
               ))}
