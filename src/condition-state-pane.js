@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
+import './styles/condition-state-pane.css';
 
 import Container from "react-bootstrap/Container";
 import Form from "react-bootstrap/Form";
@@ -7,7 +8,9 @@ import Row from "react-bootstrap/Row";
 import { Overlay, Tooltip } from 'react-bootstrap';
 import { actions } from "./app-state.js";
 import { ConditionState } from "./states/condition-state.js";
-import { VirtualizedTable } from "./data-view.js";
+import { useTable, useBlockLayout } from "react-table";
+import { FixedSizeList } from "react-window";
+import { TableStyles } from "./utils.js";
 import { DataTable } from "./data-table.js";
 const esprima = require('esprima');
 
@@ -17,11 +20,11 @@ export function ConditionStatePane({
     dispatch,
 }){
     const [expressionValue, setExpressionValue] = useState('');
-    const [response, setResponse] = useState("");
+    const [response, setResponse] = useState("NULL");
     const [ready, setReady] = useState(false);
-
-    // the filteredData contains only the rows that fits the input condition
-    const [filteredData, setFilteredData] = useState(dataTable);
+    const [shortTableView, setShortTableView] = useState(false);
+    // the filteredData is a Datatable that contains only the rows that fits the input condition
+    const [filteredData, setFilteredData] = useState([]);
     
     const onCancel = () => {
         dispatch(actions.cancelCreateConditionState(null));
@@ -35,20 +38,25 @@ export function ConditionStatePane({
     const onSelect = (buttonText) => {
         setExpressionValue(pre => pre + buttonText);
     }
-    // Dependencies of AutoCompleteBox
-    const AutoCompleteBoxProps = {
-        dataTable,
-        expressionValue,
-        setExpressionValue,
-        setResponse,
-        setReady,
-        setFilteredData,
-        dispatch,
+    
+    const onSwitch= () => {
+        if (shortTableView) setShortTableView(false);
+        else setShortTableView(true);
     }
 
-    // not sure if we need this...
     let highlightFn = (points) => dispatch(actions.highlightPoints(points));
-    let showPointsFn = (pointsRange) => dispatch(actions.setShownPoints(pointsRange));
+
+    // Dependencies of AutoCompleteBox
+    const AutoCompleteBoxProps = {
+      dataTable,
+      expressionValue,
+      setExpressionValue,
+      setResponse,
+      setReady,
+      setFilteredData,
+      highlightFn,
+      dispatch,
+    }
 
     const options = dataTable.cols.map((x) => x.displayName);
     return(
@@ -56,47 +64,60 @@ export function ConditionStatePane({
             <h2 className="text-center"> Create Condition State </h2>
             <Container>
                 <Row>
-                    <hr />
                     <Form>
-                        {options.map((i)=>(<><Button variant="primary" key={i} size='sm' onClick={() => onSelect(i)}>{i}</Button>{' '}</>))}
+                        {options.map((i)=>i === "Time"||i === "Date Created"?<></>:(<><Button className="mb-1" variant="primary" key={i} size='sm' onClick={() => onSelect(i)}>{i}</Button>{' '}</>))}
                         <AutoCompleteBox {...AutoCompleteBoxProps}/>
-                        <hr/>
-                        <Form.Text className="text-muted">
-                            Corresponding javascript expression feedback
-                        </Form.Text>
-                        <Form.Control type="text" 
-                            placeholder="NULL" 
-                            value = {response}
-                            readOnly 
-                            disabled>
+                        <Form.Control 
+                          type="text" 
+                          placeholder="NULL" 
+                          value = {response}
+                          className={
+                            response === "NULL"
+                                ? "input-primary"
+                                : response === "Correct"
+                                    ? "input-success"
+                                    : "input-danger"
+                        }
+                          readOnly 
+                          disabled>
                         </Form.Control>
-                        <hr/>
-                        <Button
-                            className="mt-3"
-                            variant="outline-secondary"
-                            sz="lg"
-                            onClick={onCancel}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="mt-3 mx-3"
-                            variant="primary"
-                            sz="lg"
-                            onClick={onCreate}
-                            disabled = {!ready}
-                        >
-                            Create
-                        </Button>
-                        <hr/>
-                        <Form.Text className="text-muted">
-                            Corresponding table content
-                        </Form.Text>
-                        <VirtualizedTable
-                            dataTable={filteredData}
-                            highlightFn={highlightFn}
-                            showPointsFn={showPointsFn}
+                        <div className="d-flex justify-content-end">
+                          <Button
+                              className="mt-3"
+                              variant="outline-secondary"
+                              sz="lg"
+                              onClick={onCancel}
+                          >
+                              Cancel
+                          </Button>
+                          <Button
+                              className="mt-3 mx-3"
+                              variant="primary"
+                              sz="lg"
+                              onClick={onCreate}
+                              disabled = {!ready}
+                          >
+                              Create
+                          </Button>
+                        </div>
+                        <Form.Check
+                          id = "table-display-checkbox"
+                          type="checkbox"
+                          label= {"View selected rows only (" + filteredData.length + " data points are selected)"}
+                          checked = {shortTableView}
+                          onChange= {onSwitch}
                         />
+                        {shortTableView?
+                            <CFVirtualizedTable
+                              dataTable={filteredData.length === 0?dataTable:filteredData}
+                              highlightRows={filteredData.length === 0?[]:[[1, filteredData.length + 1]]}
+                              applyHighlight={true}/>:
+                            <CFVirtualizedTable
+                              dataTable={dataTable}
+                              highlightRows={getRanges(filteredData.rows)}
+                              applyHighlight={response === "Correct"}/>
+                            }
+                        
                     </Form>
                 </Row>
             </Container>
@@ -114,6 +135,7 @@ function AutoCompleteBox({
     setResponse,
     setReady,
     setFilteredData,
+    highlightFn,
     dispatch,
 })
 {
@@ -126,7 +148,9 @@ function AutoCompleteBox({
         return x.displayName;
     });
 
-    // this handles the performance of Response Text and suggestions
+    // This handles the performance of Response Text and suggestions
+    // contains most page behavior (filter data, show suggestion, 
+    // response bar, highlight points)
     const handleChange = (event) => {
         const input = event.target.value;
         const lastWord = input.split(' ').pop();
@@ -152,16 +176,16 @@ function AutoCompleteBox({
             setFilteredData(DataTable.fromRowsCols(filterList(dataTable.rows, input, allowedTokens), dataTable.cols));
             setResponse("Correct");
             setReady(true);
-            //dispatch(actions.highlightPoints(filterList(dataTable.rows, input, allowedTokens)));
+            highlightFn(getRanges(filterList(dataTable.rows, input, allowedTokens)));
         }
         catch(e){
-            setFilteredData(dataTable);
+            setFilteredData([]);
             setReady(false);
             setResponse(e);
             if(input.length === 0){
                 setResponse("NULL");
             }
-            //dispatch(actions.highlightPoints());
+            highlightFn([[-1, -1]]);
         }
     };
 
@@ -206,66 +230,200 @@ function AutoCompleteBox({
 }
 
 // Filter the list with an expression String and a list of allowedIdentifiers
+// This function uses esprima to parse the script, but code texts is not 
+// excuted by it
 export const filterList= (list, expression, allowedIdentifiers) => {
-    const ast = esprima.parseScript(expression);
-    function evaluateNode(node, context) {
-        switch (node.type) {
-            case 'Program':
-                return node.body.map((n) => evaluateNode(n, context));
-            case 'ExpressionStatement':
-                return evaluateNode(node.expression, context);
-            case 'BinaryExpression':
-                const left = evaluateNode(node.left, context);
-                const right = evaluateNode(node.right, context);
-                
-                // Evaluate arithmetic operators first (Addition, Subtraction, Multiplication, Division, Modulus)
-                let result;
-                switch (node.operator) {
-                case '+': result = left + right; break;
-                case '-': result = left - right; break;
-                case '*': result = left * right; break;
-                case '/': result = left / right; break;
-                case '%': result = left % right; break;
-                default: result = null;
-                }
-                
-                // If an arithmetic operation was performed, return the result.
-                if (result !== null) {
-                return result;
-                }
-                
-                // Evaluate comparison and logical operators
-                switch (node.operator) {
-                case '==': return left == right; // Should we keep this one?
-                case '!=': return left != right; // and this one?
-                case '===': return left === right;
-                case '!==': return left !== right;
-                case '<': return left < right;
-                case '<=': return left <= right;
-                case '>': return left > right;
-                case '>=': return left >= right;
-                case '&&': return left && right;
-                case '||': return left || right;
-                default: throw new Error(`Unknown operator: ${node.operator}`);
-                }
-            case 'Identifier':
-                if (!allowedIdentifiers.includes(node.name)) {
-                    const match = allowedIdentifiers.find(i => i.toLowerCase() === node.name.toLowerCase());
-                    if (match){
-                        node.name = match;
-                    }
-                    else {
-                        throw new Error(`Unknown identifier: ${node.name}`);
-                    }
-                }
-                return context[node.name];
-            case 'Literal':
-                return node.value;
-            default:
-                throw new Error(`Unknown node type: ${node.type}`);
+    // Replace spaces in identifiers with underscores in the expression string
+  allowedIdentifiers.forEach(identifier => {
+    const identifierWithUnderscore = identifier.replace(/ /g, '_');
+    expression = expression.split(identifier).join(identifierWithUnderscore);
+  });
+  allowedIdentifiers = allowedIdentifiers.filter(identifier => identifier !== "Time");
+  const ast = esprima.parseScript(expression);
+
+  function evaluateNode(node, context) {
+    switch (node.type) {
+      case 'Program':
+        return node.body.map(n => evaluateNode(n, context));
+      case 'ExpressionStatement':
+        return evaluateNode(node.expression, context);
+      case 'BinaryExpression':
+      case 'LogicalExpression':
+        const left = evaluateNode(node.left, context);
+        const right = evaluateNode(node.right, context);
+        switch (node.operator) {
+          case '+': return left + right;
+          case '-': return left - right;
+          case '*': return left * right;
+          case '/': return left / right;
+          case '%': return left % right;
+          case '==': return left == right;
+          case '!=': return left != right;
+          case '===': return left === right;
+          case '!==': return left !== right;
+          case '<': return left < right;
+          case '<=': return left <= right;
+          case '>': return left > right;
+          case '>=': return left >= right;
+          case '&&': return left && right;
+          case '||': return left || right;
+          default: throw new Error(`Unknown operator: ${node.operator}`);
         }
+      case 'Identifier':
+        let identifier = node.name.replace(/_/g, ' ');
+        if (!allowedIdentifiers.includes(identifier)) {
+          const match = allowedIdentifiers.find(i => i.toLowerCase() === identifier.toLowerCase());
+          if (match){
+            identifier = match;
+          }
+          else {
+            throw new Error(`Unknown identifier: ${identifier}`);
+          }
+        }
+        return context[identifier];
+      case 'Literal':
+        return node.value;
+      default:
+        throw new Error(`Unknown node type: ${node.type}`);
     }
+  }
+    
     const filteredList = list.filter((obj) => evaluateNode(ast.body[0].expression, obj));
     return filteredList;
 }
+
+// Helper function that turns filtered datatable into a list of ranges to use show points funcition
+function getRanges(filtered){
+  let ranges = [];
+  if (!filtered || filtered.length <= 0) return ranges;
+
+  let startPoint = filtered[0].Order;
+  let endPoint = filtered[0].Order;
+  for (let i=1; i<filtered.length; i++){
+    let order = filtered[i].Order;
+    if (order === endPoint + 1){
+      endPoint++;
+    }
+    else{
+      ranges.push([startPoint, endPoint]);
+      startPoint = order;
+      endPoint = order;
+    }
+  }
+  ranges.push([startPoint, endPoint]);
+  return ranges;
+}
+
+
+// This is pretty much copied & pasted from VirtualizedTable with hightlight
+// and show points functions removed and highlight rows function implemented
+function CFVirtualizedTable({ dataTable, highlightRows, applyHighlight }) {
+    const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
   
+    // These need to be memo-ized to prevent constant re-rendering
+    const columns = React.useMemo(() => {
+      return dataTable ? dataTable.getReactTableCols() : [];
+    }, [dataTable]);
+    const data = React.useMemo(() => {
+      return dataTable ? dataTable.getReactTableData() : [];
+    }, [dataTable]);
+  
+    const {
+      getTableProps,
+      getTableBodyProps,
+      headerGroups,
+      rows,
+      totalColumnsWidth,
+      prepareRow,
+    } = useTable(
+      {
+        columns,
+        data,
+      },
+      useBlockLayout
+    );
+  
+    const RenderRow = useCallback(
+      ({ index, style }) => {
+        const row = rows[index];
+        prepareRow(row);
+    
+        // Check if this row index falls within any of the provided ranges
+        let isHighlighted = false;
+        if (applyHighlight) {  // Only check for highlighting if applyHighlight is true
+          for (let range of highlightRows) {
+            if (index + 1 >= range[0] && index + 1 <= range[1]) { // Index + 1 here is to fit Order number with index number
+              isHighlighted = true;
+              break;
+            }
+          }
+        }
+    
+        return (
+          <div
+            {...row.getRowProps({
+              style,
+            })}
+            className={`tr ${isHighlighted ? "highlighted" : ""}`}
+          >
+            {row.cells.map((cell) => {
+              // This is where each cell gets rendered.
+              return (
+                <div {...cell.getCellProps()} className="td">
+                  {cell.render("Cell")}
+                </div>
+              );
+            })}
+          </div>
+        );
+      },
+      [prepareRow, rows, highlightRows, applyHighlight]
+    );
+    
+  
+    return (
+      <TableStyles>
+        <div {...getTableProps()} className="table">
+          <div>
+            {headerGroups.map((headerGroup) => (
+              <div
+                {...headerGroup.getHeaderGroupProps()}
+                className="tr table-header"
+              >
+                {headerGroup.headers.map((column) => (
+                  <div {...column.getHeaderProps()} className={"th " + column.render('Header').replace(/\s/g, '')}>
+                    {column.render("Header")}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+  
+          <div {...getTableBodyProps()}>
+            <FixedSizeList
+              height={400}
+              itemCount={rows.length}
+              itemSize={35}
+              width={totalColumnsWidth + scrollBarSize}
+              overscanCount={25}
+            >
+              {RenderRow}
+            </FixedSizeList>
+          </div>
+        </div>
+      </TableStyles>
+    );
+  }
+  
+  const scrollbarWidth = () => {
+    // from: https://davidwalsh.name/detect-scrollbar-width
+    const scrollDiv = document.createElement("div");
+    scrollDiv.setAttribute(
+      "style",
+      "width: 100px; height: 100px; overflow: scroll; position:absolute; top:-9999px;"
+    );
+    document.body.appendChild(scrollDiv);
+    const scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
+    document.body.removeChild(scrollDiv);
+    return scrollbarWidth;
+  };
