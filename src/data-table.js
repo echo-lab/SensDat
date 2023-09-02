@@ -1,8 +1,8 @@
 import * as Papa from "papaparse";
 import "any-date-parser";
 
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 import { hhmmss } from "./utils.js";
 
@@ -74,6 +74,14 @@ export class DataTable {
   getVizData() {
     if (!this.isReady()) return false;
     let timeCol = this.getAccessor(COL_TYPES.T_CLEAN);
+    console.log(
+      this.rows.map((row) => ({
+        Order: row.Order,
+        Latitude: row.Latitude,
+        Longitude: row.Longitude,
+        Timestamp: timeCol && row[timeCol],
+      }))
+    );
     return this.rows.map((row) => ({
       Order: row.Order,
       Latitude: row.Latitude,
@@ -131,7 +139,6 @@ export class DataTable {
     let result = this.copy();
     let tmpCol = this.getTempCol();
 
-
     // Filter out any current temp-state columns and add the new one.
     result.cols = result.cols.filter((col) => col.type !== COL_TYPES.STATE_TMP);
     result.cols.push({
@@ -166,6 +173,39 @@ export class DataTable {
       return row;
     });
     return result;
+  }
+
+  // NOTE: This returns a NEW DataTable (!!)
+  createTimeGraphTable(column) {
+    let res = new DataTable();
+    res.rows = this.rows;
+    res.cols = [
+      { displayName: "Order", accessor: "Order", type: COL_TYPES.INDEX },
+      {
+        displayName: "Time",
+        accessor: "CLEANED_TIME",
+        type: COL_TYPES.T_CLEAN,
+      },
+    ];
+    if (column === "Longitude") {
+      res.cols.push({
+        displayName: column,
+        accessor: column,
+        type: COL_TYPES.X,
+      });
+    } else if (column === "Latitude") {
+      res.cols.push({
+        displayName: column,
+        accessor: column,
+        type: COL_TYPES.Y,
+      });
+    } else if (column === "Elevation") {
+      res.cols.push({
+        displayName: column,
+        accessor: column,
+      });
+    }
+    return res;
   }
 
   // NOTE: This returns a NEW DataTable (!!)
@@ -296,14 +336,14 @@ export class DataTable {
           col.width = 80;
         } else if (c.displayName === "Distance from Start") {
           col.width = 90;
-        } else if (
-          c.type === COL_TYPES.Y ||
-          c.type === COL_TYPES.X
-        ) {
+        } else if (c.type === COL_TYPES.Y || c.type === COL_TYPES.X) {
           col.width = 100;
         } else if (c.type === COL_TYPES.T_CLEAN) {
           col.width = 90;
-        } else if (c.type === COL_TYPES.STATE || c.type === COL_TYPES.STATE_TMP) {
+        } else if (
+          c.type === COL_TYPES.STATE ||
+          c.type === COL_TYPES.STATE_TMP
+        ) {
           col.width = 100;
 
           // Takes out the value from the cell if the cell
@@ -313,9 +353,11 @@ export class DataTable {
 
         // Need to tell React Table how to render the timestamp column
         if (c.type === COL_TYPES.T_CLEAN) {
-          col.Cell = ({ cell: { value } }) => <TimeWithTooltip timestamp={value} />;
+          col.Cell = ({ cell: { value } }) => (
+            <TimeWithTooltip timestamp={value} />
+          );
         }
-  
+
         return col;
       });
   }
@@ -413,17 +455,14 @@ export class DataTable {
   }
 }
 
-function TimeWithTooltip({timestamp}) {
+function TimeWithTooltip({ timestamp }) {
   const renderTooltip = (props) => (
     <Tooltip id="button-tooltip" {...props}>
       {timestamp.toLocaleString()}
     </Tooltip>
   );
   return (
-    <OverlayTrigger
-      placement="bottom"
-      overlay={renderTooltip}
-    >
+    <OverlayTrigger placement="bottom" overlay={renderTooltip}>
       <span>{hhmmss(timestamp)}</span>
     </OverlayTrigger>
   );

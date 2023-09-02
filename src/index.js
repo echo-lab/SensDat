@@ -103,10 +103,10 @@ function App() {
 
   let dataViewProps = {
     dataTable: state.dataTable,
-    uistate: state.uiState,
     summaryTables: state.summaryTables,
     activeTab: state.activeTab,
     dispatch,
+    timeGraphDataTable: state.timeGraphDataTable,
   };
 
   let compoundStatePaneProps = {
