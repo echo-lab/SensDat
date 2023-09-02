@@ -383,6 +383,7 @@ actionHandlers["createSummary"] = (state, stateID) => {
 actionHandlers["selectTab"] = (state, tabID) => ({
   ...state,
   activeTab: tabID,
+  timeGraphDataTable: state.dataTable.createTimeGraphTable(tabID),
 });
 
 actionHandlers["setShownPoints"] = (state, shownRange) => ({
@@ -441,6 +442,14 @@ actionHandlers["setTargetTransform"] = (state, targetTransformParams) => ({
     targetTransformParams
   ),
 });
+
+actionHandlers["createTimeGraph"] = (state, timeGraph) => {
+  return {
+    ...state,
+    activeTab: timeGraph,
+    timeGraphDataTable: state.dataTable.createTimeGraphTable(timeGraph),
+  };
+};
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
 // which takes a payload and returns an action object which can be used w/ React's `dispatch`

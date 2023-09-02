@@ -142,11 +142,11 @@ function App() {
 
   let dataViewProps = {
     dataTable: state.dataTable,
-    uistate: state.uiState,
     summaryTables: state.summaryTables,
     activeTab: state.activeTab,
     userDefinedStates: state.userDefinedStates,
     dispatch,
+    timeGraphDataTable: state.timeGraphDataTable,
   };
 
   let compoundStatePaneProps = {

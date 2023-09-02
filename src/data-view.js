@@ -17,6 +17,7 @@ export function DataView({
   activeTab,
   userDefinedStates,
   dispatch,
+  timeGraphDataTable,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
   return useMemo(() => {
@@ -34,6 +35,36 @@ export function DataView({
           <Tab eventKey="BASE_TABLE" title="Base Table">
             <VirtualizedTable
               dataTable={dataTable}
+              highlightFn={highlightFn}
+              showPointsFn={showPointsFn}
+            />
+          </Tab>
+          <Tab
+            eventKey="Longitude"
+            title="Longitude"
+          >
+            <VirtualizedTable
+              dataTable={timeGraphDataTable}
+              highlightFn={highlightFn}
+              showPointsFn={showPointsFn}
+            />
+          </Tab>
+          <Tab
+            eventKey="Latitude"
+            title="Latitude"
+          >
+            <VirtualizedTable
+              dataTable={timeGraphDataTable}
+              highlightFn={highlightFn}
+              showPointsFn={showPointsFn}
+            />
+          </Tab>
+          <Tab
+            eventKey="Elevation"
+            title="Elevation"
+          >
+            <VirtualizedTable
+              dataTable={timeGraphDataTable}
               highlightFn={highlightFn}
               showPointsFn={showPointsFn}
             />
@@ -57,6 +88,7 @@ export function DataView({
     activeTab,
     userDefinedStates,
     dispatch,
+    timeGraphDataTable,
   ]);
 }
 
@@ -65,6 +97,7 @@ export function DataView({
 export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
+  console.log(dataTable);
   // These need to be memo-ized to prevent constant re-rendering
   const columns = React.useMemo(() => {
     return dataTable ? dataTable.getReactTableCols() : [];

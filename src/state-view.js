@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 
-import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import Dropdown from "react-bootstrap/Dropdown";
-import DropdownButton from "react-bootstrap/DropdownButton";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Modal from "react-bootstrap/Modal";
+import {
+  Button,
+  Form,
+  Dropdown,
+  DropdownButton,
+  Row,
+  Col,
+  Modal,
+} from "react-bootstrap";
 
 import { UIState } from "./ui-state.js";
 import { actions } from "./app-state.js";
@@ -64,6 +66,30 @@ export function StateView({
               disabled={userDefinedStates.length === 0}
             >
               Sequence
+            </Dropdown.Item>
+          </DropdownButton>
+          <DropdownButton
+            variant="outline-primary"
+            size="sm"
+            id="dropdown-basic-button"
+            title="+ New Time Graph"
+            className="mx-2"
+            disabled={uiState.busy()}
+          >
+            <Dropdown.Item
+              onClick={() => dispatch(actions.createTimeGraph("Longitude"))}
+            >
+              Longitude
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={() => dispatch(actions.createTimeGraph("Latitude"))}
+            >
+              Latitude
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={() => dispatch(actions.createTimeGraph("Elevation"))}
+            >
+              Elevation
             </Dropdown.Item>
           </DropdownButton>
           {userDefinedStates.map((s) => (
