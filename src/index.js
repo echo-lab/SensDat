@@ -142,7 +142,6 @@ function App() {
 
   let dataViewProps = {
     dataTable: state.dataTable,
-    uiState: state.uiState,
     summaryTables: state.summaryTables,
     activeTab: state.activeTab,
     userDefinedStates: state.userDefinedStates,

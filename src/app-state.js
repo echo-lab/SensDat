@@ -412,6 +412,7 @@ actionHandlers["createSummary"] = (state, stateID) => {
 actionHandlers["selectTab"] = (state, tabID) => ({
   ...state,
   activeTab: tabID,
+  timeGraphDataTable: state.dataTable.createTimeGraphTable(tabID),
 });
 
 actionHandlers["setShownPoints"] = (state, shownRange) => ({
@@ -475,6 +476,7 @@ actionHandlers["createTimeGraph"] = (state, timeGraph) => {
   return {
     ...state,
     activeTab: timeGraph,
+    timeGraphDataTable: state.dataTable.createTimeGraphTable(timeGraph),
   };
 };
 
