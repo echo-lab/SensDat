@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useMemo, forwardRef } from "react";
 
 import Table from "react-bootstrap/Table";

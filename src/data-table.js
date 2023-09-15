@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import * as Papa from "papaparse";
 import * as DateParser from "any-date-parser";
 
