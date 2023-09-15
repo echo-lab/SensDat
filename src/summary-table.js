@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useMemo, forwardRef } from "react";
 
 import Table from "react-bootstrap/Table";
@@ -142,7 +143,7 @@ export function SummaryTable({
                     role="cell"
                     key={idx}
                     rowSpan={trueOnly ? 1 : row["cycleRowspan"] || 1}
-                    >
+                  >
                     {row[accessor]}
                   </td>
                 );

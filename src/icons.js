@@ -1,3 +1,5 @@
+import * as React from "react";
+
 // https://icons.getbootstrap.com/icons/square/
 export function SquareIcon() {
   return (

@@ -1,3 +1,4 @@
+import * as React from "react";
 import NavDropdown from "react-bootstrap/NavDropdown";
 
 import { DataTable } from "./data-table";
@@ -6,7 +7,7 @@ import { SiteLayout } from "./upload-layout";
 
 const TASK1_LAYOUT_PATH = `${process.env.PUBLIC_URL}/task1-layout.png`;
 
-export function UserStudyLoader({dispatch}) {
+export function UserStudyLoader({ dispatch }) {
   let loadTask2 = (e) => {
     e.preventDefault();
     DataTable.Task2Data().then((dt) => {
