@@ -13,6 +13,7 @@ import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { UploadDataWidget } from "./upload-data.js";
+import { ConditionStatePane } from "./condition-state-pane.js"
 import { UserStudyLoader } from "./preload/user-study";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
@@ -112,7 +113,7 @@ function App() {
     vizTimespan: state.vizState.timespan,
     shownPoints: state.vizState.shownPoints,
     useShownPoints:
-      state.activeTab === "BASE_TABLE" && state.uiState.shouldShowPoints(),
+      state.activeTab === "BASE_TABLE" && state.uiState.shouldShowPoints() && state.uiState !== UIState.CreateCondition, // TODO: fold last part into shouldShowPoints();
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,
@@ -141,6 +142,12 @@ function App() {
     dispatch,
   };
 
+  let conditionStatePaneProps = {
+    userDefinedStates: state.userDefinedStates,
+    dataTable: state.dataTable,
+    dispatch,
+  };
+  
   let createSequenceProps = {
     userDefinedStates: state.userDefinedStates,
     dataTable: state.dataTable,
@@ -185,6 +192,8 @@ function App() {
       return <CompoundStatePane {...compoundStatePaneProps} />;
     } else if (uistate === UIState.CreateSequence) {
       return <SequenceStatePane {...createSequenceProps} />;
+    } else if (uistate === UIState.CreateCondition) {
+      return <ConditionStatePane {...conditionStatePaneProps} />;
     } else {
       return <DataView {...dataViewProps} />;
     }

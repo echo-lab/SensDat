@@ -21,6 +21,10 @@ export function StateView({
 }) {
   let handleCreateRegion = () =>
     dispatch(actions.startCreateRegion({ dispatch }));
+  let handleCreateTimespan = () => {};
+  let handleCreateCondition = () => {
+    dispatch(actions.startCreateConditionState({ dispatch }));
+  };
   let handleCreateCompoundState = () =>
     dispatch(actions.startCreateCompoundState());
   let handleCreateSequence = () => dispatch(actions.startCreateSequence());
@@ -45,6 +49,10 @@ export function StateView({
             disabled={uiState.busy()}
           >
             <Dropdown.Item onClick={handleCreateRegion}>Region</Dropdown.Item>
+            <Dropdown.Item onClick={handleCreateTimespan}>
+              Timespan
+            </Dropdown.Item>
+            <Dropdown.Item onClick={handleCreateCondition}>Condition</Dropdown.Item>
             <Dropdown.Item
               onClick={handleCreateCompoundState}
               disabled={userDefinedStates.length < 2}

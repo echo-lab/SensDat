@@ -2,6 +2,7 @@ export class UIState {
   static NotLoaded = new UIState("not-loaded");
   static Default = new UIState("default");
   static CreateRegion = new UIState("create-region");
+  static CreateCondition = new UIState("create-condition");
   static CreateCompound = new UIState("create-compound");
   static CreateSequence = new UIState("create-sequence");
   static MoveDataPoints = new UIState("move-data-points");
