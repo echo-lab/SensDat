@@ -156,7 +156,7 @@ function App() {
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
-        <Navbar.Brand>SensDat</Navbar.Brand>
+        <Navbar.Brand>Octave</Navbar.Brand>
         <Nav className="justify-content-end">
           <NavDropdown className="no-arrow" title="Import Data">
             <NavDropdown.Item onClick={() => setUploadActive(true)}>
@@ -206,7 +206,7 @@ function App() {
               flex={0.595}
               propagateDimensionsRate={200}
               propagateDimensions={true}
-              minSize="500"
+              minSize="300"
             >
               <VizView {...vizViewProps} />
             </ReflexElement>

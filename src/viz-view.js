@@ -78,11 +78,13 @@ export function VizView({
   let [resetZoom, setResetZoom] = useState(() => () => {});
   const d3Dots = useRef();
 
-  let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
+  let svgWidth = dimensions.width * 0.95 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
   useEffect(() => {
     setContainerHeight(svgHeight + 200);
+    // If nixing the timespan bar, do:
+    // setContainerHeight(svgHeight + 70);
   }, [svgHeight, setContainerHeight]);
 
   // Some helper methods in case we change the order later. Note: svg must not be null to use.
