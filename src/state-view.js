@@ -27,6 +27,7 @@ export function StateView({
   };
   let handleCreateCompoundState = () =>
     dispatch(actions.startCreateCompoundState());
+  let handleCreateSequence = () => dispatch(actions.startCreateSequence());
   // maybeDeleteState contains the state which is being deleted (the user has to confirm).
   let [maybeDeleteState, setMaybeDeleteState] = useState(null);
 
@@ -57,6 +58,12 @@ export function StateView({
               disabled={userDefinedStates.length < 2}
             >
               Combination
+            </Dropdown.Item>
+            <Dropdown.Item
+              onClick={handleCreateSequence}
+              disabled={userDefinedStates.length === 0}
+            >
+              Sequence
             </Dropdown.Item>
           </DropdownButton>
           {userDefinedStates.map((s) => (

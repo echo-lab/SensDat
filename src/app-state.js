@@ -75,7 +75,7 @@ export const initialState = {
   vizState: {
     dataPoints: null, // This should be updated only when new data is loaded!
     timespan: [0, 1e15],
-    shownPoints: [0, 14],  // In theory, more ideal to determine this programatically, but eh.
+    shownPoints: [0, 14], // In theory, more ideal to determine this programatically, but eh.
     highlightedPoints: null,
   },
 };
@@ -172,14 +172,14 @@ actionHandlers["loadTable"] = (state, table) => {
   }
   let vizData = table.getVizData();
   let transform = getDefaultDataTransform(vizData);
-  
+
   // The new data table will be scrolled to the same position as before.
   // BUT: if we have fewer points than before, we'll just be scrolled to the end.
   // SO: below, we correct the shown points if we have to.
   let [r1, r2] = state.vizState.shownPoints || [0, 14];
   let N = table.rows.length;
   if (r2 > N) {
-    [r1, r2] = [N - (r2-r1) - 1, N];
+    [r1, r2] = [N - (r2 - r1) - 1, N];
   }
 
   return {
@@ -288,6 +288,25 @@ actionHandlers["createCompoundState"] = (state, compoundState) => {
     uiState: UIState.Default,
   };
 };
+
+actionHandlers["startCreateSequence"] = (state) => ({
+  ...state,
+  uiState: UIState.CreateSequence,
+});
+
+actionHandlers["cancelCreateSequence"] = (state) => ({
+  ...state,
+  uiState: UIState.Default,
+});
+
+actionHandlers["createSequenceState"] = (state, seqState) => ({
+  ...state,
+  userDefinedStates: state.userDefinedStates.concat(seqState),
+  dataTable: state.dataTable
+    .withTempState(seqState, state.currentDataTransform)
+    .withCommittedTempState(),
+  uiState: UIState.Default,
+});
 
 actionHandlers["createTempState"] = (state, { userDefinedState }) => {
   // return a new DataTable with the temp state column.
@@ -415,6 +434,15 @@ actionHandlers["CreateConditionState"] = (state, conditionState) => {
     uiState: UIState.Default,
   }
 }
+
+// Dirty, dirty hack lol
+actionHandlers["setTargetTransform"] = (state, targetTransformParams) => ({
+  ...state,
+  currentDataTransform: state.currentDataTransform.withTargetParams(
+    targetTransformParams
+  ),
+});
+
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
 // which takes a payload and returns an action object which can be used w/ React's `dispatch`
 // function. So: you can do something like: dispatch(actions.loadTable(myTable));

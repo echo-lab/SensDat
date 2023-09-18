@@ -1,5 +1,5 @@
 import * as Papa from "papaparse";
-import "any-date-parser";
+import * as DateParser from "any-date-parser";
 
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
@@ -152,7 +152,7 @@ export class DataTable {
 
     // Get the values for our new state. Note: this can't necessarily be done
     // row-by-row (e.g., for compound states).
-    let values = state.getValues(result.rows, transform);
+    let values = state.getValues(result, transform);
 
     // Filter out values for the old temp state (if they exist), and populate w/
     // the new one.
@@ -211,7 +211,7 @@ export class DataTable {
     if (!tCol || this.getColByType(COL_TYPES.T_CLEAN)) return this;
 
     let times = this.rows.map((r) => {
-      let t = Date.fromString(r[tCol.accessor]);
+      let t = DateParser.fromString(r[tCol.accessor]);
       // Interpret it in the current timezone instead of GMT...
       t.setTime(t.getTime() + t.getTimezoneOffset() * 60 * 1000);
       return t;
@@ -366,7 +366,7 @@ export class DataTable {
     if (tsCol) {
       res.rows = res.rows.map((r) => ({
         ...r,
-        [tsCol.accessor]: Date.fromString(r[tsCol.accessor]),
+        [tsCol.accessor]: DateParser.fromString(r[tsCol.accessor]),
       }));
     }
 
@@ -386,6 +386,28 @@ export class DataTable {
       complete: (res) => {
         onSuccess(new DataTable(res.data, {}));
       },
+    });
+  }
+
+  static FromHostedData(fName) {
+    const colMapping = {
+      Order: COL_TYPES.INDEX,
+      Longitude: COL_TYPES.X,
+      Latitude: COL_TYPES.Y,
+      "Date Created": COL_TYPES.T,
+      "Distance from Last": COL_TYPES.DIST,
+    };
+    return new Promise((resolve, reject) => {
+      Papa.parse(fName, {
+        download: true,
+        dynamicTyping: true,
+        header: true,
+        skipEmptyLines: true,
+        error: (e) => reject(e),
+        complete: (res) => {
+          resolve(new DataTable(res.data, colMapping).withCleanedTime());
+        },
+      });
     });
   }
 

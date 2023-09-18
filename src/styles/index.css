@@ -78,9 +78,9 @@ body {
 }
 
 div .tr:hover:not(.table-header) {
-  background-color: rgba(33, 37, 41, 0.075);
+  /* background-color: rgba(33, 37, 41, 0.075); */
+  background-color: #30cf3033;
 }
-
 .tr {
   cursor: default;
 }
@@ -137,4 +137,32 @@ div .tr:hover:not(.table-header) {
 .settings-gear > .dropdown-toggle {
   background-color: null;
   border-color: null;
+}
+
+.selected-row {
+  background-color: #0062ff2e;
+}
+
+.highlighted {
+  background-color: #30cf3033 !important;
+}
+
+.prevent-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+.y-scroll-modal {
+  max-height: 600px;
+  overflow-y: scroll;
+}
+
+.toggle-butt:hover {
+  background-color: #d4d4d4;
+}
+
+.toggle-butt.btn-success {
+  background-color: #a0ed8d !important;
+  color: black !important;
 }

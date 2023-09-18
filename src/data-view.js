@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from "react";
-import styled from "styled-components";
+import React, { useCallback, useMemo } from "react";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
@@ -15,8 +14,8 @@ import "./styles/data-view.css";
 export function DataView({
   dataTable,
   summaryTables,
-  uistate,
   activeTab,
+  userDefinedStates,
   dispatch,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
@@ -40,14 +39,11 @@ export function DataView({
             />
           </Tab>
           {summaryTables.map((st) => (
-            <Tab
-              eventKey={st.state.id}
-              key={st.state.id}
-              title={`Summary: ${st.state.name}`}
-            >
+            <Tab eventKey={st.state.id} key={st.state.id} title={st.state.name}>
               <SummaryTab
                 table={dataTable}
                 state={st.state}
+                userDefinedStates={userDefinedStates}
                 highlightFn={highlightFn}
               />
             </Tab>
@@ -55,7 +51,13 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [dataTable, summaryTables, uistate, activeTab, dispatch]);
+  }, [
+    dataTable,
+    summaryTables,
+    activeTab,
+    userDefinedStates,
+    dispatch,
+  ]);
 }
 
 // This is pretty much copied from this example:
@@ -109,13 +111,11 @@ export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           className="tr"
         >
           {row.cells.map((cell) => {
-
             const currentValue = cell.value;
 
-            if(currentValue === "true" || currentValue === "false"){
-
-              cell.value = currentValue.charAt(0).toUpperCase()
-              + currentValue.slice(1);
+            if (currentValue === "true" || currentValue === "false") {
+              cell.value =
+                currentValue.charAt(0).toUpperCase() + currentValue.slice(1);
 
               // This is where each cell gets rendered.
               return (
@@ -123,8 +123,7 @@ export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
                   {cell.render("Cell")}
                 </div>
               );
-            }
-            else {
+            } else {
               // This is where each cell gets rendered.
               return (
                 <div {...cell.getCellProps()} className="td">
@@ -149,7 +148,10 @@ export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
               className="tr table-header"
             >
               {headerGroup.headers.map((column) => (
-                <div {...column.getHeaderProps()} className={"th " + column.render('Header').replace(/\s/g, '')}>
+                <div
+                  {...column.getHeaderProps()}
+                  className={"th " + column.render("Header").replace(/\s/g, "")}
+                >
                   {column.render("Header")}
                 </div>
               ))}
