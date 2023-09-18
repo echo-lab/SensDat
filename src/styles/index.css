@@ -78,9 +78,9 @@ body {
 }
 
 div .tr:hover:not(.table-header) {
-  background-color: rgba(33, 37, 41, 0.075);
+  /* background-color: rgba(33, 37, 41, 0.075); */
+  background-color: #30cf3033;
 }
-
 .tr {
   cursor: default;
 }
