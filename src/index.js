@@ -34,6 +34,10 @@ const RECORD_DATA_START_TIME = new Date(
 ); // a year ago lol
 const RECORD_DATA_DT = 5; // number of seconds between data points
 
+// This is the main place where everything starts. If you are doing any 
+// development on this project, this is a good place to start to see how 
+// everything is being rendered.
+
 function App() {
   const [state, dispatch] = useReducer(AppState.reducer, AppState.initialState);
   const [uploadActive, setUploadActive] = useState(false);
@@ -42,13 +46,22 @@ function App() {
   const dataRecorder = useMemo(() => new DataRecorder(RECORD_DATA_DT), []); // no deps!
 
   // Load the previous data if it exists. Else, prompt the user for an upload.
+  // Currently takes advantage of using localstorage to store the most recent
+  // instance of the site.
   useEffect(
     () => {
+
+      // Stores the last instance of the site from local storage.
       let serializedState = window.localStorage["state"];
+
+      // If there is not a last instance, it prompts the user to upload data.
       if (!serializedState) {
         setUploadActive(true);
         return;
       }
+
+      // If there is a last instance, than it deserializes it and displays it 
+      // on the site.
       AppState.deserialize(serializedState).then((deserializedState) =>
         dispatch(AppState.actions.loadState(deserializedState))
       );

@@ -7,6 +7,7 @@ import Form from "react-bootstrap/Form";
 
 import { actions } from "./app-state.js";
 
+// Constant to represent the 
 const EXAMPLE_LAYOUT_PATH = `${process.env.PUBLIC_URL}/example-layout.jpg`;
 
 export class SiteLayout {
