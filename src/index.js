@@ -173,6 +173,15 @@ function App() {
     dispatch,
   };
 
+  // This could really be cleaned up...
+  let exportButtonProps = {
+    activeTab: state.activeTab,
+    dataTable: state.dataTable,
+    summaryTables: state.summaryTables,
+    state,
+    dispatch,
+  };
+
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
@@ -192,7 +201,7 @@ function App() {
           ) : (
             <>
               <Navbar.Text>|</Navbar.Text>
-              <ExportButton {...state}></ExportButton>
+              <ExportButton {...exportButtonProps}></ExportButton>
             </>
           )}
         </Nav>

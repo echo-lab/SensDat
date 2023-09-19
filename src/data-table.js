@@ -1,6 +1,9 @@
 import * as Papa from "papaparse";
 import * as DateParser from "any-date-parser";
 
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
+
 import { hhmmss } from "./utils.js";
 
 // different forms of test data that can be used.
@@ -428,4 +431,20 @@ export class DataTable {
       });
     });
   }
+}
+
+function TimeWithTooltip({timestamp}) {
+  const renderTooltip = (props) => (
+    <Tooltip id="button-tooltip" {...props}>
+      {timestamp.toLocaleString()}
+    </Tooltip>
+  );
+  return (
+    <OverlayTrigger
+      placement="bottom"
+      overlay={renderTooltip}
+    >
+      <span>{hhmmss(timestamp)}</span>
+    </OverlayTrigger>
+  );
 }
