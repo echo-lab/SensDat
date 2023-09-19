@@ -1,4 +1,3 @@
-import * as d3 from "d3";
 import debounce from "lodash.debounce";
 
 import { actions } from "./app-state.js";

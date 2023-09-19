@@ -1,8 +1,8 @@
 import NavDropdown from "react-bootstrap/NavDropdown";
 
-import { DataTable } from "./data-table";
-import { actions } from "./app-state";
-import { SiteLayout } from "./upload-layout";
+import { DataTable } from "../data-table";
+import { actions } from "../app-state";
+import { SiteLayout } from "../upload-layout";
 
 const TASK1_LAYOUT_PATH = `${process.env.PUBLIC_URL}/task1-layout.png`;
 

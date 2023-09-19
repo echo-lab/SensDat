@@ -1,8 +1,9 @@
 import * as Papa from "papaparse";
-import "any-date-parser";
+import * as DateParser from "any-date-parser";
 
 import { hhmmss } from "./utils.js";
 
+// different forms of test data that can be used.
 const TEST_DATA = [
   "test_data",
   "demo_data_student",
@@ -55,6 +56,16 @@ export class DataTable {
     this.stateToTrueRanges = {};
 
     this.sortColumns();
+  }
+
+  static fromRowsCols(rows,cols) {
+    let res = new DataTable();
+    res.rows = rows;
+    res.cols = cols;
+
+    res.stateToTrueRanges = {};
+    res.cacheStateData();
+    return res;
   }
 
   // Is the table ready to be used in the UI? i.e., does it have a cleaned time column?
@@ -123,6 +134,7 @@ export class DataTable {
     let result = this.copy();
     let tmpCol = this.getTempCol();
 
+
     // Filter out any current temp-state columns and add the new one.
     result.cols = result.cols.filter((col) => col.type !== COL_TYPES.STATE_TMP);
     result.cols.push({
@@ -133,7 +145,7 @@ export class DataTable {
 
     // Get the values for our new state. Note: this can't necessarily be done
     // row-by-row (e.g., for compound states).
-    let values = state.getValues(result.rows, transform);
+    let values = state.getValues(result, transform);
 
     // Filter out values for the old temp state (if they exist), and populate w/
     // the new one.
@@ -192,7 +204,7 @@ export class DataTable {
     if (!tCol || this.getColByType(COL_TYPES.T_CLEAN)) return this;
 
     let times = this.rows.map((r) => {
-      let t = Date.fromString(r[tCol.accessor]);
+      let t = DateParser.fromString(r[tCol.accessor]);
       // Interpret it in the current timezone instead of GMT...
       t.setTime(t.getTime() + t.getTimezoneOffset() * 60 * 1000);
       return t;
@@ -268,32 +280,47 @@ export class DataTable {
   }
 
   getReactTableCols() {
-    return this.cols.map((c) => {
-      let col = {
-        Header: c.displayName,
-        accessor: c.accessor,
-      };
-      if (c.type === COL_TYPES.INDEX || c.displayName === "Speed") 
-      {
-        col.width = 60;
-      }
-      else if (c.displayName === "Bearing"){
-        col.width = 70;
-      }
-      else if (c.displayName === "Elevation"){
-        col.width = 80;
-      }
-      else if (c.type === COL_TYPES.Y || c.type === COL_TYPES.X 
-        || c.type === COL_TYPES.DIST || c.displayName === "Distance from Start"){
-        col.width = 100;
-      }
+    return this.cols
+      .filter((c) => c.type !== COL_TYPES.T) // Don't display the original time column
+      .map((c) => {
+        let col = {
+          Header: c.displayName,
+          accessor: c.accessor,
+        };
+        if (c.type === COL_TYPES.INDEX) {
+          col.width = 55;
+        } else if (c.displayName === "Speed") {
+          col.width = 60;
+        } else if (c.displayName === "Bearing") {
+          col.width = 70;
+        } else if (c.displayName === "Elevation") {
+          col.width = 80;
+        } else if (c.type === COL_TYPES.DIST) {
+          col.width = 80;
+        } else if (c.displayName === "Distance from Start") {
+          col.width = 90;
+        } else if (
+          c.type === COL_TYPES.Y ||
+          c.type === COL_TYPES.X
+        ) {
+          col.width = 100;
+        } else if (c.type === COL_TYPES.T_CLEAN) {
+          col.width = 90;
+        } else if (c.type === COL_TYPES.STATE || c.type === COL_TYPES.STATE_TMP) {
+          col.width = 100;
 
-      // Need to tell React Table how to render the timestamp column
-      if (c.type === COL_TYPES.T_CLEAN) {
-        col.Cell = ({ cell: { value } }) => hhmmss(value);
-      }
-      return col;
-    });
+          // Takes out the value from the cell if the cell
+          // is in a region (Currently solves the uppercase issue).
+          col.Cell = ({ cell: { value } }) => value;
+        }
+
+        // Need to tell React Table how to render the timestamp column
+        if (c.type === COL_TYPES.T_CLEAN) {
+          col.Cell = ({ cell: { value } }) => <TimeWithTooltip timestamp={value} />;
+        }
+  
+        return col;
+      });
   }
 
   getReactTableData() {
@@ -332,7 +359,7 @@ export class DataTable {
     if (tsCol) {
       res.rows = res.rows.map((r) => ({
         ...r,
-        [tsCol.accessor]: Date.fromString(r[tsCol.accessor]),
+        [tsCol.accessor]: DateParser.fromString(r[tsCol.accessor]),
       }));
     }
 
@@ -352,6 +379,28 @@ export class DataTable {
       complete: (res) => {
         onSuccess(new DataTable(res.data, {}));
       },
+    });
+  }
+
+  static FromHostedData(fName) {
+    const colMapping = {
+      Order: COL_TYPES.INDEX,
+      Longitude: COL_TYPES.X,
+      Latitude: COL_TYPES.Y,
+      "Date Created": COL_TYPES.T,
+      "Distance from Last": COL_TYPES.DIST,
+    };
+    return new Promise((resolve, reject) => {
+      Papa.parse(fName, {
+        download: true,
+        dynamicTyping: true,
+        header: true,
+        skipEmptyLines: true,
+        error: (e) => reject(e),
+        complete: (res) => {
+          resolve(new DataTable(res.data, colMapping).withCleanedTime());
+        },
+      });
     });
   }
 

@@ -75,7 +75,7 @@ export const initialState = {
   vizState: {
     dataPoints: null, // This should be updated only when new data is loaded!
     timespan: [0, 1e15],
-    shownPoints: [-1, -1],
+    shownPoints: [0, 14], // In theory, more ideal to determine this programatically, but eh.
     highlightedPoints: null,
   },
 };
@@ -172,6 +172,16 @@ actionHandlers["loadTable"] = (state, table) => {
   }
   let vizData = table.getVizData();
   let transform = getDefaultDataTransform(vizData);
+
+  // The new data table will be scrolled to the same position as before.
+  // BUT: if we have fewer points than before, we'll just be scrolled to the end.
+  // SO: below, we correct the shown points if we have to.
+  let [r1, r2] = state.vizState.shownPoints || [0, 14];
+  let N = table.rows.length;
+  if (r2 > N) {
+    [r1, r2] = [N - (r2 - r1) - 1, N];
+  }
+
   return {
     ...initialState, // Reset to the original state
     dataTable: table,
@@ -278,6 +288,25 @@ actionHandlers["createCompoundState"] = (state, compoundState) => {
   };
 };
 
+actionHandlers["startCreateSequence"] = (state) => ({
+  ...state,
+  uiState: UIState.CreateSequence,
+});
+
+actionHandlers["cancelCreateSequence"] = (state) => ({
+  ...state,
+  uiState: UIState.Default,
+});
+
+actionHandlers["createSequenceState"] = (state, seqState) => ({
+  ...state,
+  userDefinedStates: state.userDefinedStates.concat(seqState),
+  dataTable: state.dataTable
+    .withTempState(seqState, state.currentDataTransform)
+    .withCommittedTempState(),
+  uiState: UIState.Default,
+});
+
 actionHandlers["createTempState"] = (state, { userDefinedState }) => {
   // return a new DataTable with the temp state column.
   // Note: clobbers any existing temp columns (!)
@@ -378,6 +407,39 @@ actionHandlers["highlightPointsForState"] = (state, userState) => ({
     ...state.vizState,
     highlightedPoints: state.dataTable.getTrueRanges(userState.id),
   },
+});
+
+actionHandlers["startCreateConditionState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.CreateCondition,
+  }
+}
+
+actionHandlers["cancelCreateConditionState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+  }
+}
+
+actionHandlers["CreateConditionState"] = (state, conditionState) => {
+  return {
+    ...state,
+    userDefinedStates: state.userDefinedStates.concat(conditionState),
+    dataTable: state.dataTable
+      .withTempState(conditionState, state.currentDataTransform)
+      .withCommittedTempState(),
+    uiState: UIState.Default,
+  }
+}
+
+// Dirty, dirty hack lol
+actionHandlers["setTargetTransform"] = (state, targetTransformParams) => ({
+  ...state,
+  currentDataTransform: state.currentDataTransform.withTargetParams(
+    targetTransformParams
+  ),
 });
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function

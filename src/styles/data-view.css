@@ -1,0 +1,9 @@
+.True {
+  /* TODO: figure out how to make this not clobber the on-hover situation */
+  background-color: lightgreen;
+}
+
+.False {
+  /* TODO: figure out how to make this not clobber the on-hover situation */
+  /* background-color: white; */
+}
