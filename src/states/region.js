@@ -49,8 +49,8 @@ export class RectRegion {
 
   // This method gets all the boolean values that represent whether each point
   // in the data table is in the Region State or not.
-  getValues(rows, transform) {
-    return rows.map((row) =>
+  getValues(table, transform) {
+    return table.rows.map((row) =>
       String(
         this.#containsPoint(
           ...transform.transformPoint([row.Longitude, row.Latitude])
@@ -135,8 +135,8 @@ export class EllipseRegion {
 
   // This method gets all the boolean values that represent whether each point
   // in the data table is in the Region State or not.
-  getValues(rows, transform) {
-    return rows.map((row) =>
+  getValues(table, transform) {
+    return table.rows.map((row) =>
       String(
         this.#containsPoint(
           ...transform.transformPoint([row.Longitude, row.Latitude])

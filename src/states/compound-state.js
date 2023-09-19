@@ -81,7 +81,8 @@ export class CompoundState {
     return res;
   }
 
-  getValues(rows) {
+  getValues(table) {
+    let rows = table.rows;
     let truePoints = getChosenPoints(rows, this.states, this.nodes, this.edges);
     return rows.map(
       (row) =>
