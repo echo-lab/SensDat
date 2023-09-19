@@ -144,7 +144,7 @@ actionHandlers["loadState"] = (state, deserializedState) => {
 
   let { dataTable, defaultDataTransform, currentDataTransform } =
     deserializedState;
-  if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
+    if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
   dataTable.sortColumns();
   let vizData = dataTable.getVizData();
   defaultDataTransform =
@@ -189,7 +189,6 @@ actionHandlers["loadTable"] = (state, table) => {
     vizState: {
       ...initialState.vizState,
       dataPoints: vizData,
-      shownPoints: [r1, r2],
     },
     defaultDataTransform: transform,
     currentDataTransform: transform,

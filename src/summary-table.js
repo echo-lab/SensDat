@@ -94,15 +94,15 @@ function SummaryModeDropdown({ trueOnly, setTrueOnly }) {
   return (
     <Dropdown>
       <Dropdown.Toggle as={CustomToggle} id="dropdown-summary-mode">
-        Visit
+        Period
       </Dropdown.Toggle>
 
       <Dropdown.Menu>
         <Dropdown.Item onClick={() => setTrueOnly(true)}>
-          Show Only Visits ('True' Segments) {trueOnly ? "✓" : ""}
+          Show True Segments Only {trueOnly ? "✓" : ""}
         </Dropdown.Item>
         <Dropdown.Item onClick={() => setTrueOnly(false)}>
-          Show 'False' Segments Between Visits {trueOnly ? "" : "✓"}
+          Show True and False Segments {trueOnly ? "" : "✓"}
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>
