@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
 import './styles/condition-state-pane.css';
+import * as esprima from "esprima";
 
 import Container from "react-bootstrap/Container";
 import Form from "react-bootstrap/Form";
@@ -12,7 +13,6 @@ import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 import { TableStyles } from "./utils.js";
 import { DataTable } from "./data-table.js";
-const esprima = require('esprima');
 
 // This controls the performance of Create Conditional State interaction
 export function ConditionStatePane({

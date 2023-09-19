@@ -113,7 +113,7 @@ function App() {
     vizTimespan: state.vizState.timespan,
     shownPoints: state.vizState.shownPoints,
     useShownPoints:
-      state.activeTab === "BASE_TABLE" && state.uiState.shouldShowPoints() && state.uiState !== UIState.CreateCondition, // TODO: fold last part into shouldShowPoints();
+      state.activeTab === "BASE_TABLE" && state.uiState.shouldShowPoints(),
     highlightedPoints: state.vizState.highlightedPoints,
     uistate: state.uiState,
     createRegionInteraction: state.createRegionInteraction,

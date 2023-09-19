@@ -14,7 +14,7 @@ export class UIState {
 
   // Should we show the data points on the viz view? Answer should be no if the table isn't showing.
   shouldShowPoints() {
-    return ![UIState.CreateCompound, UIState.CreateSequence].includes(this);
+    return ![UIState.CreateCompound, UIState.CreateSequence, UIState.CreateCondition].includes(this);
   }
 
   // i.e., are we currently doing some action that prevents us from starting another one?
