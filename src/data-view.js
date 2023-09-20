@@ -39,32 +39,23 @@ export function DataView({
               showPointsFn={showPointsFn}
             />
           </Tab>
-          <Tab
-            eventKey="Longitude"
-            title="Longitude"
-          >
+          <Tab eventKey="Longitude" title="Longitude">
             <VirtualizedTable
-              dataTable={timeGraphDataTable}
+              dataTable={dataTable}
               highlightFn={highlightFn}
               showPointsFn={showPointsFn}
             />
           </Tab>
-          <Tab
-            eventKey="Latitude"
-            title="Latitude"
-          >
+          <Tab eventKey="Latitude" title="Latitude">
             <VirtualizedTable
-              dataTable={timeGraphDataTable}
+              dataTable={dataTable}
               highlightFn={highlightFn}
               showPointsFn={showPointsFn}
             />
           </Tab>
-          <Tab
-            eventKey="Elevation"
-            title="Elevation"
-          >
+          <Tab eventKey="Elevation" title="Elevation">
             <VirtualizedTable
-              dataTable={timeGraphDataTable}
+              dataTable={dataTable}
               highlightFn={highlightFn}
               showPointsFn={showPointsFn}
             />
