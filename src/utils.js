@@ -7,14 +7,16 @@ import { EditBox } from "./edit-box.js";
 import { ConditionState } from "./states/condition-state.js";
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 import { SequenceState } from "./states/sequence-state.js";
+import { TimespanState } from "./states/timespan-state.js";
 
-// This is slightly sad.
+// This is very sad.
 const stateFactories = [
   (o) => EllipseRegion.fromObject(o),
   (o) => CompoundState.fromObject(o),
   (o) => RectRegion.fromObject(o),
   (o) => ConditionState.fromObject(o),
   (o) => SequenceState.fromObject(o),
+  (o) => TimespanState.fromObject(o),
 ];
 
 // This assumes that the stateFactories will return null if the object isn't

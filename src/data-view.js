@@ -10,17 +10,21 @@ import { SummaryTab } from "./summary-table.js";
 import { TableStyles } from "./utils.js";
 
 import "./styles/data-view.css";
+import { UIState } from "./ui-state.js";
 
 export function DataView({
   dataTable,
   summaryTables,
   activeTab,
   userDefinedStates,
+  uiState,
   dispatch,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
   return useMemo(() => {
-    let highlightFn = (points) => dispatch(actions.highlightPoints(points));
+    let highlightFn = (points) =>
+      uiState !== UIState.CreateTimespan &&
+      dispatch(actions.highlightPoints(points));
     let showPointsFn = (pointsRange) =>
       dispatch(actions.setShownPoints(pointsRange));
 
@@ -51,13 +55,7 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [
-    dataTable,
-    summaryTables,
-    activeTab,
-    userDefinedStates,
-    dispatch,
-  ]);
+  }, [dataTable, summaryTables, activeTab, userDefinedStates, dispatch, uiState]);
 }
 
 // This is pretty much copied from this example:

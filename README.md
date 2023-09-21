@@ -48,8 +48,10 @@ This file also has various functions for mutating the app-state. Most state need
 ### States
 1. `state-view.js` for the component that lists the currently-existing states.
 1. `states/<state-name>.js` has a special object for each state.
+1. `utils.js` has a list `stateFactories` which needs to be updated for each state (though that's kind of sad).
 1. For individual states:
     1. `create-region-interaction.js` for Region State creation (which is embedded in `viz-view.js`).
     1. `compound-state-pane.js` is a component for creating Combination States
     1. `condition-state-pane.js` is a component for creating Condition States
     1. `sequence-state-pane.js` is a component for creating Sequence States
+    1. `timespan-state-panel.js` is a component for creatign Timespan states.
