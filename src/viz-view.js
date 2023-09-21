@@ -14,15 +14,15 @@ import * as Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 
 import * as d3 from "d3";
-import debounce from "lodash.debounce";
 
+import { CreateTimespanWidget } from "./timespan-state-panel.js";
 import { actions } from "./app-state.js";
 import { EllipseRegion, RectRegion } from "./states/region.js";
 import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
 import { UploadLayoutWidget } from "./upload-layout.js";
-import { BsSquare,BsCircle,BsGearFill  } from "react-icons/bs";
+import { BsSquare, BsCircle, BsGearFill } from "react-icons/bs";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 import { EditBox } from "./edit-box.js";
@@ -249,13 +249,18 @@ export function VizView({
     dispatch,
   };
 
-  let timeSlider = useMemo(
-    () =>
-      vizData && (
-        <TimeSlider vizData={vizData} svgWidth={svgWidth} dispatch={dispatch} />
-      ),
+  // Memoize to prevent re-rendering and resetting the slider.
+  let timespanWidget = useMemo(
+    () => (
+      <CreateTimespanWidget
+        vizData={vizData}
+        dispatch={dispatch}
+        takenNames={userDefinedStates.map((s) => s.name)}
+      />
+    ),
     [vizData, svgWidth, dispatch]
   );
+  timespanWidget = uiState === UIState.CreateTimespan && timespanWidget;
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
@@ -280,7 +285,7 @@ export function VizView({
         uiState={uiState}
         dispatch={dispatch}
       />
-      {timeSlider}
+      {timespanWidget}
       {uiState === UIState.MoveDataPoints && (
         <DataEditor {...dataEditorProps} />
       )}
@@ -356,46 +361,6 @@ function SettingsWidgets({
         />
       )}
     </>
-  );
-}
-
-// TODO: would this be simpler to just... implement without a library??
-function TimeSlider({ vizData, svgWidth, dispatch }) {
-  // Whenever vizData updates, increment 'key', which is used to
-  // force remounting the slider when the underlying data changes.
-  let key = useRef(0);
-  useEffect(() => {
-    key.current = key.current + 1;
-  }, [vizData]);
-
-  // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
-  let tipFormatter = useMemo(() => {
-    let [tMin, tMax] = d3.extent(vizData, (d) => d.Timestamp.getTime());
-    return (val) =>
-      hhmmss(new Date(tMin + (val / vizData.length) * (tMax - tMin)));
-  }, [vizData]);
-
-  if (!vizData) return null;
-
-  let rangeProps = {
-    max: vizData.length,
-    defaultValue: [0, vizData.length],
-    allowCross: false,
-    draggableTrack: true,
-    onChange: debounce((val) => dispatch(actions.changeTimespan(val)), 18),
-    tipFormatter,
-  };
-
-  const sliderDivStyle = {
-    width: svgWidth - 150, // TODO: fix this - it's a weird magic value
-    margin: 50,
-  };
-
-  return (
-    <div style={sliderDivStyle}>
-      <p>Timespan</p>
-      <Range key={key.current} {...rangeProps} />
-    </div>
   );
 }
 
