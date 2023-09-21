@@ -249,7 +249,7 @@ export class DataTable {
     if (!tCol || this.getColByType(COL_TYPES.T_CLEAN)) return this;
 
     let times = this.rows.map((r) => {
-      let t = DateParser.fromString(r[tCol.accessor]);
+      let t = DateParser.fromString(r[tCol.accessor], "en");
       // Interpret it in the current timezone instead of GMT...
       t.setTime(t.getTime() + t.getTimezoneOffset() * 60 * 1000);
       return t;
@@ -406,7 +406,7 @@ export class DataTable {
     if (tsCol) {
       res.rows = res.rows.map((r) => ({
         ...r,
-        [tsCol.accessor]: DateParser.fromString(r[tsCol.accessor]),
+        [tsCol.accessor]: DateParser.fromString(r[tsCol.accessor], "en"),
       }));
     }
 
