@@ -2,6 +2,7 @@ import React from "react";
 
 import { DropdownButton, Dropdown } from "react-bootstrap";
 
+import { CreateTimespanWidget } from "./timespan-state-panel.js";
 import { actions } from "./app-state.js";
 import { LatitudeLongitudeVizView } from "./longitude-latitude-viz-view.js";
 import { TimeSeriesVizView } from "./time-series-viz-view.js";

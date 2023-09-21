@@ -60,14 +60,7 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [
-    dataTable,
-    summaryTables,
-    activeTab,
-    userDefinedStates,
-    dispatch,
-    uiState,
-  ]);
+  }, [dataTable, summaryTables, activeTab, userDefinedStates, dispatch, uiState]);
 }
 
 const IndeterminateCheckbox = forwardRef(({ indeterminate, ...rest }, ref) => {
