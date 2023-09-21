@@ -11,14 +11,12 @@ import ListGroup from "react-bootstrap/ListGroup";
 import Dropdown from "react-bootstrap/Dropdown";
 
 import * as Slider from "rc-slider";
-import "rc-slider/assets/index.css";
 
 import * as d3 from "d3";
 
 import { CreateTimespanWidget } from "./timespan-state-panel.js";
 import { actions } from "./app-state.js";
 import { EllipseRegion, RectRegion } from "./states/region.js";
-import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
 import { UploadLayoutWidget } from "./upload-layout.js";
@@ -34,9 +32,6 @@ const DOT_HIGHLIGHT_COLOR = "#91fd76";
 const INVISIBLE_COLOR = "#00000000";
 const PATH_COLOR = "#69b3a2";
 const DEFAULT_OPACITY_PERCENT = 20;
-
-const createSliderWithTooltip = Slider.createSliderWithTooltip;
-const Range = createSliderWithTooltip(Slider.Range);
 
 // See: https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
 // (Not sure if this use case is legit - I just didn't want to keep accessing
