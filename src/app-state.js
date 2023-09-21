@@ -144,7 +144,7 @@ actionHandlers["loadState"] = (state, deserializedState) => {
 
   let { dataTable, defaultDataTransform, currentDataTransform } =
     deserializedState;
-    if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
+  if (!dataTable.isReady()) return state; // If it ain't good, don't load it!
   dataTable.sortColumns();
   let vizData = dataTable.getVizData();
   defaultDataTransform =
@@ -195,6 +195,8 @@ actionHandlers["loadTable"] = (state, table) => {
   };
 };
 
+// TODO: possibly remove this feature?
+// This changes which trajectory is shown (not the dots, but the path).
 actionHandlers["changeTimespan"] = (state, payload) => {
   return {
     ...state,
@@ -243,6 +245,33 @@ actionHandlers["cancelUploadLayout"] = (state) => {
 actionHandlers["finishUploadLayout"] = (state, siteLayout) => {
   return { ...state, uiState: UIState.Default, siteLayout };
 };
+
+actionHandlers["startCreateTimespanState"] = (state) => ({
+  ...state,
+  uiState: UIState.CreateTimespan,
+  vizState: {
+    ...state.vizState,
+    highlightedPoints: [[0, 100000000]],
+  },
+});
+
+actionHandlers["cancelCreateTimespanState"] = (state) => ({
+  ...state,
+  uiState: UIState.Default,
+  vizState: {
+    ...state.vizState,
+    highlightedPoints: [],
+  },
+});
+
+actionHandlers["finishCreateTimespanState"] = (state, timespanState) => ({
+  ...state,
+  userDefinedStates: state.userDefinedStates.concat(timespanState),
+  dataTable: state.dataTable
+    .withTempState(timespanState, state.currentDataTransform)
+    .withCommittedTempState(),
+  uiState: UIState.Default,
+});
 
 actionHandlers["startCreateRegion"] = (state, { dispatch }) => {
   return {
@@ -413,15 +442,15 @@ actionHandlers["startCreateConditionState"] = (state, payload) => {
   return {
     ...state,
     uiState: UIState.CreateCondition,
-  }
-}
+  };
+};
 
 actionHandlers["cancelCreateConditionState"] = (state, payload) => {
   return {
     ...state,
     uiState: UIState.Default,
-  }
-}
+  };
+};
 
 actionHandlers["CreateConditionState"] = (state, conditionState) => {
   return {
@@ -431,8 +460,8 @@ actionHandlers["CreateConditionState"] = (state, conditionState) => {
       .withTempState(conditionState, state.currentDataTransform)
       .withCommittedTempState(),
     uiState: UIState.Default,
-  }
-}
+  };
+};
 
 // Dirty, dirty hack lol
 actionHandlers["setTargetTransform"] = (state, targetTransformParams) => ({
