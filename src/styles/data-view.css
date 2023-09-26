@@ -9,7 +9,7 @@
 }
 
 .columnButtonContainer {
-  display: flex;
+  display: none; 
   border-radius: 0.375rem;
   margin-bottom: 8px;
   overflow-x: auto;
