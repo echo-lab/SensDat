@@ -25,6 +25,7 @@ import { UploadLayoutWidget } from "./upload-layout.js";
 import { SquareIcon, CircleIcon, GearIcon } from "./icons.js";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
+import { Tabs, Tab } from "react-bootstrap";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 
@@ -73,7 +74,7 @@ export function VizView({
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
-  let [resetZoom, setResetZoom] = useState(() => () => {});
+  let [resetZoom, setResetZoom] = useState(() => () => { });
   const d3Dots = useRef();
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
@@ -97,9 +98,9 @@ export function VizView({
       !vizData
         ? null
         : vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
-            let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
-            return { x, y, Timestamp, Order };
-          }),
+          let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+          return { x, y, Timestamp, Order };
+        }),
     [vizData, currentTransform]
   );
 
@@ -141,7 +142,7 @@ export function VizView({
       );
       resetZoom();
     },
-    /*dependencies=*/ [svg, createRegionInteraction]
+    /*dependencies=*/[svg, createRegionInteraction]
   );
 
   // Function to highlight points.
@@ -177,7 +178,7 @@ export function VizView({
     },
     // Note: the dependencies are such that we need to rerun this whenever d3Dots
     // changes OR when the set of shown/highlighted points changes.
-    /*deps=*/ [
+    /*deps=*/[
       vizData,
       vizTimespan,
       createRegionInteraction,
@@ -225,34 +226,41 @@ export function VizView({
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-      <svg
-        ref={svgRef}
-        style={svgStyle}
-        viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
+      <Tabs
+        onSelect={(k) => dispatch(actions.selectTab(k))}
+        className="m-3"
       >
-        <g className="zoomG">
-          <g className="siteLayoutG">
-            <image />
-          </g>
-          <g className="dataG"></g>
-          <g className="regionG"></g>
-          <g className="newRegionG"></g>
-        </g>
-      </svg>
-      <SettingsWidgets
-        svgWidth={svgWidth}
-        setLayoutOpacity={setLayoutOpacity}
-        createRegionInteraction={createRegionInteraction}
-        uiState={uiState}
-        dispatch={dispatch}
-      />
-      {timeSlider}
-      {uiState === UIState.MoveDataPoints && (
-        <DataEditor {...dataEditorProps} />
-      )}
-      {uiState === UIState.UploadLayout && (
-        <UploadLayoutWidget dispatch={dispatch} />
-      )}
+        <Tab eventKey="BASE_TABLE" title="Base Table">
+          <svg
+            ref={svgRef}
+            style={svgStyle}
+            viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
+          >
+            <g className="zoomG">
+              <g className="siteLayoutG">
+                <image />
+              </g>
+              <g className="dataG"></g>
+              <g className="regionG"></g>
+              <g className="newRegionG"></g>
+            </g>
+          </svg>
+          <SettingsWidgets
+            svgWidth={svgWidth}
+            setLayoutOpacity={setLayoutOpacity}
+            createRegionInteraction={createRegionInteraction}
+            uiState={uiState}
+            dispatch={dispatch}
+          />
+          {timeSlider}
+          {uiState === UIState.MoveDataPoints && (
+            <DataEditor {...dataEditorProps} />
+          )}
+          {uiState === UIState.UploadLayout && (
+            <UploadLayoutWidget dispatch={dispatch} />
+          )}
+        </Tab>
+      </Tabs>
     </Container>
   );
 }

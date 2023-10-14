@@ -201,7 +201,9 @@ export class DataTable {
     if (!tCol || this.getColByType(COL_TYPES.T_CLEAN)) return this;
 
     let times = this.rows.map((r) => {
+      console.log(r[tCol.accessor]);
       let t = Date.fromString(r[tCol.accessor]);
+      console.log(t);
       // Interpret it in the current timezone instead of GMT...
       t.setTime(t.getTime() + t.getTimezoneOffset() * 60 * 1000);
       return t;
