@@ -36,6 +36,7 @@ export function DataView({
 
     return (
       <div className="data-container debug def-visible">
+        
         <Tabs
           activeKey={activeTab}
           onSelect={(k) => dispatch(actions.selectTab(k))}

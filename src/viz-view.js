@@ -23,6 +23,7 @@ import { BsSquare, BsCircle, BsGearFill } from "react-icons/bs";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 import { EditBox } from "./edit-box.js";
+import { Tabs, Tab } from "react-bootstrap";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 
@@ -69,7 +70,7 @@ export function VizView({
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
-  let [resetZoom, setResetZoom] = useState(() => () => {});
+  let [resetZoom, setResetZoom] = useState(() => () => { });
   const d3Dots = useRef();
 
   let svgWidth = dimensions.width * 0.95 || 500; // Default to 500 to avoid an error message
@@ -100,9 +101,9 @@ export function VizView({
       !vizData
         ? null
         : vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
-            let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
-            return { x, y, Timestamp, Order };
-          }),
+          let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+          return { x, y, Timestamp, Order };
+        }),
     [vizData, currentTransform]
   );
 
@@ -159,15 +160,18 @@ export function VizView({
   }, [svg, regionsG, userDefinedStates]);
 
   // This initializes the createRegionInteraction with the SVG.
-  useEffect(() => {
-    if (!svg || !createRegionInteraction) return;
-    createRegionInteraction.initializeSvg(
-      d3.select(svg),
-      d3.select(newRegionG),
-      [PXL_WIDTH / 2, PXL_HEIGHT / 2]
-    );
-    resetZoom();
-  }, [svg, newRegionG, createRegionInteraction]);
+  useEffect(
+    () => {
+      if (!svg || !createRegionInteraction) return;
+      createRegionInteraction.initializeSvg(
+        d3.select(svg),
+        d3.select(newRegionG()),
+        [PXL_WIDTH / 2, PXL_HEIGHT / 2]
+      );
+      resetZoom();
+    },
+    /*dependencies=*/[svg, createRegionInteraction]
+  );
 
   // Function to highlight points.
   useEffect(
@@ -202,7 +206,7 @@ export function VizView({
     },
     // Note: the dependencies are such that we need to rerun this whenever d3Dots
     // changes OR when the set of shown/highlighted points changes.
-    /*deps=*/ [
+    /*deps=*/[
       vizData,
       vizTimespan,
       createRegionInteraction,
@@ -258,7 +262,7 @@ export function VizView({
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-<Tabs
+      <Tabs
         onSelect={(k) => dispatch(actions.selectTab(k))}
         className="m-3"
       >
