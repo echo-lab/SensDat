@@ -14,7 +14,6 @@ const App = () => {
         <Route path="/home" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/spatial-temporal" element={<SpatialTemporal />} />
-        <Route path="/time-series" element={<SpatialTemporal />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
