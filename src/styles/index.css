@@ -166,3 +166,8 @@ div .tr:hover:not(.table-header) {
   background-color: #a0ed8d !important;
   color: black !important;
 }
+
+.settings-gear, .region-shape, .rc-slider {
+  position: relative;
+  margin-top: 75px;
+}

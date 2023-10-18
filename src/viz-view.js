@@ -6,9 +6,8 @@ import React, {
   useState,
 } from "react";
 
-import Container from "react-bootstrap/Container";
-import ListGroup from "react-bootstrap/ListGroup";
-import Dropdown from "react-bootstrap/Dropdown";
+import { Tabs, Tab, Dropdown , ListGroup, Container} from "react-bootstrap";
+
 
 import * as Slider from "rc-slider";
 
@@ -259,34 +258,41 @@ export function VizView({
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-      <svg
-        ref={svgRef}
-        style={svgStyle}
-        viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
+<Tabs
+        onSelect={(k) => dispatch(actions.selectTab(k))}
+        className="m-3"
       >
-        <g className="zoomG">
-          <g className="siteLayoutG">
-            <image />
-          </g>
-          <g className="dataG"></g>
-          <g className="regionG"></g>
-          <g className="newRegionG"></g>
-        </g>
-      </svg>
-      <SettingsWidgets
-        svgWidth={svgWidth}
-        setLayoutOpacity={setLayoutOpacity}
-        createRegionInteraction={createRegionInteraction}
-        uiState={uiState}
-        dispatch={dispatch}
-      />
-      {timespanWidget}
-      {uiState === UIState.MoveDataPoints && (
-        <DataEditor {...dataEditorProps} />
-      )}
-      {uiState === UIState.UploadLayout && (
-        <UploadLayoutWidget dispatch={dispatch} />
-      )}
+        <Tab eventKey="BASE_TABLE" title="Base Table">
+          <svg
+            ref={svgRef}
+            style={svgStyle}
+            viewBox={`0 0 ${PXL_WIDTH} ${PXL_HEIGHT}`}
+          >
+            <g className="zoomG">
+              <g className="siteLayoutG">
+                <image />
+              </g>
+              <g className="dataG"></g>
+              <g className="regionG"></g>
+              <g className="newRegionG"></g>
+            </g>
+          </svg>
+          <SettingsWidgets
+            svgWidth={svgWidth}
+            setLayoutOpacity={setLayoutOpacity}
+            createRegionInteraction={createRegionInteraction}
+            uiState={uiState}
+            dispatch={dispatch}
+          />
+          {timespanWidget}
+          {uiState === UIState.MoveDataPoints && (
+            <DataEditor {...dataEditorProps} />
+          )}
+          {uiState === UIState.UploadLayout && (
+            <UploadLayoutWidget dispatch={dispatch} />
+          )}
+        </Tab>
+      </Tabs>
     </Container>
   );
 }
