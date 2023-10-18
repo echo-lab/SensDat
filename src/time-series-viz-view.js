@@ -84,15 +84,15 @@ export function TimeSeriesVizView({
   // Move the data to SVG-coordinates.
   let tData = useMemo(() => {
     const visTabSections = activeVizTab.split(":");
-    console.log(visTabSections);
     const timeSeriesVisData = dataTable.getTimeSeriesVizData(visTabSections[1]);
+
     console.log(timeSeriesVisData);
 
     return timeSeriesVisData.map(({ DataToGraph, Timestamp, Order }) => {
-      console.log(Timestamp);
-      const isoDate = Date.parse(Timestamp) / 10000000000;
-      console.log(isoDate);
-      const [x, oldY] = [Order, DataToGraph];
+      const isoDate =
+        (Date.parse(Timestamp) - Date.parse(timeSeriesVisData[0].Timestamp)) /
+        1000;
+      const [x, oldY] = [isoDate, DataToGraph];
       const y = oldY * -1;
       return { x, y, Timestamp, Order };
     });
@@ -147,9 +147,13 @@ export function TimeSeriesVizView({
     () => {
       if (!d3Dots.current) return;
 
+      console.log(d3Dots.current);
+
       let shownDoobs = d3Dots.current.filter(
         (d) => shownPoints[0] <= d.Order && d.Order <= shownPoints[1]
       );
+      console.log(shownDoobs);
+
       useShownPoints &&
         shownDoobs.attr("fill", DOT_COLOR).attr("stroke", "black").raise();
 
@@ -158,6 +162,7 @@ export function TimeSeriesVizView({
       let highlights = d3Dots.current.filter((d) =>
         highlightPoints.some(([lo, hi]) => lo <= d.Order && d.Order <= hi)
       );
+
       highlights
         .attr("fill", DOT_HIGHLIGHT_COLOR)
         .attr("stroke", "black")
@@ -200,7 +205,7 @@ export function TimeSeriesVizView({
       <svg
         ref={svgRef}
         style={svgStyle}
-        viewBox={`0 ${-TIME_SERIES_PXL_HEIGHT / 2.5} 500 ${
+        viewBox={`0 ${-TIME_SERIES_PXL_HEIGHT * 0.3} 500 ${
           TIME_SERIES_PXL_HEIGHT / 2
         }`}
       >
@@ -237,9 +242,6 @@ function attachZoomListeners(svg, g) {
 function drawData(g, data, timespan) {
   if (!data || data.length === 0) return;
   data = filterByTimespan(data, timespan);
-
-  //console.log("Data: ");
-  //console.log(data);
 
   g.selectAll("*").remove();
 
