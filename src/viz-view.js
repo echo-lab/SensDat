@@ -11,21 +11,20 @@ import ListGroup from "react-bootstrap/ListGroup";
 import Dropdown from "react-bootstrap/Dropdown";
 
 import * as Slider from "rc-slider";
-import "rc-slider/assets/index.css";
 
 import * as d3 from "d3";
-import debounce from "lodash.debounce";
 
+import { CreateTimespanWidget } from "./timespan-state-panel.js";
 import { actions } from "./app-state.js";
 import { EllipseRegion, RectRegion } from "./states/region.js";
-import { hhmmss } from "./utils.js";
 import { UIState } from "./ui-state.js";
 import { DataEditor } from "./viz-data-editor.js";
 import { UploadLayoutWidget } from "./upload-layout.js";
-import { SquareIcon, CircleIcon, GearIcon } from "./icons.js";
+import { BsSquare, BsCircle, BsGearFill } from "react-icons/bs";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 import { Tabs, Tab } from "react-bootstrap";
+import { EditBox } from "./edit-box.js";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 
@@ -34,9 +33,6 @@ const DOT_HIGHLIGHT_COLOR = "#91fd76";
 const INVISIBLE_COLOR = "#00000000";
 const PATH_COLOR = "#69b3a2";
 const DEFAULT_OPACITY_PERCENT = 20;
-
-const createSliderWithTooltip = Slider.createSliderWithTooltip;
-const Range = createSliderWithTooltip(Slider.Range);
 
 // See: https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
 // (Not sure if this use case is legit - I just didn't want to keep accessing
@@ -71,26 +67,34 @@ export function VizView({
   dimensions,
   siteLayout,
   setContainerHeight,
+  dataRecorder,
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
   let [resetZoom, setResetZoom] = useState(() => () => {});
   const d3Dots = useRef();
 
-  let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
+  let svgWidth = dimensions.width * 0.95 || 500; // Default to 500 to avoid an error message
   let svgHeight = svgWidth / SVG_ASPECT_RATIO;
 
   useEffect(() => {
     setContainerHeight(svgHeight + 200);
-  }, [svgHeight]);
+    // If nixing the timespan bar, do:
+    // setContainerHeight(svgHeight + 70);
+  }, [svgHeight, setContainerHeight]);
 
   // Some helper methods in case we change the order later. Note: svg must not be null to use.
-  let zoomG = () => svg.childNodes[0];
-  let siteLayoutG = () => zoomG().childNodes[0];
-  let dataG = () => zoomG().childNodes[1];
-  let regionsG = () => zoomG().childNodes[2];
-  let newRegionG = () => zoomG().childNodes[3];
-  let siteLayoutImageTag = () => siteLayoutG().childNodes[0];
+  let [zoomG, dataG, regionsG, newRegionG, siteLayoutImageTag] = useMemo(() => {
+    if (!svg) return new Array(6).fill(null);
+    let zoomG = svg.childNodes[0];
+    return [
+      zoomG,
+      zoomG.childNodes[1],
+      zoomG.childNodes[2],
+      zoomG.childNodes[3],
+      zoomG.childNodes[0].childNodes[0],
+    ];
+  }, [svg]);
 
   // Move the data to SVG-coordinates.
   let tData = useMemo(
@@ -104,46 +108,68 @@ export function VizView({
     [vizData, currentTransform]
   );
 
+  let reverseTransform = useMemo(() => {
+    if (!currentTransform) {
+      return null;
+    }
+    let revTransform = new EditBox(
+      currentTransform.currentParams,
+      currentTransform.initialParams
+    );
+    return (xy) => revTransform.transformPoint(xy);
+  }, [currentTransform]);
+
   // Attach zoom listeners
   useEffect(() => {
     if (!svg) return;
-    let reset = attachZoomListeners(d3.select(svg), d3.select(zoomG()));
+    let reset = !dataRecorder
+      ? attachZoomListeners(d3.select(svg), d3.select(zoomG))
+      : () => {};
     setResetZoom(() => reset);
-  }, [svg]);
+  }, [svg, zoomG, dataRecorder]);
 
   // Reset the zoom/pan if we get new data.
   useEffect(() => {
+    if (!svg) return;
     resetZoom();
-  }, [svg, vizData, siteLayout]);
+    d3.select(zoomG).on("click", (e) => {
+      dataRecorder && dataRecorder.addPoint(reverseTransform(d3.pointer(e)));
+    });
+  }, [
+    svg,
+    zoomG,
+    resetZoom,
+    vizData,
+    siteLayout,
+    currentTransform,
+    dataRecorder,
+  ]);
 
   // Draw/redraw the data.
   // TODO: consider optimizing by redrawing the data points and path separately.
   useEffect(() => {
     if (!svg) return;
-    let g = d3.select(dataG());
+    let g = d3.select(dataG);
     d3Dots.current = drawData(g, tData, vizTimespan);
-  }, [svg, tData, vizTimespan]);
+  }, [svg, dataG, tData, vizTimespan]);
 
   // Redraw the regions.
   useEffect(() => {
     if (!svg) return;
-    let g = d3.select(regionsG());
+    let g = d3.select(regionsG);
     drawRegions(g, userDefinedStates);
-  }, [svg, userDefinedStates]);
+  }, [svg, regionsG, userDefinedStates]);
 
   // This initializes the createRegionInteraction with the SVG.
-  useEffect(
-    () => {
-      if (!svg || !createRegionInteraction) return;
-      createRegionInteraction.initializeSvg(
-        d3.select(svg),
-        d3.select(newRegionG()),
-        [PXL_WIDTH / 2, PXL_HEIGHT / 2]
-      );
-      resetZoom();
-    },
-    /*dependencies=*/ [svg, createRegionInteraction]
-  );
+  useEffect(() => {
+    if (!svg || !createRegionInteraction) return;
+    createRegionInteraction.initializeSvg(
+      d3.select(svg),
+      d3.select(newRegionG),
+      [PXL_WIDTH / 2, PXL_HEIGHT / 2]
+    );
+    resetZoom();
+  }, [svg, newRegionG, createRegionInteraction]);
 
   // Function to highlight points.
   useEffect(
@@ -193,14 +219,14 @@ export function VizView({
   useEffect(() => {
     if (svg === null) return;
     siteLayout
-      ? drawSiteLayout(d3.select(siteLayoutImageTag()), siteLayout)
-      : d3.select(siteLayoutImageTag()).attr("width", 0).attr("height", 0);
-  }, [svg, siteLayout]);
+      ? drawSiteLayout(d3.select(siteLayoutImageTag), siteLayout)
+      : d3.select(siteLayoutImageTag).attr("width", 0).attr("height", 0);
+  }, [svg, siteLayoutImageTag, siteLayout]);
 
   let setLayoutOpacity = useMemo(() => {
     if (!siteLayout || !svg) return null;
-    return (val) => d3.select(siteLayoutImageTag()).attr("opacity", val / 100);
-  }, [svg, siteLayout]);
+    return (val) => d3.select(siteLayoutImageTag).attr("opacity", val / 100);
+  }, [svg, siteLayout, siteLayoutImageTag]);
 
   // TODO: Figure out what these should be and probably move them.
   const svgStyle = {
@@ -219,10 +245,18 @@ export function VizView({
     dispatch,
   };
 
-  let timeSliderProps = { vizData, svgWidth, dispatch };
-  let timeSlider = useMemo(() => {
-    return vizData ? <TimeSlider {...timeSliderProps} /> : null;
-  }, [vizData, svgWidth]);
+  // Memoize to prevent re-rendering and resetting the slider.
+  let timespanWidget = useMemo(
+    () => (
+      <CreateTimespanWidget
+        vizData={vizData}
+        dispatch={dispatch}
+        takenNames={userDefinedStates.map((s) => s.name)}
+      />
+    ),
+    [vizData, svgWidth, dispatch]
+  );
+  timespanWidget = uiState === UIState.CreateTimespan && timespanWidget;
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
@@ -295,7 +329,7 @@ function SettingsWidgets({
           id="dropdown-basic"
           disabled={uiState.busy()}
         >
-          <GearIcon />
+          <BsGearFill />
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
@@ -327,46 +361,6 @@ function SettingsWidgets({
         />
       )}
     </>
-  );
-}
-
-// TODO: would this be simpler to just... implement without a library??
-function TimeSlider({ vizData, svgWidth, dispatch }) {
-  // Whenever vizData updates, increment 'key', which is used to
-  // force remounting the slider when the underlying data changes.
-  let key = useRef(0);
-  useEffect(() => {
-    key.current = key.current + 1;
-  }, [vizData]);
-
-  // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
-  let tipFormatter = useMemo(() => {
-    let [tMin, tMax] = d3.extent(vizData, (d) => d.Timestamp.getTime());
-    return (val) =>
-      hhmmss(new Date(tMin + (val / vizData.length) * (tMax - tMin)));
-  }, [vizData]);
-
-  if (!vizData) return null;
-
-  let rangeProps = {
-    max: vizData.length,
-    defaultValue: [0, vizData.length],
-    allowCross: false,
-    draggableTrack: true,
-    onChange: debounce((val) => dispatch(actions.changeTimespan(val)), 18),
-    tipFormatter,
-  };
-
-  const sliderDivStyle = {
-    width: svgWidth - 150, // TODO: fix this - it's a weird magic value
-    margin: 50,
-  };
-
-  return (
-    <div style={sliderDivStyle}>
-      <p>Timespan</p>
-      <Range key={key.current} {...rangeProps} />
-    </div>
   );
 }
 
@@ -532,7 +526,7 @@ function RegionShapeSelector({ svgWidth, createRegionInteraction }) {
           createRegionInteraction.useEllipse();
         }}
       >
-        <CircleIcon />
+        <BsCircle />
       </ListGroup.Item>
       <ListGroup.Item
         variant="light"
@@ -543,7 +537,7 @@ function RegionShapeSelector({ svgWidth, createRegionInteraction }) {
           createRegionInteraction.useRect();
         }}
       >
-        <SquareIcon />
+        <BsSquare />
       </ListGroup.Item>
     </ListGroup>
   );

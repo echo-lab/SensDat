@@ -1,70 +1,57 @@
-# Getting Started with Create React App
+# Getting Started with SensDat Development
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. Make sure that you have NVM installed.
+2. Clone the Repo onto your local machine using your choice of git cloning methods.
+3. cd into the src folder.
+4. Run a npm install from the terminal to download all the required node modules.
+5. Start the app in development mode with `npm start`.
+6. Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-## Available Scripts
+Note that the app was initially created with [Create React App](https://create-react-app.dev/).
 
-In the project directory, you can run:
+# SensDat Deployment
 
-### `npm start`
+SensDat is deployed as a static website at (sensdat.cs.vt.edu)[sensdat.cs.vt.edu].
+Steps to push new code:
+1. Open up your terminal, navigate to the top-level SensDatfolder, and build the code locally via `npm run build`.
+1. If you're not on VT's network, use Pulse Secure to proxy.
+1. Now we'll use the `sftp` command to transfer the build files to the server!
+   1. Run `sftp danielmanesh@128.173.236.236` (or if you have another username) and enter the password.
+   1. Run `cd sensdat`.
+   1. Run `put -r build`. 
+        - NOTE: This will clobber whatever's currently in the directly `build` on the server with the local `build` directory. If you're not sure you want to clobber the old `build` directory, you can `ssh` in to the server and copy it to to the directory `sensdat/old_builds/` as backup.
+1. That's it!
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# File Organization
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+**_NOTE:_** This may not be exhaustive or up-to-date. Please update as needed :)
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Where to Start?
 
-### `npm run build`
+1. `index.js` This contains the root component of the app. Good for getting a high-level view of how all the components are assembled.
+1. `app-state.js` This file is for managing the "app-state", i.e., a blob of state that is initialized in `index.js` and passed down/shared with all the subcomponents. 
+This file also has various functions for mutating the app-state. Most state needed by multiple components should live and be managed here. 
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Data Visualization Development Files
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. `viz-view.js` for development on the main data visualization.
+2. `viz-data-editor.js` for development on the edit data section of the visualization.
+3. `upload-layout.js` for development on uploading a site layout to display on the visualization. 
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Data Table Development Files
 
-### `npm run eject`
+1. `data-view.js` for the component that houses the tabs with the data and summary tables
+1. `data-table.js` for main development on the base data table.
+1. `summary-tabl.sj` for summary tables based on states.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### States
+1. `state-view.js` for the component that lists the currently-existing states.
+1. `states/<state-name>.js` has a special object for each state.
+1. `utils.js` has a list `stateFactories` which needs to be updated for each state (though that's kind of sad).
+1. For individual states:
+    1. `create-region-interaction.js` for Region State creation (which is embedded in `viz-view.js`).
+    1. `compound-state-pane.js` is a component for creating Combination States
+    1. `condition-state-pane.js` is a component for creating Condition States
+    1. `sequence-state-pane.js` is a component for creating Sequence States
+    1. `timespan-state-panel.js` is a component for creatign Timespan states.

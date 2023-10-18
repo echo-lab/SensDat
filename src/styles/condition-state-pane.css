@@ -1,0 +1,19 @@
+.input-primary {
+    background-color: #add8e6 !important; /* light blue */
+    color: #000000 !important; /* black text */
+}
+
+.input-success {
+    background-color: #90ee90 !important; /* light green */
+    color: #000000 !important; /* black text */
+}
+
+.input-danger {
+    background-color: #ffffe0 !important; /* light yellow */
+    color: #000000 !important; /* black text */
+}
+
+.tr.highlighted {
+    background-color: #90ee90; /* light green */
+  }
+  

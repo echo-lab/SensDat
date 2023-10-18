@@ -1,5 +1,10 @@
-import React, { useCallback, useEffect, useMemo } from "react";
-import styled from "styled-components";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  forwardRef,
+} from "react";
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
@@ -11,17 +16,21 @@ import { SummaryTab } from "./summary-table.js";
 import { TableStyles } from "./utils.js";
 
 import "./styles/data-view.css";
+import { UIState } from "./ui-state.js";
 
 export function DataView({
   dataTable,
   summaryTables,
-  uistate,
   activeTab,
+  userDefinedStates,
+  uiState,
   dispatch,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
   return useMemo(() => {
-    let highlightFn = (points) => dispatch(actions.highlightPoints(points));
+    let highlightFn = (points) =>
+      uiState !== UIState.CreateTimespan &&
+      dispatch(actions.highlightPoints(points));
     let showPointsFn = (pointsRange) =>
       dispatch(actions.setShownPoints(pointsRange));
 
@@ -41,14 +50,11 @@ export function DataView({
             />
           </Tab>
           {summaryTables.map((st) => (
-            <Tab
-              eventKey={st.state.id}
-              key={st.state.id}
-              title={`Summary: ${st.state.name}`}
-            >
+            <Tab eventKey={st.state.id} key={st.state.id} title={st.state.name}>
               <SummaryTab
                 table={dataTable}
                 state={st.state}
+                userDefinedStates={userDefinedStates}
                 highlightFn={highlightFn}
               />
             </Tab>
@@ -56,12 +62,35 @@ export function DataView({
         </Tabs>
       </div>
     );
-  }, [dataTable, summaryTables, uistate, activeTab, dispatch]);
+  }, [dataTable, summaryTables, activeTab, userDefinedStates, dispatch, uiState]);
 }
+
+const IndeterminateCheckbox = forwardRef(({ indeterminate, ...rest }, ref) => {
+  const defaultRef = useRef();
+  const resolvedRef = ref || defaultRef;
+
+  useEffect(() => {
+    resolvedRef.current.indeterminate = indeterminate;
+  }, [resolvedRef, indeterminate]);
+
+  return (
+    <div className="columnButton">
+      <label className="columnButtonLabel">
+        <input
+          className="columnButtonInput"
+          type="checkbox"
+          ref={resolvedRef}
+          {...rest}
+        />
+        <div className="columnButtonText">All</div>
+      </label>
+    </div>
+  );
+});
 
 // This is pretty much copied from this example:
 // https://react-table.tanstack.com/docs/examples/virtualized-rows
-function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
+export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
   // These need to be memo-ized to prevent constant re-rendering
@@ -79,6 +108,8 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
     rows,
     totalColumnsWidth,
     prepareRow,
+    allColumns,
+    getToggleHideAllColumnsProps,
   } = useTable(
     {
       columns,
@@ -110,13 +141,11 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
           className="tr"
         >
           {row.cells.map((cell) => {
-
             const currentValue = cell.value;
 
-            if(currentValue == "true" || currentValue == "false"){
-
-              cell.value = currentValue.charAt(0).toUpperCase()
-              + currentValue.slice(1);
+            if (currentValue === "true" || currentValue === "false") {
+              cell.value =
+                currentValue.charAt(0).toUpperCase() + currentValue.slice(1);
 
               // This is where each cell gets rendered.
               return (
@@ -124,8 +153,7 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
                   {cell.render("Cell")}
                 </div>
               );
-            }
-            else {
+            } else {
               // This is where each cell gets rendered.
               return (
                 <div {...cell.getCellProps()} className="td">
@@ -142,6 +170,21 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
 
   return (
     <TableStyles>
+      <div className="columnButtonContainer">
+        <IndeterminateCheckbox {...getToggleHideAllColumnsProps()} />
+        {allColumns.map((column) => (
+          <div className="columnButton" key={column.id}>
+            <label className="columnButtonLabel">
+              <input
+                className="columnButtonInput"
+                type="checkbox"
+                {...column.getToggleHiddenProps()}
+              />
+              <div className="columnButtonText">{column.Header}</div>
+            </label>
+          </div>
+        ))}
+      </div>
       <div {...getTableProps()} className="table">
         <div>
           {headerGroups.map((headerGroup) => (
@@ -150,7 +193,10 @@ function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
               className="tr table-header"
             >
               {headerGroup.headers.map((column) => (
-                <div {...column.getHeaderProps()} className={"th " + column.render('Header').replace(/\s/g, '')}>
+                <div
+                  {...column.getHeaderProps()}
+                  className={"th " + column.render("Header").replace(/\s/g, "")}
+                >
                   {column.render("Header")}
                 </div>
               ))}

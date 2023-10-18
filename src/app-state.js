@@ -75,7 +75,7 @@ export const initialState = {
   vizState: {
     dataPoints: null, // This should be updated only when new data is loaded!
     timespan: [0, 1e15],
-    shownPoints: [0, 14],  // In theory, more ideal to determine this programatically, but eh.
+    shownPoints: [0, 14], // In theory, more ideal to determine this programatically, but eh.
     highlightedPoints: null,
   },
 };
@@ -172,14 +172,14 @@ actionHandlers["loadTable"] = (state, table) => {
   }
   let vizData = table.getVizData();
   let transform = getDefaultDataTransform(vizData);
-  
+
   // The new data table will be scrolled to the same position as before.
   // BUT: if we have fewer points than before, we'll just be scrolled to the end.
   // SO: below, we correct the shown points if we have to.
   let [r1, r2] = state.vizState.shownPoints || [0, 14];
   let N = table.rows.length;
   if (r2 > N) {
-    [r1, r2] = [N - (r2-r1) - 1, N];
+    [r1, r2] = [N - (r2 - r1) - 1, N];
   }
 
   return {
@@ -189,13 +189,14 @@ actionHandlers["loadTable"] = (state, table) => {
     vizState: {
       ...initialState.vizState,
       dataPoints: vizData,
-      shownPoints: [r1, r2],
     },
     defaultDataTransform: transform,
     currentDataTransform: transform,
   };
 };
 
+// TODO: possibly remove this feature?
+// This changes which trajectory is shown (not the dots, but the path).
 actionHandlers["changeTimespan"] = (state, payload) => {
   return {
     ...state,
@@ -245,6 +246,33 @@ actionHandlers["finishUploadLayout"] = (state, siteLayout) => {
   return { ...state, uiState: UIState.Default, siteLayout };
 };
 
+actionHandlers["startCreateTimespanState"] = (state) => ({
+  ...state,
+  uiState: UIState.CreateTimespan,
+  vizState: {
+    ...state.vizState,
+    highlightedPoints: [[0, 100000000]],
+  },
+});
+
+actionHandlers["cancelCreateTimespanState"] = (state) => ({
+  ...state,
+  uiState: UIState.Default,
+  vizState: {
+    ...state.vizState,
+    highlightedPoints: [],
+  },
+});
+
+actionHandlers["finishCreateTimespanState"] = (state, timespanState) => ({
+  ...state,
+  userDefinedStates: state.userDefinedStates.concat(timespanState),
+  dataTable: state.dataTable
+    .withTempState(timespanState, state.currentDataTransform)
+    .withCommittedTempState(),
+  uiState: UIState.Default,
+});
+
 actionHandlers["startCreateRegion"] = (state, { dispatch }) => {
   return {
     ...state,
@@ -288,6 +316,25 @@ actionHandlers["createCompoundState"] = (state, compoundState) => {
     uiState: UIState.Default,
   };
 };
+
+actionHandlers["startCreateSequence"] = (state) => ({
+  ...state,
+  uiState: UIState.CreateSequence,
+});
+
+actionHandlers["cancelCreateSequence"] = (state) => ({
+  ...state,
+  uiState: UIState.Default,
+});
+
+actionHandlers["createSequenceState"] = (state, seqState) => ({
+  ...state,
+  userDefinedStates: state.userDefinedStates.concat(seqState),
+  dataTable: state.dataTable
+    .withTempState(seqState, state.currentDataTransform)
+    .withCommittedTempState(),
+  uiState: UIState.Default,
+});
 
 actionHandlers["createTempState"] = (state, { userDefinedState }) => {
   // return a new DataTable with the temp state column.
@@ -389,6 +436,39 @@ actionHandlers["highlightPointsForState"] = (state, userState) => ({
     ...state.vizState,
     highlightedPoints: state.dataTable.getTrueRanges(userState.id),
   },
+});
+
+actionHandlers["startCreateConditionState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.CreateCondition,
+  };
+};
+
+actionHandlers["cancelCreateConditionState"] = (state, payload) => {
+  return {
+    ...state,
+    uiState: UIState.Default,
+  };
+};
+
+actionHandlers["CreateConditionState"] = (state, conditionState) => {
+  return {
+    ...state,
+    userDefinedStates: state.userDefinedStates.concat(conditionState),
+    dataTable: state.dataTable
+      .withTempState(conditionState, state.currentDataTransform)
+      .withCommittedTempState(),
+    uiState: UIState.Default,
+  };
+};
+
+// Dirty, dirty hack lol
+actionHandlers["setTargetTransform"] = (state, targetTransformParams) => ({
+  ...state,
+  currentDataTransform: state.currentDataTransform.withTargetParams(
+    targetTransformParams
+  ),
 });
 
 // actions maps each actionHandler name (e.g., "loadTable", "changeTimespan") to a function
