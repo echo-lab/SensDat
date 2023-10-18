@@ -74,7 +74,7 @@ export function VizView({
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
-  let [resetZoom, setResetZoom] = useState(() => () => { });
+  let [resetZoom, setResetZoom] = useState(() => () => {});
   const d3Dots = useRef();
 
   let svgWidth = dimensions.width * 0.97 || 500; // Default to 500 to avoid an error message
@@ -98,9 +98,9 @@ export function VizView({
       !vizData
         ? null
         : vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
-          let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
-          return { x, y, Timestamp, Order };
-        }),
+            let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+            return { x, y, Timestamp, Order };
+          }),
     [vizData, currentTransform]
   );
 
@@ -142,7 +142,7 @@ export function VizView({
       );
       resetZoom();
     },
-    /*dependencies=*/[svg, createRegionInteraction]
+    /*dependencies=*/ [svg, createRegionInteraction]
   );
 
   // Function to highlight points.
@@ -178,7 +178,7 @@ export function VizView({
     },
     // Note: the dependencies are such that we need to rerun this whenever d3Dots
     // changes OR when the set of shown/highlighted points changes.
-    /*deps=*/[
+    /*deps=*/ [
       vizData,
       vizTimespan,
       createRegionInteraction,
@@ -226,10 +226,7 @@ export function VizView({
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-      <Tabs
-        onSelect={(k) => dispatch(actions.selectTab(k))}
-        className="m-3"
-      >
+      <Tabs onSelect={(k) => dispatch(actions.selectTab(k))} className="m-3">
         <Tab eventKey="BASE_TABLE" title="Base Table">
           <svg
             ref={svgRef}
