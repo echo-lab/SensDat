@@ -12,7 +12,7 @@ import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
 import { UploadDataWidget } from "./upload-data.js";
-import { ConditionStatePane } from "./condition-state-pane.js"
+import { ConditionStatePane } from "./condition-state-pane.js";
 import { UserStudyLoader } from "./preload/user-study";
 import { CompoundStatePane } from "./compound-state-pane.js";
 import { UIState } from "./ui-state.js";
@@ -33,8 +33,8 @@ const RECORD_DATA_START_TIME = new Date(
 ); // a year ago lol
 const RECORD_DATA_DT = 5; // number of seconds between data points
 
-// This is the main place where everything starts. If you are doing any 
-// development on this project, this is a good place to start to see how 
+// This is the main place where everything starts. If you are doing any
+// development on this project, this is a good place to start to see how
 // everything is being rendered.
 
 export default function SpatialTemporal() {
@@ -49,7 +49,6 @@ export default function SpatialTemporal() {
   // instance of the site.
   useEffect(
     () => {
-
       // Stores the last instance of the site from local storage.
       let serializedState = window.localStorage["state"];
 
@@ -59,7 +58,7 @@ export default function SpatialTemporal() {
         return;
       }
 
-      // If there is a last instance, than it deserializes it and displays it 
+      // If there is a last instance, than it deserializes it and displays it
       // on the site.
       AppState.deserialize(serializedState).then((deserializedState) =>
         dispatch(AppState.actions.loadState(deserializedState))
@@ -159,7 +158,7 @@ export default function SpatialTemporal() {
     dataTable: state.dataTable,
     dispatch,
   };
-  
+
   let createSequenceProps = {
     userDefinedStates: state.userDefinedStates,
     dataTable: state.dataTable,
@@ -184,7 +183,7 @@ export default function SpatialTemporal() {
   let PageHeader = () => (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
-        <Navbar.Brand>Octave</Navbar.Brand>
+        <Navbar.Brand href="home">Octave</Navbar.Brand>
         <Nav className="justify-content-end">
           <NavDropdown className="no-arrow" title="Import Data">
             <NavDropdown.Item onClick={() => setUploadActive(true)}>
@@ -255,4 +254,4 @@ export default function SpatialTemporal() {
       {uploadActive ? <UploadDataWidget {...uploadDataProps} /> : null}
     </>
   );
-};
+}
