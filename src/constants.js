@@ -3,3 +3,5 @@
 // always span this space (i.e., we will use view-box="0 0 800 500").
 export const PXL_WIDTH = 800;
 export const PXL_HEIGHT = 500;
+export const TIME_SERIES_PXL_WIDTH = 1600;
+export const TIME_SERIES_PXL_HEIGHT = 1000;

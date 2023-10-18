@@ -8,8 +8,7 @@ import React, {
 import { useTable, useBlockLayout } from "react-table";
 import { FixedSizeList } from "react-window";
 
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
+import { Tab, Tabs } from "react-bootstrap";
 
 import { actions } from "./app-state.js";
 import { SummaryTab } from "./summary-table.js";
@@ -25,7 +24,6 @@ export function DataView({
   userDefinedStates,
   uiState,
   dispatch,
-  timeGraphDataTable,
 }) {
   // Should absolutely NOT re-render this if we don't have to!!
   return useMemo(() => {
@@ -42,39 +40,9 @@ export function DataView({
           onSelect={(k) => dispatch(actions.selectTab(k))}
           className="m-3"
         >
-          <Tab eventKey="BASE_TABLE" title="Base Table">
+          <Tab eventKey={"BASE_TABLE"} title="Base Table">
             <VirtualizedTable
               dataTable={dataTable}
-              highlightFn={highlightFn}
-              showPointsFn={showPointsFn}
-            />
-          </Tab>
-          <Tab
-            eventKey="Longitude"
-            title="Longitude"
-          >
-            <VirtualizedTable
-              dataTable={timeGraphDataTable}
-              highlightFn={highlightFn}
-              showPointsFn={showPointsFn}
-            />
-          </Tab>
-          <Tab
-            eventKey="Latitude"
-            title="Latitude"
-          >
-            <VirtualizedTable
-              dataTable={timeGraphDataTable}
-              highlightFn={highlightFn}
-              showPointsFn={showPointsFn}
-            />
-          </Tab>
-          <Tab
-            eventKey="Elevation"
-            title="Elevation"
-          >
-            <VirtualizedTable
-              dataTable={timeGraphDataTable}
               highlightFn={highlightFn}
               showPointsFn={showPointsFn}
             />
@@ -98,7 +66,7 @@ export function DataView({
     activeTab,
     userDefinedStates,
     dispatch,
-    timeGraphDataTable,
+    uiState,
   ]);
 }
 
@@ -130,7 +98,6 @@ const IndeterminateCheckbox = forwardRef(({ indeterminate, ...rest }, ref) => {
 export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), []);
 
-  console.log(dataTable);
   // These need to be memo-ized to prevent constant re-rendering
   const columns = React.useMemo(() => {
     return dataTable ? dataTable.getReactTableCols() : [];
@@ -230,14 +197,20 @@ export function VirtualizedTable({ dataTable, highlightFn, showPointsFn }) {
               {...headerGroup.getHeaderGroupProps()}
               className="tr table-header"
             >
-              {headerGroup.headers.map((column) => (
-                <div
-                  {...column.getHeaderProps()}
-                  className={"th " + column.render("Header").replace(/\s/g, "")}
-                >
-                  {column.render("Header")}
-                </div>
-              ))}
+              {headerGroup.headers.map((column) => {
+                console.log(column.render("Header").replace(/\s/g, ""));
+
+                return (
+                  <div
+                    {...column.getHeaderProps()}
+                    className={
+                      "th " + column.render("Header").replace(/\s/g, "")
+                    }
+                  >
+                    {column.render("Header")}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>

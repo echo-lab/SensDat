@@ -122,6 +122,8 @@ function App() {
   };
 
   let vizViewProps = {
+    activeVizTab: state.activeVizTab,
+    dataTable: state.dataTable,
     vizData: state.vizState.dataPoints,
     vizTimespan: state.vizState.timespan,
     shownPoints: state.vizState.shownPoints,

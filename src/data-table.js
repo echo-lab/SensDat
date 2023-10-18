@@ -63,7 +63,7 @@ export class DataTable {
     this.sortColumns();
   }
 
-  static fromRowsCols(rows,cols) {
+  static fromRowsCols(rows, cols) {
     let res = new DataTable();
     res.rows = rows;
     res.cols = cols;
@@ -96,6 +96,21 @@ export class DataTable {
       Longitude: row.Longitude,
       Timestamp: timeCol && row[timeCol],
     }));
+  }
+
+  // Note: MUST have the cleaned Time column!
+  // columnName is the column you want to graph against Time
+  getTimeSeriesVizData(columnName) {
+    if (!this.isReady()) return false;
+    let timeCol = this.getAccessor(COL_TYPES.T_CLEAN);
+
+    // Find a better way to look if the column name is in the table
+    // See if you can convert string to JS
+      return this.rows.map((row) => ({
+        Order: row.Order,
+        Timestamp: timeCol && row[timeCol],
+        DataToGraph: row[columnName],
+      }));
   }
 
   getTempCol() {
@@ -181,39 +196,6 @@ export class DataTable {
       return row;
     });
     return result;
-  }
-
-  // NOTE: This returns a NEW DataTable (!!)
-  createTimeGraphTable(column) {
-    let res = new DataTable();
-    res.rows = this.rows;
-    res.cols = [
-      { displayName: "Order", accessor: "Order", type: COL_TYPES.INDEX },
-      {
-        displayName: "Time",
-        accessor: "CLEANED_TIME",
-        type: COL_TYPES.T_CLEAN,
-      },
-    ];
-    if (column === "Longitude") {
-      res.cols.push({
-        displayName: column,
-        accessor: column,
-        type: COL_TYPES.X,
-      });
-    } else if (column === "Latitude") {
-      res.cols.push({
-        displayName: column,
-        accessor: column,
-        type: COL_TYPES.Y,
-      });
-    } else if (column === "Elevation") {
-      res.cols.push({
-        displayName: column,
-        accessor: column,
-      });
-    }
-    return res;
   }
 
   // NOTE: This returns a NEW DataTable (!!)
@@ -424,6 +406,7 @@ export class DataTable {
       dynamicTyping: true,
       error: onError,
       complete: (res) => {
+        console.log(res);
         onSuccess(new DataTable(res.data, {}));
       },
     });

@@ -66,6 +66,9 @@ export const initialState = {
   // Which tab is active in the Data Pane. Either "BASE_TABLE" or a state ID.
   activeTab: "BASE_TABLE",
 
+  // Which tab is active in the Graph Pane. Either "BASE_TABLE" or a Time Series Graph.
+  activeVizTab: "BASE_TABLE",
+
   // The current site layout. Should be a SiteLayout object or null;
   siteLayout: null,
 
@@ -412,7 +415,6 @@ actionHandlers["createSummary"] = (state, stateID) => {
 actionHandlers["selectTab"] = (state, tabID) => ({
   ...state,
   activeTab: tabID,
-  timeGraphDataTable: state.dataTable.createTimeGraphTable(tabID),
 });
 
 actionHandlers["setShownPoints"] = (state, shownRange) => ({
@@ -472,11 +474,13 @@ actionHandlers["setTargetTransform"] = (state, targetTransformParams) => ({
   ),
 });
 
-actionHandlers["createTimeGraph"] = (state, timeGraph) => {
+actionHandlers["createTimeSeriesGraph"] = (state, activeVizTab) => {
+  console.log("I got called! " + activeVizTab);
   return {
     ...state,
-    activeTab: timeGraph,
-    timeGraphDataTable: state.dataTable.createTimeGraphTable(timeGraph),
+    activeVizTab: activeVizTab,
+    dataTable: state.dataTable,
+    uiState: UIState.Default,
   };
 };
 

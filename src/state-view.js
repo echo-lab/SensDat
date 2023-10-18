@@ -70,30 +70,6 @@ export function StateView({
               Sequence
             </Dropdown.Item>
           </DropdownButton>
-          <DropdownButton
-            variant="outline-primary"
-            size="sm"
-            id="dropdown-basic-button"
-            title="+ New Time Graph"
-            className="mx-2"
-            disabled={uiState.busy()}
-          >
-            <Dropdown.Item
-              onClick={() => dispatch(actions.createTimeGraph("Longitude"))}
-            >
-              Longitude
-            </Dropdown.Item>
-            <Dropdown.Item
-              onClick={() => dispatch(actions.createTimeGraph("Latitude"))}
-            >
-              Latitude
-            </Dropdown.Item>
-            <Dropdown.Item
-              onClick={() => dispatch(actions.createTimeGraph("Elevation"))}
-            >
-              Elevation
-            </Dropdown.Item>
-          </DropdownButton>
           {userDefinedStates.map((s) => (
             <DropdownButton
               variant="outline-dark"
