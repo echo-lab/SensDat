@@ -93,6 +93,21 @@ export class DataTable {
     }));
   }
 
+  // Note: MUST have the cleaned Time column!
+  // columnName is the column you want to graph against Time
+  getTimeSeriesVizData(columnName) {
+    if (!this.isReady()) return false;
+    let timeCol = this.getAccessor(COL_TYPES.T_CLEAN);
+
+    // Find a better way to look if the column name is in the table
+    // See if you can convert string to JS
+    return this.rows.map((row) => ({
+      Order: row.Order,
+      Timestamp: timeCol && row[timeCol],
+      DataToGraph: row[columnName],
+    }));
+  }
+
   getTempCol() {
     // returns null or col object, i.e., {displayName, accessor, type}
     let res = this.cols.filter((col) => col.type === COL_TYPES.STATE_TMP);

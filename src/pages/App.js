@@ -5,6 +5,7 @@ import Header from "./components/header";
 import Home from "./home/home-page";
 import About from "./about/about-page";
 import SpatialTemporal from "./spatial-temporal/spatial-temporal";
+import TimeSeries from "./time-series/time-series";
 
 const App = () => {
   const buildPage = (page) => (
@@ -23,6 +24,11 @@ const App = () => {
           exact
           path="/spatial-temporal"
           element={buildPage(<SpatialTemporal />)}
+        />
+        <Route
+          exact
+          path="/time-series"
+          element={buildPage(<TimeSeries />)}
         />
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
