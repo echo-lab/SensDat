@@ -6,8 +6,7 @@ import React, {
   useState,
 } from "react";
 
-import { Tabs, Tab, Dropdown , ListGroup, Container} from "react-bootstrap";
-
+import { Tabs, Tab, Dropdown, ListGroup, Container } from "react-bootstrap";
 
 import * as Slider from "rc-slider";
 
@@ -141,6 +140,7 @@ export function VizView({
     siteLayout,
     currentTransform,
     dataRecorder,
+    reverseTransform,
   ]);
 
   // Draw/redraw the data.
@@ -167,7 +167,7 @@ export function VizView({
       [PXL_WIDTH / 2, PXL_HEIGHT / 2]
     );
     resetZoom();
-  }, [svg, newRegionG, createRegionInteraction]);
+  }, [svg, createRegionInteraction, newRegionG, resetZoom]);
 
   // Function to highlight points.
   useEffect(
@@ -252,16 +252,13 @@ export function VizView({
         takenNames={userDefinedStates.map((s) => s.name)}
       />
     ),
-    [vizData, svgWidth, dispatch]
+    [vizData, dispatch, userDefinedStates]
   );
   timespanWidget = uiState === UIState.CreateTimespan && timespanWidget;
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-<Tabs
-        onSelect={(k) => dispatch(actions.selectTab(k))}
-        className="m-3"
-      >
+      <Tabs onSelect={(k) => dispatch(actions.selectTab(k))} className="m-3">
         <Tab eventKey="BASE_TABLE" title="Base Table">
           <svg
             ref={svgRef}
@@ -343,6 +340,7 @@ function SettingsWidgets({
         </Dropdown.Menu>
       </Dropdown>
       {setLayoutOpacity && (
+        // eslint-disable-next-line
         <Slider.default
           defaultValue={DEFAULT_OPACITY_PERCENT}
           onChange={setLayoutOpacity}

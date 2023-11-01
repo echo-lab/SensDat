@@ -1,0 +1,32 @@
+.Home {
+  display:flex;
+  width: 100%;
+}
+
+.Home-left {
+  display:flex;
+  flex-direction: column;
+  width: 50%;
+}
+
+.Home-right {
+  display:flex;
+  flex-direction: column;
+  width: 50%;
+}
+
+.Home-title {
+  margin-left: auto;
+  margin-right:auto;
+}
+
+.Home-description {
+  margin-left: auto;
+  margin-right:auto;
+}
+
+.Home-spatialTemporalButton {
+  margin-left: auto;
+  margin-right:auto;
+}
+
