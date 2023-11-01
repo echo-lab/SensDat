@@ -1,6 +1,6 @@
 import * as React from "react";
-
 import "../../styles/home/home-page.css";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
@@ -23,9 +23,9 @@ const Home = () => {
         ></iframe>
       </div>
       <div className="Home-right">
-        <a className="Home-spatialTemporalButton" href="spatial-temporal">
+        <Link className="Home-spatialTemporalButton" to="/spatial-temporal">
           Check Out Octave Here!
-        </a>
+        </Link>
       </div>
     </div>
   );

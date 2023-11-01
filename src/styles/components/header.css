@@ -1,0 +1,13 @@
+.Header-Logo {
+  padding-top: 0.3125rem;
+  padding-bottom: 0.3125rem;
+  margin-right: 1rem;
+  font-size: 1.25rem;
+  text-decoration: none;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.Header-Logo:hover {
+  color: #fff;
+}
