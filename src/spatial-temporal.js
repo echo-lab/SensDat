@@ -221,10 +221,28 @@ export default function SpatialTemporal() {
 
   return (
     <>
-      <PageHeader />
       <Container fluid className="bg-doob">
-        <Container>
+        <Container className="d-flex justify-content-between">
           <StateView {...stateViewProps} />
+          <Nav className="my-auto">
+            <NavDropdown className="no-arrow" title="Import Data">
+              <NavDropdown.Item onClick={() => setUploadActive(true)}>
+                Upload CSV
+              </NavDropdown.Item>
+              <ClassExerciseLoader dispatch={dispatch} />
+            </NavDropdown>
+            {window.location.href.endsWith("/study") ? (
+              <>
+                <Navbar.Text>|</Navbar.Text>
+                <UserStudyLoader dispatch={dispatch} />
+              </>
+            ) : (
+              <>
+                <Navbar.Text>|</Navbar.Text>
+                <ExportButton {...exportButtonProps}></ExportButton>
+              </>
+            )}
+          </Nav>
         </Container>
       </Container>
       <Container fluid className="bg-light">

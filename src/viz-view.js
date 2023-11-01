@@ -8,7 +8,6 @@ import React, {
 
 import { Tabs, Tab, Dropdown , ListGroup, Container} from "react-bootstrap";
 
-
 import * as Slider from "rc-slider";
 
 import * as d3 from "d3";
@@ -23,7 +22,6 @@ import { BsSquare, BsCircle, BsGearFill } from "react-icons/bs";
 
 import { PXL_HEIGHT, PXL_WIDTH } from "./constants.js";
 import { EditBox } from "./edit-box.js";
-import { Tabs, Tab } from "react-bootstrap";
 
 const SVG_ASPECT_RATIO = 8 / 5; // width/height
 
