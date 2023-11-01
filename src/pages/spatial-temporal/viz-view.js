@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 
-import { Tabs, Tab, Dropdown , ListGroup, Container} from "react-bootstrap";
+import { Tabs, Tab, Dropdown, ListGroup, Container } from "react-bootstrap";
 
 import * as Slider from "rc-slider";
 
@@ -68,7 +68,7 @@ export function VizView({
   uiState,
 }) {
   let [svg, svgRef] = useSvgRef();
-  let [resetZoom, setResetZoom] = useState(() => () => { });
+  let [resetZoom, setResetZoom] = useState(() => () => {});
   const d3Dots = useRef();
 
   let svgWidth = dimensions.width * 0.95 || 500; // Default to 500 to avoid an error message
@@ -99,9 +99,9 @@ export function VizView({
       !vizData
         ? null
         : vizData.map(({ Longitude, Latitude, Timestamp, Order }) => {
-          let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
-          return { x, y, Timestamp, Order };
-        }),
+            let [x, y] = currentTransform.transformPoint([Longitude, Latitude]);
+            return { x, y, Timestamp, Order };
+          }),
     [vizData, currentTransform]
   );
 
@@ -140,6 +140,7 @@ export function VizView({
     siteLayout,
     currentTransform,
     dataRecorder,
+    reverseTransform,
   ]);
 
   // Draw/redraw the data.
@@ -158,18 +159,15 @@ export function VizView({
   }, [svg, regionsG, userDefinedStates]);
 
   // This initializes the createRegionInteraction with the SVG.
-  useEffect(
-    () => {
-      if (!svg || !createRegionInteraction) return;
-      createRegionInteraction.initializeSvg(
-        d3.select(svg),
-        d3.select(newRegionG()),
-        [PXL_WIDTH / 2, PXL_HEIGHT / 2]
-      );
-      resetZoom();
-    },
-    /*dependencies=*/[svg, createRegionInteraction]
-  );
+  useEffect(() => {
+    if (!svg || !createRegionInteraction) return;
+    createRegionInteraction.initializeSvg(
+      d3.select(svg),
+      d3.select(newRegionG),
+      [PXL_WIDTH / 2, PXL_HEIGHT / 2]
+    );
+    resetZoom();
+  }, [svg, createRegionInteraction, newRegionG, resetZoom]);
 
   // Function to highlight points.
   useEffect(
@@ -204,7 +202,7 @@ export function VizView({
     },
     // Note: the dependencies are such that we need to rerun this whenever d3Dots
     // changes OR when the set of shown/highlighted points changes.
-    /*deps=*/[
+    /*deps=*/ [
       vizData,
       vizTimespan,
       createRegionInteraction,
@@ -254,16 +252,13 @@ export function VizView({
         takenNames={userDefinedStates.map((s) => s.name)}
       />
     ),
-    [vizData, svgWidth, dispatch]
+    [vizData, dispatch, userDefinedStates]
   );
   timespanWidget = uiState === UIState.CreateTimespan && timespanWidget;
 
   return (
     <Container className="viz-container" style={{ paddingLeft: "5px" }}>
-      <Tabs
-        onSelect={(k) => dispatch(actions.selectTab(k))}
-        className="m-3"
-      >
+      <Tabs onSelect={(k) => dispatch(actions.selectTab(k))} className="m-3">
         <Tab eventKey="BASE_TABLE" title="Base Table">
           <svg
             ref={svgRef}
@@ -345,6 +340,7 @@ function SettingsWidgets({
         </Dropdown.Menu>
       </Dropdown>
       {setLayoutOpacity && (
+        // eslint-disable-next-line
         <Slider.default
           defaultValue={DEFAULT_OPACITY_PERCENT}
           onChange={setLayoutOpacity}

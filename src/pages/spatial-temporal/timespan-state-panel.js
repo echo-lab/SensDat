@@ -1,8 +1,4 @@
-import React, {
-  useRef,
-  useMemo,
-  useState,
-} from "react";
+import React, { useRef, useMemo, useState } from "react";
 
 import * as d3 from "d3";
 import * as Slider from "rc-slider";
@@ -24,10 +20,10 @@ export function CreateTimespanWidget({ vizData, takenNames, dispatch }) {
   // TODO: can we get rid of this???????????
   // Whenever the underlying data updates, increment 'key', which is used to
   // force remounting the slider when the underlying data changes.
-//   let key = useRef(0);
-//   useEffect(() => {
-//     key.current = key.current + 1;
-//   }, [vizData]);
+  //   let key = useRef(0);
+  //   useEffect(() => {
+  //     key.current = key.current + 1;
+  //   }, [vizData]);
 
   // TODO: Figure out how to do this w/ 'marks' instead of tooltips.
   let tRange = vizData && d3.extent(vizData, (d) => d.Timestamp.getTime());
@@ -44,7 +40,7 @@ export function CreateTimespanWidget({ vizData, takenNames, dispatch }) {
 
   let onSubmit = (e) => {
     let timespanState = new TimespanState(stateName, selectedRange.current);
-    dispatch(actions.finishCreateTimespanState(timespanState))
+    dispatch(actions.finishCreateTimespanState(timespanState));
   };
 
   //
@@ -73,10 +69,7 @@ export function CreateTimespanWidget({ vizData, takenNames, dispatch }) {
   };
 
   // Possibly unnecessary! yay!
-  let slider = useMemo(
-    () => <Range {...rangeProps} />,
-    [tRange, dataLength, dispatch]
-  );
+  let slider = useMemo(() => <Range {...rangeProps} />, [rangeProps]);
 
   return (
     <Container className="mx-3 px-3 py-3">

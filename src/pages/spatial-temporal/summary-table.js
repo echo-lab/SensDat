@@ -13,7 +13,7 @@ import {
   getSequenceInfo,
 } from "./utils.js";
 
-import "./styles/summary-table.css";
+import "../../styles/spatial-temporal/summary-table.css";
 import { SequenceState } from "./states/sequence-state.js";
 
 const SUMMARY_COLS = Object.freeze({

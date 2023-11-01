@@ -1,10 +1,10 @@
 import * as React from "react";
 import { Navigate } from "react-router";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Header from "./header";
-import Home from "./home-page";
-import About from "./about-page";
-import SpatialTemporal from "./spatial-temporal";
+import Header from "./components/header";
+import Home from "./home/home-page";
+import About from "./about/about-page";
+import SpatialTemporal from "./spatial-temporal/spatial-temporal";
 
 const App = () => {
   const buildPage = (page) => (

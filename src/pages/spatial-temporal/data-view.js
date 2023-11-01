@@ -15,7 +15,7 @@ import { actions } from "./app-state.js";
 import { SummaryTab } from "./summary-table.js";
 import { TableStyles } from "./utils.js";
 
-import "./styles/data-view.css";
+import "../../styles/spatial-temporal/data-view.css";
 import { UIState } from "./ui-state.js";
 
 export function DataView({

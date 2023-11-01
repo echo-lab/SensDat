@@ -7,7 +7,7 @@ import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
 import Nav from "react-bootstrap/Nav";
 
-import "./styles/spatial-temporal.css";
+import "../../styles/spatial-temporal/spatial-temporal.css";
 import { DataView } from "./data-view.js";
 import { VizView } from "./viz-view.js";
 import { StateView } from "./state-view.js";
@@ -179,33 +179,6 @@ export default function SpatialTemporal() {
     state,
     dispatch,
   };
-
-  let PageHeader = () => (
-    <Navbar className="bg-top-nav" variant="dark" expand="lg">
-      <Container>
-        <Navbar.Brand href="home">Octave</Navbar.Brand>
-        <Nav className="justify-content-end">
-          <NavDropdown className="no-arrow" title="Import Data">
-            <NavDropdown.Item onClick={() => setUploadActive(true)}>
-              Upload CSV
-            </NavDropdown.Item>
-            <ClassExerciseLoader dispatch={dispatch} />
-          </NavDropdown>
-          {window.location.href.endsWith("/study") ? (
-            <>
-              <Navbar.Text>|</Navbar.Text>
-              <UserStudyLoader dispatch={dispatch} />
-            </>
-          ) : (
-            <>
-              <Navbar.Text>|</Navbar.Text>
-              <ExportButton {...exportButtonProps}></ExportButton>
-            </>
-          )}
-        </Nav>
-      </Container>
-    </Navbar>
-  );
 
   let renderRightPane = (uistate) => {
     if (uistate === UIState.CreateCompound) {
