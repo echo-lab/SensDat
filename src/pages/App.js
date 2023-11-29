@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/header";
 import Home from "./home/home-page";
 import About from "./about/about-page";
+import Tutorial from "./tutorial/tutorial-page";
 import SpatialTemporal from "./spatial-temporal/spatial-temporal";
 
 const App = () => {
@@ -19,11 +20,14 @@ const App = () => {
       <Routes>
         <Route exact path="/home" element={buildPage(<Home />)} />
         <Route exact path="/about" element={buildPage(<About />)} />
+        <Route exact path="/tutorial" element={buildPage(<Tutorial />)} />
+        
         <Route
           exact
           path="/spatial-temporal"
           element={buildPage(<SpatialTemporal />)}
         />
+
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </HashRouter>
