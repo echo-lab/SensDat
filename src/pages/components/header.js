@@ -16,6 +16,9 @@ const Header = () => {
           <Link className="Menu-Logo" to="/about">
             About
           </Link>
+          <Link className="Menu-Logo" to="/tutorial">
+            Tutorial
+          </Link>
           <Link className="Menu-Logo" to="/spatial-temporal">
             Sensdat
           </Link>
