@@ -1,32 +1,27 @@
+
+
 .Home {
   display:flex;
   width: 100%;
+  height:calc(100vh - 56px);
 }
 
-.Home-left {
+.Home-text {
   display:flex;
   flex-direction: column;
-  width: 50%;
-}
-
-.Home-right {
-  display:flex;
-  flex-direction: column;
-  width: 50%;
+  width: 100%;
+  height: 100%;
 }
 
 .Home-title {
-  margin-left: auto;
+  margin-left: 10%;
+  margin-top: 5%;
   margin-right:auto;
+  /* background-color: aquamarine; */
 }
 
 .Home-description {
-  margin-left: auto;
-  margin-right:auto;
-}
-
-.Home-spatialTemporalButton {
-  margin-left: auto;
-  margin-right:auto;
+  margin-left: 10%;
+  margin-right:10%;
 }
 

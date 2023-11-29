@@ -11,3 +11,19 @@
 .Header-Logo:hover {
   color: #fff;
 }
+
+.Menu-Logo {
+  padding-top: 0.3125rem;
+  padding-bottom: 0.3125rem;
+  margin-left: 30px;
+  font-size: 1rem;
+  text-decoration: none;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.Menu-Logo:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+

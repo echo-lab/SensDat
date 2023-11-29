@@ -9,6 +9,17 @@ const Header = () => {
         <Link className="Header-Logo" to="/home">
           Octave
         </Link>
+        <div className="Menu">
+          <Link className="Menu-Logo" to="/home">
+            Home
+          </Link>
+          <Link className="Menu-Logo" to="/about">
+            About
+          </Link>
+          <Link className="Menu-Logo" to="/spatial-temporal">
+            Sensdat
+          </Link>
+        </div>
       </Container>
     </Navbar>
   );
