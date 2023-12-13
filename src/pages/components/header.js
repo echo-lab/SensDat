@@ -6,21 +6,21 @@ const Header = () => {
   return (
     <Navbar className="bg-top-nav" variant="dark" expand="lg">
       <Container>
-        <Link className="Header-Logo" to="/home">
+        {/* <Link className="Header-Logo" to="/home">
           Octave
-        </Link>
+        </Link> */}
         <div className="Menu">
           <Link className="Menu-Logo" to="/home">
             Home
-          </Link>
-          <Link className="Menu-Logo" to="/about">
-            About
           </Link>
           <Link className="Menu-Logo" to="/tutorial">
             Tutorial
           </Link>
           <Link className="Menu-Logo" to="/spatial-temporal">
-            Sensdat
+            Octave
+          </Link>
+          <Link className="Menu-Logo" to="/people">
+            People
           </Link>
         </div>
       </Container>

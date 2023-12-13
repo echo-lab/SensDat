@@ -1,64 +1,30 @@
-.About {
-    display:flex;
-    flex-direction: row;
-    width: 100%;
-    height:calc(100vh - 56px);
-    flex: 1;
-  }
-  
-  .About-left {
-    display:flex;
-    flex-direction: column;
-    /* width: 60%; */
-    height: 100%;
-    flex-grow: 2;
-  }
+.People {
+  width: 100%;
+  height: calc(100vh - 56px);
+  flex: 1;
+}
 
-  .About-right {
-    display:flex;
-    flex-direction: column;
-    background-color: rgb(79 79 79);
-    min-width: 500px;
-    max-width: 600px;
-    width: 40%;
-    height: 100%;
-    flex-grow: 1;
-  }
-  
-  .About-title {
-    margin-left: 10%;
-    margin-top: 5%;
-    /* margin-right:auto; */
-  }
-  
-  .About-description {
-    margin-left: 10%;
-    margin-right:10%;
-  }
-  
-  .Paper-container {
-    margin: 5%;
-    border-radius: 16px;
-    height: 100%;
-    border: 6px solid white;
-  }
-  .Paper-title {
-    margin-left: 5%;
-    margin-top: 5%;
-    margin-right:auto;
-    color: white;
-  }
+h2 {
+  margin-bottom: 1%;
+}
 
-  .Paper-line {
-    margin-top: 1%;
-    margin-left: 5%;
-    margin-right: 5%;
-    background-color: white;
-    padding: 2.5px;
-  }
-  .Paper {
-    margin: 5%;
-    margin-top: 2%;
-    height: 86%;
-    border: 6px solid white;
-  }
+li {
+  margin-bottom: 5px;
+}
+
+.People-title {
+  margin-left: 10%;
+  margin-top: 5%;
+  margin-bottom: 10px;
+  /* margin-right:auto; */
+}
+
+.Group {
+  margin-bottom: 3%;
+}
+
+.People-description {
+  margin-left: 15%;
+  margin-right: 10%;
+  font-size: 18px;
+}
